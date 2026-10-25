@@ -1,6 +1,9 @@
 Create database QLStoreConsole;
 use QLStoreConsole;
-
+CREATE TABLE Kho (
+    maKho BIGINT AUTO_INCREMENT PRIMARY KEY
+    
+);
 -- ==================== Thanh Ngân (Nhân viên, Khách hàng, Tài khoản, Nhà cung cấp, Serial máy) ===========================================
 -- NhanVien
 CREATE TABLE NhanVien (
