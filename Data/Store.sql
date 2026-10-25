@@ -5,7 +5,7 @@ CREATE TABLE Kho (
     
 );
 -- ==================== Thanh Ngân (Nhân viên, Khách hàng, Tài khoản, Nhà cung cấp, Serial máy) ===========================================
--- NhanVien
+--  NhanVien
 CREATE TABLE NhanVien (
     maNV BIGINT AUTO_INCREMENT PRIMARY KEY,
     hoTen VARCHAR(100) NOT NULL,
