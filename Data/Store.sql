@@ -72,9 +72,9 @@ CREATE TABLE SerialMay (
 -- ==================================================================================================
 
 
---==============================Phượng Vĩ( Phiếu Thu cũ, chi tiết phiếu Thu cũ, phiếu Bảo hành)============
+-- ==============================Phượng Vĩ( Phiếu Thu cũ, chi tiết phiếu Thu cũ, phiếu Bảo hành)============
 
---1 Phiếu thu cũ
+-- 1 Phiếu thu cũ
 CREATE TABLE PhieuThuCu (
     maPTC        BIGINT AUTO_INCREMENT PRIMARY KEY,
     maKH         BIGINT        NOT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE PhieuThuCu (
     CONSTRAINT FK_PhieuThuCu_Kho       FOREIGN KEY (maKho) REFERENCES Kho(maKho)
 );
 
---2 Chi tiết phiếu thu cũ
+--  Chi tiết phiếu thu cũ
 CREATE TABLE ChiTietPhieuThuCu (
     maCTTC     BIGINT AUTO_INCREMENT PRIMARY KEY,
     maPTC      BIGINT        NOT NULL,
@@ -108,13 +108,13 @@ CREATE TABLE ChiTietPhieuThuCu (
     CONSTRAINT CK_ChiTietPhieuThuCu_DonGiaThu CHECK (donGiaThu >= 0)
 );
 
---3 Phiếu bảo hành
+-- 3 Phiếu bảo hành
 CREATE TABLE PhieuBaoHanh (
     maBH BIGINT AUTO_INCREMENT PRIMARY KEY,
     maSerial BIGINT NOT NULL,
     maNV BIGINT NOT NULL,
     ngayTiepNhan DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    trangThaiBaoHanh BIT(1) NOT NULL DEFAULT b'0',--b'0' là ngoài bảo hành, b'1' là trong bảo hành
+    trangThaiBaoHanh BIT(1) NOT NULL DEFAULT b'0', -- b'0' là ngoài bảo hành, b'1' là trong bảo hành,
     ngayHenTra DATETIME NULL,
     noiDung NVARCHAR(255) NULL,
     moTaLoi NVARCHAR(255) NULL,
@@ -133,5 +133,5 @@ CREATE TABLE PhieuBaoHanh (
     CONSTRAINT CK_PhieuBaoHanh_ChiPhi
         CHECK (chiPhi >= 0)
 );
-);
---============================================================================================================
+
+-- ============================================================================================================
