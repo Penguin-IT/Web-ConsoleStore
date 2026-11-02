@@ -135,3 +135,97 @@ CREATE TABLE PhieuBaoHanh (
 );
 
 -- ============================================================================================================
+
+-- ==================== Hữu Nhật (LoaiSanPham, NenTang, SanPham, Kho, TonKho,BienDongKho) ===========================================
+CREATE TABLE LoaiSanPham (
+    maLoai BIGINT NOT NULL AUTO_INCREMENT,
+    tenLoai VARCHAR(100) NOT NULL,
+    CONSTRAINT PK_LoaiSanPham PRIMARY KEY (maLoai),
+    CONSTRAINT UQ_LoaiSanPham_tenLoai UNIQUE (tenLoai)
+);
+
+CREATE TABLE NenTang (
+    maNenTang BIGINT NOT NULL AUTO_INCREMENT,
+    tenNenTang VARCHAR(100) NOT NULL,
+    CONSTRAINT PK_NenTang PRIMARY KEY (maNenTang),
+    CONSTRAINT UQ_NenTang_tenNenTang UNIQUE (tenNenTang)
+);
+
+CREATE TABLE Kho (
+    maKho BIGINT NOT NULL AUTO_INCREMENT,
+    tenKho VARCHAR(100) NOT NULL,
+    diaChi VARCHAR(255) NULL,
+    CONSTRAINT PK_Kho PRIMARY KEY (maKho)
+);
+
+CREATE TABLE SanPham (
+    maSP BIGINT NOT NULL AUTO_INCREMENT,
+    tenSP VARCHAR(100) NOT NULL,
+    moTa VARCHAR(255) NULL,
+    giaBan DECIMAL(18,0) NOT NULL,
+    hinhAnh VARCHAR(255) NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    maLoai BIGINT NOT NULL,
+    maNenTang BIGINT NULL,
+    CONSTRAINT PK_SanPham PRIMARY KEY (maSP),
+    CONSTRAINT CK_SanPham_giaBan CHECK (giaBan > 0),
+    CONSTRAINT CK_SanPham_deleted CHECK (deleted IN (0, 1)),
+    CONSTRAINT FK_SanPham_LoaiSanPham FOREIGN KEY (maLoai) REFERENCES LoaiSanPham (maLoai),
+    CONSTRAINT FK_SanPham_NenTang FOREIGN KEY (maNenTang) REFERENCES NenTang (maNenTang)
+);
+
+CREATE TABLE TonKho (
+    maTon BIGINT NOT NULL AUTO_INCREMENT,
+    soLuong INT NOT NULL DEFAULT 0,
+    maKho BIGINT NOT NULL,
+    maSP BIGINT NOT NULL,
+    CONSTRAINT PK_TonKho PRIMARY KEY (maTon),
+    CONSTRAINT CK_TonKho_soLuong CHECK (soLuong >= 0),
+    CONSTRAINT UQ_TonKho_maKho_maSP UNIQUE (maKho, maSP),
+    CONSTRAINT FK_TonKho_Kho FOREIGN KEY (maKho) REFERENCES Kho (maKho),
+    CONSTRAINT FK_TonKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham (maSP)
+);
+
+CREATE TABLE BienDongKho (
+    maBD BIGINT NOT NULL AUTO_INCREMENT,
+    loaiBienDong VARCHAR(20) NOT NULL,
+    soLuong INT NOT NULL,
+    soLuongTruoc INT NOT NULL,
+    soLuongSau INT NOT NULL,
+    thoiGian DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    maKho BIGINT NOT NULL,
+    maSP BIGINT NOT NULL,
+    maNV BIGINT NULL,
+    maCTPN BIGINT NULL,
+    maCTHD BIGINT NULL,
+    maCTTC BIGINT NULL,
+    CONSTRAINT PK_BienDongKho PRIMARY KEY (maBD),
+    CONSTRAINT CK_BienDongKho_loaiBienDong CHECK (loaiBienDong IN ('NHAP', 'BAN', 'THU_CU', 'HOAN_HUY')),
+    CONSTRAINT CK_BienDongKho_soLuong CHECK (soLuong > 0),
+    CONSTRAINT CK_BienDongKho_soLuongTruoc CHECK (soLuongTruoc >= 0),
+    CONSTRAINT CK_BienDongKho_soLuongSau CHECK (
+        soLuongSau >= 0
+        AND (
+            (loaiBienDong = 'BAN' AND soLuongSau = soLuongTruoc - soLuong)
+            OR (loaiBienDong <> 'BAN' AND soLuongSau = soLuongTruoc + soLuong)
+        )
+    ),
+    CONSTRAINT CK_BienDongKho_chungTu CHECK (
+        (maCTPN IS NOT NULL) + (maCTHD IS NOT NULL) + (maCTTC IS NOT NULL) = 1
+    ),
+    CONSTRAINT CK_BienDongKho_loaiVaChungTu CHECK (
+        (loaiBienDong = 'NHAP' AND maCTPN IS NOT NULL)
+        OR (loaiBienDong = 'THU_CU' AND maCTTC IS NOT NULL)
+        OR (loaiBienDong IN ('BAN', 'HOAN_HUY') AND maCTHD IS NOT NULL)
+    ),
+    CONSTRAINT FK_BienDongKho_Kho FOREIGN KEY (maKho) REFERENCES Kho (maKho),
+    CONSTRAINT FK_BienDongKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham (maSP),
+    CONSTRAINT FK_BienDongKho_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien (maNV),
+    CONSTRAINT FK_BienDongKho_ChiTietPhieuNhap FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap (maCTPN),
+    CONSTRAINT FK_BienDongKho_ChiTietHoaDon FOREIGN KEY (maCTHD) REFERENCES ChiTietHoaDon (maCTHD),
+    CONSTRAINT FK_BienDongKho_ChiTietPhieuThuCu FOREIGN KEY (maCTTC) REFERENCES ChiTietPhieuThuCu (maCTTC)
+);
+
+CREATE INDEX IX_BienDongKho_maSP_thoiGian ON BienDongKho (maSP, thoiGian);
+
+-- ============================================================================================================
