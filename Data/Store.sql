@@ -133,5 +133,74 @@ CREATE TABLE PhieuBaoHanh (
     CONSTRAINT CK_PhieuBaoHanh_ChiPhi
         CHECK (chiPhi >= 0)
 );
+<<<<<<< Updated upstream
+=======
+--TRIGGER: phiếu thu cũ
+
+DELIMITER $$
+CREATE TRIGGER ChiTietPhieuThuCu_After_Insert
+AFTER INSERT ON ChiTietPhieuThuCu
+FOR EACH ROW
+BEGIN
+    DECLARE v_maKho BIGINT;
+    DECLARE v_maNV BIGINT;
+    DECLARE v_soLuongTruoc INT DEFAULT 0;
+    DECLARE v_soLuongSau   INT DEFAULT 0;
+
+    -- 1. Lấy thông tin kho và nhân viên, khóa phiếu thu cũ
+    SELECT maKho, maNV
+    INTO v_maKho, v_maNV
+    FROM PhieuThuCu
+    WHERE maPTC = NEW.maPTC
+    FOR UPDATE;
+    -- 2. Cộng tổng tiền
+    UPDATE PhieuThuCu
+    SET tongTienThu = COALESCE(tongTienThu, 0)
+                      + (NEW.soLuong * NEW.donGiaThu)
+    WHERE maPTC = NEW.maPTC;
+    -- 3. Đảm bảo tồn kho tồn tại
+    INSERT INTO TonKho (maKho, maSP, soLuong)
+    VALUES (v_maKho, NEW.maSP, 0)
+    ON DUPLICATE KEY UPDATE maTon = maTon;
+    -- 4. Khóa và đọc tồn kho
+    SELECT soLuong
+    INTO v_soLuongTruoc
+    FROM TonKho
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP
+    FOR UPDATE;
+    -- 5. Kiểm tra tràn INT
+    IF v_soLuongTruoc > 2147483647 - NEW.soLuong THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Ton kho vuot gioi han INT';
+    END IF;
+    -- 6. Tính tồn kho sau
+    SET v_soLuongSau = v_soLuongTruoc + NEW.soLuong;
+    -- 7. Cập nhật tồn kho
+    UPDATE TonKho
+    SET soLuong = v_soLuongSau
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP;
+    -- 8. Ghi nhận biến động kho
+    INSERT INTO BienDongKho (
+        loaiBienDong, soLuong, soLuongTruoc, soLuongSau,
+        maKho, maSP, maNV, maCTTC
+    )
+    VALUES (
+        'THU_CU', NEW.soLuong, v_soLuongTruoc, v_soLuongSau,
+        v_maKho, NEW.maSP, v_maNV, NEW.maCTTC
+    );
+
+END$$
+DELIMITER ;
+-- ============================================================================================================
+
+-- ==================== Hữu Nhật (LoaiSanPham, NenTang, SanPham, Kho, TonKho,BienDongKho) ===========================================
+CREATE TABLE LoaiSanPham (
+    maLoai BIGINT NOT NULL AUTO_INCREMENT,
+    tenLoai VARCHAR(100) NOT NULL,
+    CONSTRAINT PK_LoaiSanPham PRIMARY KEY (maLoai),
+    CONSTRAINT UQ_LoaiSanPham_tenLoai UNIQUE (tenLoai)
+>>>>>>> Stashed changes
 );
 --============================================================================================================
