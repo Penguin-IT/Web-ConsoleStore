@@ -1,71 +1,10 @@
 Create database QLStoreConsole;
 use QLStoreConsole;
-
--- =====================================================================
--- THỨ TỰ TẠO BẢNG (bảng cha trước, bảng con sau):
---   1. Nhật  : LoaiSanPham, NenTang, Kho, SanPham, TonKho
---   2. Ngân  : NhanVien, KhachHang, TaiKhoan, NhaCungCap, SerialMay
---   3. Long  : PhieuNhap, ChiTietPhieuNhap
---   4. Huy   : HoaDon, ChiTietHoaDon, ThanhToan
---   5. Vĩ    : PhieuThuCu, ChiTietPhieuThuCu, PhieuBaoHanh
---   6. Nhật  : BienDongKho  (đặt cuối vì trỏ tới CT phiếu nhập / hóa đơn / thu cũ)
---   7. Trigger của cả nhóm
--- =====================================================================
-
-
--- ==================== Hữu Nhật (LoaiSanPham, NenTang, Kho, SanPham, TonKho) ====================
-CREATE TABLE LoaiSanPham (
-    maLoai BIGINT NOT NULL AUTO_INCREMENT,
-    tenLoai VARCHAR(100) NOT NULL,
-    CONSTRAINT PK_LoaiSanPham PRIMARY KEY (maLoai),
-    CONSTRAINT UQ_LoaiSanPham_tenLoai UNIQUE (tenLoai)
-);
-
-CREATE TABLE NenTang (
-    maNenTang BIGINT NOT NULL AUTO_INCREMENT,
-    tenNenTang VARCHAR(100) NOT NULL,
-    CONSTRAINT PK_NenTang PRIMARY KEY (maNenTang),
-    CONSTRAINT UQ_NenTang_tenNenTang UNIQUE (tenNenTang)
-);
-
 CREATE TABLE Kho (
-    maKho BIGINT NOT NULL AUTO_INCREMENT,
-    tenKho VARCHAR(100) NOT NULL,
-    diaChi VARCHAR(255) NULL,
-    CONSTRAINT PK_Kho PRIMARY KEY (maKho)
+    maKho BIGINT AUTO_INCREMENT PRIMARY KEY
+    
 );
-
-CREATE TABLE SanPham (
-    maSP BIGINT NOT NULL AUTO_INCREMENT,
-    tenSP VARCHAR(100) NOT NULL,
-    moTa VARCHAR(255) NULL,
-    giaBan DECIMAL(18,0) NOT NULL,
-    hinhAnh VARCHAR(255) NULL,
-    deleted TINYINT(1) NOT NULL DEFAULT 0,
-    maLoai BIGINT NOT NULL,
-    maNenTang BIGINT NULL,
-    CONSTRAINT PK_SanPham PRIMARY KEY (maSP),
-    CONSTRAINT CK_SanPham_giaBan CHECK (giaBan > 0),
-    CONSTRAINT CK_SanPham_deleted CHECK (deleted IN (0, 1)),
-    CONSTRAINT FK_SanPham_LoaiSanPham FOREIGN KEY (maLoai) REFERENCES LoaiSanPham (maLoai),
-    CONSTRAINT FK_SanPham_NenTang FOREIGN KEY (maNenTang) REFERENCES NenTang (maNenTang)
-);
-
-CREATE TABLE TonKho (
-    maTon BIGINT NOT NULL AUTO_INCREMENT,
-    soLuong INT NOT NULL DEFAULT 0,
-    maKho BIGINT NOT NULL,
-    maSP BIGINT NOT NULL,
-    CONSTRAINT PK_TonKho PRIMARY KEY (maTon),
-    CONSTRAINT CK_TonKho_soLuong CHECK (soLuong >= 0),
-    CONSTRAINT UQ_TonKho_maKho_maSP UNIQUE (maKho, maSP),
-    CONSTRAINT FK_TonKho_Kho FOREIGN KEY (maKho) REFERENCES Kho (maKho),
-    CONSTRAINT FK_TonKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham (maSP)
-);
--- ===============================================================================================
-
-
--- ==================== Thanh Ngân (NhanVien, KhachHang, TaiKhoan, NhaCungCap, SerialMay) ====================
+-- ==================== Thanh Ngân (Nhân viên, Khách hàng, Tài khoản, Nhà cung cấp, Serial máy) ===========================================
 --  NhanVien
 CREATE TABLE NhanVien (
     maNV BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -87,7 +26,7 @@ CREATE TABLE KhachHang (
     ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- TaiKhoan
+-- TaiKhoan 
 CREATE TABLE TaiKhoan (
     maTK BIGINT AUTO_INCREMENT PRIMARY KEY,
     tenDangNhap VARCHAR(100) NOT NULL UNIQUE,
@@ -129,92 +68,11 @@ CREATE TABLE SerialMay (
         CHECK (trangThai IN ('TRONG_KHO', 'DA_BAN', 'BAO_HANH')),
     CONSTRAINT FK_SerialMay_SanPham
         FOREIGN KEY (maSP) REFERENCES SanPham(maSP)
-);
--- ===============================================================================================
+); 
+-- ==================================================================================================
 
 
--- ==================== Long (PhieuNhap, ChiTietPhieuNhap) ====================
--- !!! TẠM THỜI: Long chưa push nên Huy tạo bản tối thiểu để script chạy được.
--- !!! Long hãy thay hai bảng này bằng bản thật của mình (giữ nguyên tên bảng + khóa chính).
-CREATE TABLE PhieuNhap (
-    maPN BIGINT AUTO_INCREMENT PRIMARY KEY,
-    maNCC BIGINT NOT NULL,
-    maNV BIGINT NOT NULL,
-    maKho BIGINT NOT NULL,
-    ngayNhap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT FK_PhieuNhap_NhaCungCap FOREIGN KEY (maNCC) REFERENCES NhaCungCap(maNCC),
-    CONSTRAINT FK_PhieuNhap_NhanVien   FOREIGN KEY (maNV)  REFERENCES NhanVien(maNV),
-    CONSTRAINT FK_PhieuNhap_Kho        FOREIGN KEY (maKho) REFERENCES Kho(maKho)
-);
-
-CREATE TABLE ChiTietPhieuNhap (
-    maCTPN BIGINT AUTO_INCREMENT PRIMARY KEY,
-    maPN BIGINT NOT NULL,
-    maSP BIGINT NOT NULL,
-    soLuong INT NOT NULL,
-    donGiaNhap DECIMAL(18,0) NOT NULL,
-    CONSTRAINT FK_ChiTietPhieuNhap_PhieuNhap FOREIGN KEY (maPN) REFERENCES PhieuNhap(maPN),
-    CONSTRAINT FK_ChiTietPhieuNhap_SanPham   FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-    CONSTRAINT CK_ChiTietPhieuNhap_soLuong   CHECK (soLuong > 0),
-    CONSTRAINT CK_ChiTietPhieuNhap_donGiaNhap CHECK (donGiaNhap >= 0)
-);
--- ===============================================================================================
-
-
--- ==================== Huy (HoaDon, ChiTietHoaDon, ThanhToan) ====================
-CREATE TABLE HoaDon (
-    maHD BIGINT NOT NULL AUTO_INCREMENT,
-    maKH BIGINT NULL,
-    maNV BIGINT NULL,
-    maKho BIGINT NOT NULL,
-    ngayLap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    kenhBan VARCHAR(20) NOT NULL,
-    trangThai VARCHAR(20) NOT NULL DEFAULT 'CHO_XAC_NHAN',
-    tongTien DECIMAL(18,0) NOT NULL DEFAULT 0,
-    diaChi VARCHAR(255) NULL,
-    ghiChu VARCHAR(255) NULL,
-    CONSTRAINT PK_HoaDon PRIMARY KEY (maHD),
-    CONSTRAINT FK_HoaDon_KhachHang FOREIGN KEY (maKH)  REFERENCES KhachHang (maKH),
-    CONSTRAINT FK_HoaDon_NhanVien  FOREIGN KEY (maNV)  REFERENCES NhanVien (maNV),
-    CONSTRAINT FK_HoaDon_Kho       FOREIGN KEY (maKho) REFERENCES Kho (maKho),
-    CONSTRAINT CK_HoaDon_kenhBan   CHECK (kenhBan IN ('QUAY', 'ONLINE')),
-    CONSTRAINT CK_HoaDon_trangThai CHECK (trangThai IN
-        ('CHO_XAC_NHAN', 'DA_XAC_NHAN', 'DANG_GIAO', 'HOAN_TAT', 'HUY')),
-    CONSTRAINT CK_HoaDon_tongTien  CHECK (tongTien >= 0)
-);
-
-CREATE TABLE ChiTietHoaDon (
-    maCTHD BIGINT NOT NULL AUTO_INCREMENT,
-    maHD BIGINT NOT NULL,
-    maSP BIGINT NOT NULL,
-    maSerial BIGINT NULL,
-    soLuong INT NOT NULL DEFAULT 1,
-    donGia DECIMAL(18,0) NOT NULL,
-    CONSTRAINT PK_ChiTietHoaDon PRIMARY KEY (maCTHD),
-    CONSTRAINT FK_ChiTietHoaDon_HoaDon    FOREIGN KEY (maHD)     REFERENCES HoaDon (maHD),
-    CONSTRAINT FK_ChiTietHoaDon_SanPham   FOREIGN KEY (maSP)     REFERENCES SanPham (maSP),
-    CONSTRAINT FK_ChiTietHoaDon_SerialMay FOREIGN KEY (maSerial) REFERENCES SerialMay (maSerial),
-    CONSTRAINT CK_ChiTietHoaDon_soLuong   CHECK (soLuong > 0),
-    CONSTRAINT CK_ChiTietHoaDon_donGia    CHECK (donGia >= 0)
-);
-
-CREATE TABLE ThanhToan (
-    maTT BIGINT NOT NULL AUTO_INCREMENT,
-    maHD BIGINT NOT NULL,
-    phuongThuc VARCHAR(20) NOT NULL,
-    soTien DECIMAL(18,0) NOT NULL,
-    trangThai VARCHAR(20) NOT NULL DEFAULT 'CHUA_THANH_TOAN',
-    ngayThanhToan DATETIME NULL,
-    CONSTRAINT PK_ThanhToan PRIMARY KEY (maTT),
-    CONSTRAINT FK_ThanhToan_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon (maHD),
-    CONSTRAINT CK_ThanhToan_phuongThuc CHECK (phuongThuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'COD')),
-    CONSTRAINT CK_ThanhToan_trangThai  CHECK (trangThai IN ('CHUA_THANH_TOAN', 'DA_THANH_TOAN')),
-    CONSTRAINT CK_ThanhToan_soTien     CHECK (soTien >= 0)
-);
--- ===============================================================================================
-
-
--- ==================== Phượng Vĩ (PhieuThuCu, ChiTietPhieuThuCu, PhieuBaoHanh) ====================
+-- ==============================Phượng Vĩ( Phiếu Thu cũ, chi tiết phiếu Thu cũ, phiếu Bảo hành)============
 
 -- 1 Phiếu thu cũ
 CREATE TABLE PhieuThuCu (
@@ -275,10 +133,59 @@ CREATE TABLE PhieuBaoHanh (
     CONSTRAINT CK_PhieuBaoHanh_ChiPhi
         CHECK (chiPhi >= 0)
 );
--- ===============================================================================================
 
+-- ============================================================================================================
 
--- ==================== Hữu Nhật (BienDongKho) ====================
+-- ==================== Hữu Nhật (LoaiSanPham, NenTang, SanPham, Kho, TonKho,BienDongKho) ===========================================
+CREATE TABLE LoaiSanPham (
+    maLoai BIGINT NOT NULL AUTO_INCREMENT,
+    tenLoai VARCHAR(100) NOT NULL,
+    CONSTRAINT PK_LoaiSanPham PRIMARY KEY (maLoai),
+    CONSTRAINT UQ_LoaiSanPham_tenLoai UNIQUE (tenLoai)
+);
+
+CREATE TABLE NenTang (
+    maNenTang BIGINT NOT NULL AUTO_INCREMENT,
+    tenNenTang VARCHAR(100) NOT NULL,
+    CONSTRAINT PK_NenTang PRIMARY KEY (maNenTang),
+    CONSTRAINT UQ_NenTang_tenNenTang UNIQUE (tenNenTang)
+);
+
+CREATE TABLE Kho (
+    maKho BIGINT NOT NULL AUTO_INCREMENT,
+    tenKho VARCHAR(100) NOT NULL,
+    diaChi VARCHAR(255) NULL,
+    CONSTRAINT PK_Kho PRIMARY KEY (maKho)
+);
+
+CREATE TABLE SanPham (
+    maSP BIGINT NOT NULL AUTO_INCREMENT,
+    tenSP VARCHAR(100) NOT NULL,
+    moTa VARCHAR(255) NULL,
+    giaBan DECIMAL(18,0) NOT NULL,
+    hinhAnh VARCHAR(255) NULL,
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    maLoai BIGINT NOT NULL,
+    maNenTang BIGINT NULL,
+    CONSTRAINT PK_SanPham PRIMARY KEY (maSP),
+    CONSTRAINT CK_SanPham_giaBan CHECK (giaBan > 0),
+    CONSTRAINT CK_SanPham_deleted CHECK (deleted IN (0, 1)),
+    CONSTRAINT FK_SanPham_LoaiSanPham FOREIGN KEY (maLoai) REFERENCES LoaiSanPham (maLoai),
+    CONSTRAINT FK_SanPham_NenTang FOREIGN KEY (maNenTang) REFERENCES NenTang (maNenTang)
+);
+
+CREATE TABLE TonKho (
+    maTon BIGINT NOT NULL AUTO_INCREMENT,
+    soLuong INT NOT NULL DEFAULT 0,
+    maKho BIGINT NOT NULL,
+    maSP BIGINT NOT NULL,
+    CONSTRAINT PK_TonKho PRIMARY KEY (maTon),
+    CONSTRAINT CK_TonKho_soLuong CHECK (soLuong >= 0),
+    CONSTRAINT UQ_TonKho_maKho_maSP UNIQUE (maKho, maSP),
+    CONSTRAINT FK_TonKho_Kho FOREIGN KEY (maKho) REFERENCES Kho (maKho),
+    CONSTRAINT FK_TonKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham (maSP)
+);
+
 CREATE TABLE BienDongKho (
     maBD BIGINT NOT NULL AUTO_INCREMENT,
     loaiBienDong VARCHAR(20) NOT NULL,
@@ -320,116 +227,5 @@ CREATE TABLE BienDongKho (
 );
 
 CREATE INDEX IX_BienDongKho_maSP_thoiGian ON BienDongKho (maSP, thoiGian);
--- ===============================================================================================
 
-
--- =====================================================================
--- TRIGGER (đặt sau khi TẤT CẢ bảng đã tạo xong)
--- =====================================================================
-DELIMITER $$
-
--- ---------- Long: TRIGGER_ChiTietPhieuNhap_After_Insert ----------
--- TODO (Long): dán trigger của mình vào đây.
-
--- ---------- Huy: TRIGGER_ChiTietHoaDon_After_Insert ----------
--- Thêm dòng chi tiết hóa đơn => bán hàng:
---   kiểm tra hóa đơn/serial/tồn kho, trừ TonKho, ghi BienDongKho 'BAN',
---   đổi SerialMay -> DA_BAN, cộng tongTien của HoaDon.
-CREATE TRIGGER TRIGGER_ChiTietHoaDon_After_Insert
-AFTER INSERT ON ChiTietHoaDon
-FOR EACH ROW
-BEGIN
-    DECLARE v_maKho   BIGINT;
-    DECLARE v_maNV    BIGINT;
-    DECLARE v_ttHD    VARCHAR(20);
-    DECLARE v_truoc   INT;
-    DECLARE v_ttSeri  VARCHAR(20);
-    DECLARE v_spSeri  BIGINT;
-
-    SELECT maKho, maNV, trangThai INTO v_maKho, v_maNV, v_ttHD
-    FROM HoaDon WHERE maHD = NEW.maHD;
-
-    IF v_ttHD = 'HUY' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Hoa don da huy, khong the them chi tiet';
-    END IF;
-
-    IF NEW.maSerial IS NOT NULL THEN
-        IF NEW.soLuong <> 1 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Dong co serial chi duoc ban so luong 1';
-        END IF;
-        SELECT MAX(trangThai), MAX(maSP) INTO v_ttSeri, v_spSeri
-        FROM SerialMay WHERE maSerial = NEW.maSerial;
-        IF v_ttSeri IS NULL OR v_ttSeri <> 'TRONG_KHO' OR v_spSeri <> NEW.maSP THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Serial khong hop le hoac khong con trong kho';
-        END IF;
-    END IF;
-
-    SELECT MAX(soLuong) INTO v_truoc
-    FROM TonKho WHERE maKho = v_maKho AND maSP = NEW.maSP;
-
-    IF v_truoc IS NULL OR v_truoc < NEW.soLuong THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Khong du ton kho de ban';
-    END IF;
-
-    UPDATE TonKho SET soLuong = soLuong - NEW.soLuong
-    WHERE maKho = v_maKho AND maSP = NEW.maSP;
-
-    INSERT INTO BienDongKho (loaiBienDong, soLuong, soLuongTruoc, soLuongSau, maKho, maSP, maNV, maCTHD)
-    VALUES ('BAN', NEW.soLuong, v_truoc, v_truoc - NEW.soLuong, v_maKho, NEW.maSP, v_maNV, NEW.maCTHD);
-
-    IF NEW.maSerial IS NOT NULL THEN
-        UPDATE SerialMay SET trangThai = 'DA_BAN' WHERE maSerial = NEW.maSerial;
-    END IF;
-
-    UPDATE HoaDon SET tongTien = tongTien + NEW.soLuong * NEW.donGia
-    WHERE maHD = NEW.maHD;
-END$$
-
--- ---------- Huy: TRIGGER_HoaDon_After_Update ----------
--- Hóa đơn chuyển sang HUY => hoàn kho: cộng lại TonKho, ghi BienDongKho 'HOAN_HUY',
--- trả SerialMay về TRONG_KHO. Dùng con trỏ để mỗi dòng ghi đúng soLuongTruoc/soLuongSau.
-CREATE TRIGGER TRIGGER_HoaDon_After_Update
-AFTER UPDATE ON HoaDon
-FOR EACH ROW
-BEGIN
-    DECLARE v_done   INT DEFAULT 0;
-    DECLARE v_cthd   BIGINT;
-    DECLARE v_sp     BIGINT;
-    DECLARE v_sl     INT;
-    DECLARE v_serial BIGINT;
-    DECLARE v_truoc  INT;
-
-    DECLARE cur CURSOR FOR
-        SELECT maCTHD, maSP, soLuong, maSerial
-        FROM ChiTietHoaDon WHERE maHD = NEW.maHD ORDER BY maCTHD;
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
-
-    IF OLD.trangThai <> 'HUY' AND NEW.trangThai = 'HUY' THEN
-        OPEN cur;
-        doc_dong: LOOP
-            FETCH cur INTO v_cthd, v_sp, v_sl, v_serial;
-            IF v_done = 1 THEN
-                LEAVE doc_dong;
-            END IF;
-
-            SELECT IFNULL(MAX(soLuong), 0) INTO v_truoc
-            FROM TonKho WHERE maKho = NEW.maKho AND maSP = v_sp;
-
-            INSERT INTO TonKho (maKho, maSP, soLuong) VALUES (NEW.maKho, v_sp, v_sl)
-            ON DUPLICATE KEY UPDATE soLuong = soLuong + v_sl;
-
-            INSERT INTO BienDongKho (loaiBienDong, soLuong, soLuongTruoc, soLuongSau, maKho, maSP, maNV, maCTHD)
-            VALUES ('HOAN_HUY', v_sl, v_truoc, v_truoc + v_sl, NEW.maKho, v_sp, NEW.maNV, v_cthd);
-
-            IF v_serial IS NOT NULL THEN
-                UPDATE SerialMay SET trangThai = 'TRONG_KHO' WHERE maSerial = v_serial;
-            END IF;
-        END LOOP;
-        CLOSE cur;
-    END IF;
-END$$
-
--- ---------- Vĩ: TRIGGER_ChiTietPhieuThuCu_After_Insert ----------
--- TODO (Vĩ): dán trigger của mình vào đây.
-
-DELIMITER ;
+-- ============================================================================================================
