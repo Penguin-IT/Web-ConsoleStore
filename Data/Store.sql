@@ -133,7 +133,6 @@ CREATE TABLE PhieuBaoHanh (
     CONSTRAINT CK_PhieuBaoHanh_ChiPhi
         CHECK (chiPhi >= 0)
 );
-
 -- ============================================================================================================
 
 -- ==================== Hữu Nhật (LoaiSanPham, NenTang, SanPham, Kho, TonKho,BienDongKho) ===========================================
@@ -229,3 +228,213 @@ CREATE TABLE BienDongKho (
 CREATE INDEX IX_BienDongKho_maSP_thoiGian ON BienDongKho (maSP, thoiGian);
 
 -- ============================================================================================================
+
+-- ==================== Huy (HoaDon, ChiTietHoaDon, ThanhToan) ====================
+CREATE TABLE HoaDon (
+    maHD BIGINT NOT NULL AUTO_INCREMENT,
+    maKH BIGINT NULL,
+    maNV BIGINT NULL,
+    maKho BIGINT NOT NULL,
+    ngayLap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    kenhBan VARCHAR(20) NOT NULL,
+    trangThai VARCHAR(20) NOT NULL DEFAULT 'CHO_XAC_NHAN',
+    tongTien DECIMAL(18,0) NOT NULL DEFAULT 0,
+    diaChi VARCHAR(255) NULL,
+    ghiChu VARCHAR(255) NULL,
+    CONSTRAINT PK_HoaDon PRIMARY KEY (maHD),
+    CONSTRAINT FK_HoaDon_KhachHang FOREIGN KEY (maKH)  REFERENCES KhachHang (maKH),
+    CONSTRAINT FK_HoaDon_NhanVien  FOREIGN KEY (maNV)  REFERENCES NhanVien (maNV),
+    CONSTRAINT FK_HoaDon_Kho       FOREIGN KEY (maKho) REFERENCES Kho (maKho),
+    CONSTRAINT CK_HoaDon_kenhBan   CHECK (kenhBan IN ('QUAY', 'ONLINE')),
+    CONSTRAINT CK_HoaDon_trangThai CHECK (trangThai IN
+        ('CHO_XAC_NHAN', 'DA_XAC_NHAN', 'DANG_GIAO', 'HOAN_TAT', 'HUY')),
+    CONSTRAINT CK_HoaDon_tongTien  CHECK (tongTien >= 0)
+);
+
+CREATE TABLE ChiTietHoaDon (
+    maCTHD BIGINT NOT NULL AUTO_INCREMENT,
+    maHD BIGINT NOT NULL,
+    maSP BIGINT NOT NULL,
+    maSerial BIGINT NULL,
+    soLuong INT NOT NULL DEFAULT 1,
+    donGia DECIMAL(18,0) NOT NULL,
+    CONSTRAINT PK_ChiTietHoaDon PRIMARY KEY (maCTHD),
+    CONSTRAINT FK_ChiTietHoaDon_HoaDon    FOREIGN KEY (maHD)     REFERENCES HoaDon (maHD),
+    CONSTRAINT FK_ChiTietHoaDon_SanPham   FOREIGN KEY (maSP)     REFERENCES SanPham (maSP),
+    CONSTRAINT FK_ChiTietHoaDon_SerialMay FOREIGN KEY (maSerial) REFERENCES SerialMay (maSerial),
+    CONSTRAINT CK_ChiTietHoaDon_soLuong   CHECK (soLuong > 0),
+    CONSTRAINT CK_ChiTietHoaDon_donGia    CHECK (donGia >= 0)
+);
+
+CREATE TABLE ThanhToan (
+    maTT BIGINT NOT NULL AUTO_INCREMENT,
+    maHD BIGINT NOT NULL,
+    phuongThuc VARCHAR(20) NOT NULL,
+    soTien DECIMAL(18,0) NOT NULL,
+    trangThai VARCHAR(20) NOT NULL DEFAULT 'CHUA_THANH_TOAN',
+    ngayThanhToan DATETIME NULL,
+    CONSTRAINT PK_ThanhToan PRIMARY KEY (maTT),
+    CONSTRAINT FK_ThanhToan_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon (maHD),
+    CONSTRAINT CK_ThanhToan_phuongThuc CHECK (phuongThuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'COD')),
+    CONSTRAINT CK_ThanhToan_trangThai  CHECK (trangThai IN ('CHUA_THANH_TOAN', 'DA_THANH_TOAN')),
+    CONSTRAINT CK_ThanhToan_soTien     CHECK (soTien >= 0)
+);
+-- ===============================================================================================
+
+DELIMITER $$
+-- ---------- Huy: TRIGGER_ChiTietHoaDon_After_Insert ----------
+-- Thêm dòng chi tiết hóa đơn => bán hàng:
+--   kiểm tra hóa đơn/serial/tồn kho, trừ TonKho, ghi BienDongKho 'BAN',
+--   đổi SerialMay -> DA_BAN, cộng tongTien của HoaDon.
+CREATE TRIGGER TRIGGER_ChiTietHoaDon_After_Insert
+AFTER INSERT ON ChiTietHoaDon
+FOR EACH ROW
+BEGIN
+    DECLARE v_maKho   BIGINT;
+    DECLARE v_maNV    BIGINT;
+    DECLARE v_ttHD    VARCHAR(20);
+    DECLARE v_truoc   INT;
+    DECLARE v_ttSeri  VARCHAR(20);
+    DECLARE v_spSeri  BIGINT;
+
+    SELECT maKho, maNV, trangThai INTO v_maKho, v_maNV, v_ttHD
+    FROM HoaDon WHERE maHD = NEW.maHD;
+
+    IF v_ttHD = 'HUY' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Hoa don da huy, khong the them chi tiet';
+    END IF;
+
+    IF NEW.maSerial IS NOT NULL THEN
+        IF NEW.soLuong <> 1 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Dong co serial chi duoc ban so luong 1';
+        END IF;
+        SELECT MAX(trangThai), MAX(maSP) INTO v_ttSeri, v_spSeri
+        FROM SerialMay WHERE maSerial = NEW.maSerial;
+        IF v_ttSeri IS NULL OR v_ttSeri <> 'TRONG_KHO' OR v_spSeri <> NEW.maSP THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Serial khong hop le hoac khong con trong kho';
+        END IF;
+    END IF;
+
+    SELECT MAX(soLuong) INTO v_truoc
+    FROM TonKho WHERE maKho = v_maKho AND maSP = NEW.maSP;
+
+    IF v_truoc IS NULL OR v_truoc < NEW.soLuong THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Khong du ton kho de ban';
+    END IF;
+
+    UPDATE TonKho SET soLuong = soLuong - NEW.soLuong
+    WHERE maKho = v_maKho AND maSP = NEW.maSP;
+
+    INSERT INTO BienDongKho (loaiBienDong, soLuong, soLuongTruoc, soLuongSau, maKho, maSP, maNV, maCTHD)
+    VALUES ('BAN', NEW.soLuong, v_truoc, v_truoc - NEW.soLuong, v_maKho, NEW.maSP, v_maNV, NEW.maCTHD);
+
+    IF NEW.maSerial IS NOT NULL THEN
+        UPDATE SerialMay SET trangThai = 'DA_BAN' WHERE maSerial = NEW.maSerial;
+    END IF;
+
+    UPDATE HoaDon SET tongTien = tongTien + NEW.soLuong * NEW.donGia
+    WHERE maHD = NEW.maHD;
+END$$
+
+-- ----------------------------TRIGGER-----------------------------------------------
+-- ---------- Huy: TRIGGER_HoaDon_After_Update ----------
+-- Hóa đơn chuyển sang HUY => hoàn kho: cộng lại TonKho, ghi BienDongKho 'HOAN_HUY',
+-- trả SerialMay về TRONG_KHO. Dùng con trỏ để mỗi dòng ghi đúng soLuongTruoc/soLuongSau.
+CREATE TRIGGER TRIGGER_HoaDon_After_Update
+AFTER UPDATE ON HoaDon
+FOR EACH ROW
+BEGIN
+    DECLARE v_done   INT DEFAULT 0;
+    DECLARE v_cthd   BIGINT;
+    DECLARE v_sp     BIGINT;
+    DECLARE v_sl     INT;
+    DECLARE v_serial BIGINT;
+    DECLARE v_truoc  INT;
+
+    DECLARE cur CURSOR FOR
+        SELECT maCTHD, maSP, soLuong, maSerial
+        FROM ChiTietHoaDon WHERE maHD = NEW.maHD ORDER BY maCTHD;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+
+    IF OLD.trangThai <> 'HUY' AND NEW.trangThai = 'HUY' THEN
+        OPEN cur;
+        doc_dong: LOOP
+            FETCH cur INTO v_cthd, v_sp, v_sl, v_serial;
+            IF v_done = 1 THEN
+                LEAVE doc_dong;
+            END IF;
+
+            SELECT IFNULL(MAX(soLuong), 0) INTO v_truoc
+            FROM TonKho WHERE maKho = NEW.maKho AND maSP = v_sp;
+
+            INSERT INTO TonKho (maKho, maSP, soLuong) VALUES (NEW.maKho, v_sp, v_sl)
+            ON DUPLICATE KEY UPDATE soLuong = soLuong + v_sl;
+
+            INSERT INTO BienDongKho (loaiBienDong, soLuong, soLuongTruoc, soLuongSau, maKho, maSP, maNV, maCTHD)
+            VALUES ('HOAN_HUY', v_sl, v_truoc, v_truoc + v_sl, NEW.maKho, v_sp, NEW.maNV, v_cthd);
+
+            IF v_serial IS NOT NULL THEN
+                UPDATE SerialMay SET trangThai = 'TRONG_KHO' WHERE maSerial = v_serial;
+            END IF;
+        END LOOP;
+        CLOSE cur;
+    END IF;
+END$$
+
+DELIMITER $$
+CREATE TRIGGER ChiTietPhieuThuCu_After_Insert
+AFTER INSERT ON ChiTietPhieuThuCu
+FOR EACH ROW
+BEGIN
+    DECLARE v_maKho BIGINT;
+    DECLARE v_maNV BIGINT;
+    DECLARE v_soLuongTruoc INT DEFAULT 0;
+    DECLARE v_soLuongSau   INT DEFAULT 0;
+
+    -- 1. Lấy thông tin kho và nhân viên, khóa phiếu thu cũ
+    SELECT maKho, maNV
+    INTO v_maKho, v_maNV
+    FROM PhieuThuCu
+    WHERE maPTC = NEW.maPTC
+    FOR UPDATE;
+    -- 2. Cộng tổng tiền
+    UPDATE PhieuThuCu
+    SET tongTienThu = COALESCE(tongTienThu, 0)
+                      + (NEW.soLuong * NEW.donGiaThu)
+    WHERE maPTC = NEW.maPTC;
+    -- 3. Đảm bảo tồn kho tồn tại
+    INSERT INTO TonKho (maKho, maSP, soLuong)
+    VALUES (v_maKho, NEW.maSP, 0)
+    ON DUPLICATE KEY UPDATE maTon = maTon;
+    -- 4. Khóa và đọc tồn kho
+    SELECT soLuong
+    INTO v_soLuongTruoc
+    FROM TonKho
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP
+    FOR UPDATE;
+    -- 5. Kiểm tra tràn INT
+    IF v_soLuongTruoc > 2147483647 - NEW.soLuong THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Ton kho vuot gioi han INT';
+    END IF;
+    -- 6. Tính tồn kho sau
+    SET v_soLuongSau = v_soLuongTruoc + NEW.soLuong;
+    -- 7. Cập nhật tồn kho
+    UPDATE TonKho
+    SET soLuong = v_soLuongSau
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP;
+    -- 8. Ghi nhận biến động kho
+    INSERT INTO BienDongKho (
+        loaiBienDong, soLuong, soLuongTruoc, soLuongSau,
+        maKho, maSP, maNV, maCTTC
+    )
+    VALUES (
+        'THU_CU', NEW.soLuong, v_soLuongTruoc, v_soLuongSau,
+        v_maKho, NEW.maSP, v_maNV, NEW.maCTTC
+    );
+
+END$$
+DELIMITER ;
+-- -----------------------------------------------------------------------------------------
