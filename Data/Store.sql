@@ -279,6 +279,7 @@ CREATE TABLE ThanhToan (
 -- ===============================================================================================
 
 DELIMITER $$
+
 -- ---------- Huy: TRIGGER_ChiTietHoaDon_After_Insert ----------
 -- Thêm dòng chi tiết hóa đơn => bán hàng:
 --   kiểm tra hóa đơn/serial/tồn kho, trừ TonKho, ghi BienDongKho 'BAN',
@@ -435,3 +436,157 @@ BEGIN
 END$$
 DELIMITER ;
 -- -----------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------
+-- ================== Thành Long (PhieuNhap, ChiTietPhieuNhap, ChiTietPhieuNhapSerial ) ===========================================
+-- Table PhieuNhap,ChiTietPhieuNhap
+-- Table ChiTietPhieuNhapSerial: truy lại serial nào được nhập trong dòng sản phẩm nào; 1 dòng nhập có thể có nhiều serial; mỗi serial chỉ thuộc 1 dòng nhập.
+-- Trigger: khi thêm chi tiết nhập, tự cộng tổng tiền phiếu, tăng tồn kho và thêm bản ghi BienDongKho
+CREATE TABLE PhieuNhap (
+    maPN BIGINT NOT NULL AUTO_INCREMENT,
+    maNCC BIGINT NOT NULL,
+    maNV BIGINT NOT NULL,
+    maKho BIGINT NOT NULL,
+    ngayNhap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tongTien DECIMAL(18,0) NOT NULL DEFAULT 0,
+    ghiChu VARCHAR(255) NULL,
+
+    CONSTRAINT PK_PhieuNhap PRIMARY KEY (maPN),
+    CONSTRAINT FK_PhieuNhap_NhaCungCap
+        FOREIGN KEY (maNCC) REFERENCES NhaCungCap(maNCC),
+    CONSTRAINT FK_PhieuNhap_NhanVien
+        FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+    CONSTRAINT FK_PhieuNhap_Kho
+        FOREIGN KEY (maKho) REFERENCES Kho(maKho),
+    CONSTRAINT CK_PhieuNhap_tongTien CHECK (tongTien >= 0)
+);
+
+CREATE TABLE ChiTietPhieuNhap (
+    maCTPN BIGINT NOT NULL AUTO_INCREMENT,
+    maPN BIGINT NOT NULL,
+    maSP BIGINT NOT NULL,
+    soLuong INT NOT NULL,
+    donGiaNhap DECIMAL(18,0) NOT NULL,
+
+    CONSTRAINT PK_ChiTietPhieuNhap PRIMARY KEY (maCTPN),
+    CONSTRAINT FK_ChiTietPhieuNhap_PhieuNhap
+        FOREIGN KEY (maPN) REFERENCES PhieuNhap(maPN),
+    CONSTRAINT FK_ChiTietPhieuNhap_SanPham
+        FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+    CONSTRAINT CK_ChiTietPhieuNhap_soLuong CHECK (soLuong > 0),
+    CONSTRAINT CK_ChiTietPhieuNhap_donGiaNhap CHECK (donGiaNhap >= 0)
+);
+
+
+CREATE TABLE ChiTietPhieuNhapSerial (
+    maCTPN BIGINT NOT NULL,
+    maSerial BIGINT NOT NULL,
+
+    CONSTRAINT PK_ChiTietPhieuNhapSerial
+        PRIMARY KEY (maCTPN, maSerial),
+    CONSTRAINT UQ_ChiTietPhieuNhapSerial_maSerial
+        UNIQUE (maSerial),
+    CONSTRAINT FK_CTPNSerial_ChiTietPhieuNhap
+        FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap(maCTPN),
+    CONSTRAINT FK_CTPNSerial_SerialMay
+        FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial)
+);
+
+DELIMITER $$
+
+CREATE TRIGGER TRIGGER_ChiTietPhieuNhap_After_Insert
+AFTER INSERT ON ChiTietPhieuNhap
+FOR EACH ROW
+BEGIN
+    DECLARE v_maKho BIGINT;
+    DECLARE v_maNV BIGINT;
+    DECLARE v_soLuongTruoc INT DEFAULT 0;
+    DECLARE v_soLuongSau INT DEFAULT 0;
+
+    -- Lấy kho và nhân viên từ phiếu nhập
+    SELECT maKho, maNV
+    INTO v_maKho, v_maNV
+    FROM PhieuNhap
+    WHERE maPN = NEW.maPN
+    FOR UPDATE;
+
+    -- Tạo dòng tồn kho ban đầu nếu sản phẩm chưa có trong kho
+    INSERT INTO TonKho (maKho, maSP, soLuong)
+    VALUES (v_maKho, NEW.maSP, 0)
+    ON DUPLICATE KEY UPDATE maTon = maTon;
+
+    -- Khóa và đọc tồn kho hiện tại
+    SELECT soLuong
+    INTO v_soLuongTruoc
+    FROM TonKho
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP
+    FOR UPDATE;
+
+    -- Tránh vượt giới hạn kiểu INT của số lượng tồn
+    IF v_soLuongTruoc > 2147483647 - NEW.soLuong THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Ton kho vuot gioi han INT';
+    END IF;
+
+    SET v_soLuongSau = v_soLuongTruoc + NEW.soLuong;
+
+    -- Cập nhật tồn kho
+    UPDATE TonKho
+    SET soLuong = v_soLuongSau
+    WHERE maKho = v_maKho
+      AND maSP = NEW.maSP;
+
+    -- Cộng chi phí dòng nhập vào tổng tiền phiếu
+    UPDATE PhieuNhap
+    SET tongTien = tongTien + (NEW.soLuong * NEW.donGiaNhap)
+    WHERE maPN = NEW.maPN;
+
+    -- Ghi lịch sử biến động kho
+    INSERT INTO BienDongKho (
+        loaiBienDong,
+        soLuong,
+        soLuongTruoc,
+        soLuongSau,
+        maKho,
+        maSP,
+        maNV,
+        maCTPN
+    )
+    VALUES (
+        'NHAP',
+        NEW.soLuong,
+        v_soLuongTruoc,
+        v_soLuongSau,
+        v_maKho,
+        NEW.maSP,
+        v_maNV,
+        NEW.maCTPN
+    );
+END$$
+
+DELIMITER ;
+-- Tổng chi phí nhập theo nhà cung cấp trong khoảng ngày.
+SELECT
+    ncc.maNCC,
+    ncc.tenNCC,
+    SUM(ct.soLuong * ct.donGiaNhap) AS tongChiPhi
+FROM PhieuNhap pn
+JOIN NhaCungCap ncc
+    ON ncc.maNCC = pn.maNCC
+JOIN ChiTietPhieuNhap ct
+    ON ct.maPN = pn.maPN
+WHERE pn.ngayNhap >= @TuNgay
+  AND pn.ngayNhap < @DenNgay
+GROUP BY ncc.maNCC, ncc.tenNCC
+ORDER BY tongChiPhi DESC;
+-- Tổng chi phí theo tháng:
+SELECT
+    YEAR(pn.ngayNhap) AS nam,
+    MONTH(pn.ngayNhap) AS thang,
+    SUM(ct.soLuong * ct.donGiaNhap) AS tongChiPhi
+FROM PhieuNhap pn
+JOIN ChiTietPhieuNhap ct
+    ON ct.maPN = pn.maPN
+GROUP BY YEAR(pn.ngayNhap), MONTH(pn.ngayNhap)
+ORDER BY nam, thang;
+--
