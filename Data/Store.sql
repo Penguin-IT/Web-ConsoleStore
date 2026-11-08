@@ -72,6 +72,7 @@ CREATE TABLE NhaCungCap (
     diaChi VARCHAR(255) NULL,
     ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+-- ==================================================================================================
 
 -- ===================== SẢN PHẨM, SERIAL, TỒN KHO =====================
 CREATE TABLE SanPham (
@@ -977,3 +978,4 @@ INSERT INTO PhieuBaoHanh (maSerial, maNV, ngayHenTra, noiDung, moTaLoi, chiPhi, 
 (15,8,DATE_ADD(NOW(),INTERVAL 7 DAY),'Chờ kiểm tra','Mất âm thanh',0,'TIEP_NHAN'),
 (17,9,DATE_ADD(NOW(),INTERVAL 7 DAY),'Chờ kiểm tra','Không đọc đĩa',0,'TIEP_NHAN'),
 (19,10,DATE_ADD(NOW(),INTERVAL 7 DAY),'Chờ kiểm tra','Lỗi wifi',0,'TIEP_NHAN');
+
