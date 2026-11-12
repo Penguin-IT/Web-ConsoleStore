@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Thanh toán</title></head>
+<body>
+
+<main class="container">
+    <h1>Thông tin giao hàng</h1>
+    <p class="alert alert-error" th:if="${loiChung}" th:text="${loiChung}"></p>
+
+    <form th:action="@{/thanh-toan}" method="post">
+        <label>Họ tên người nhận</label>
+        <input type="text" name="hoTen" th:value="${hoTen}" maxlength="100">
+        <small class="error" th:if="${loiTruong?.hoTen}" th:text="${loiTruong.hoTen}"></small>
+
+        <label>Số điện thoại</label>
+        <input type="text" name="soDienThoai" th:value="${soDienThoai}" maxlength="10">
+        <small class="error" th:if="${loiTruong?.soDienThoai}" th:text="${loiTruong.soDienThoai}"></small>
+
+        <label>Địa chỉ giao hàng</label>
+        <input type="text" name="diaChi" th:value="${diaChi}" maxlength="255">
+        <small class="error" th:if="${loiTruong?.diaChi}" th:text="${loiTruong.diaChi}"></small>
+
+        <h2>Đơn hàng</h2>
+        <ul>
+            <li th:each="d : ${gioHang.dong}"
+                th:text="${d.tenSP} + ' × ' + ${d.soLuong} + ' = ' + ${#numbers.formatDecimal(d.thanhTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></li>
+        </ul>
+        <p><strong>Tổng: <span th:text="${#numbers.formatDecimal(gioHang.tongTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></span></strong></p>
+        <p>Phương thức: Chuyển khoản qua mã QR</p>
+
+        <a class="btn" th:href="@{/gio-hang}">Quay lại giỏ hàng</a>
+        <button class="btn btn-primary" type="submit">Đặt hàng và hiện mã QR</button>
+    </form>
+</main>
+</body>
+</html>

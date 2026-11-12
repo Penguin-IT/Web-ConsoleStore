@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="10">
+    <title>Đối soát thanh toán QR</title>
+    <link rel="stylesheet" th:href="@{/css/tam.css}">
+</head>
+<body>
+<main class="container">
+    <h1>Đối soát giao dịch chuyển khoản QR</h1>
+    <p>Giao dịch được hệ thống tự ghi nhận khi ngân hàng báo tiền về. Chỉ duyệt thủ công khi đã kiểm tra sao kê ngân hàng và thấy tiền về nhưng hệ thống chưa nhận.</p>
+    <p class="alert alert-error" th:if="${loi}" th:text="${loi}"></p>
+    <p class="alert alert-success" th:if="${thongBao}" th:text="${thongBao}"></p>
+
+    <p th:if="${#lists.isEmpty(dsThanhToan)}">Chưa có giao dịch QR nào.</p>
+
+    <table class="table" th:unless="${#lists.isEmpty(dsThanhToan)}">
+        <thead>
+        <tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày lập</th><th>Số tiền</th>
+            <th>Nội dung CK</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${dsThanhToan}">
+            <td th:text="'#' + ${t.hoaDon.maHD}"></td>
+            <td th:text="${t.hoaDon.khachHang?.hoTen}"></td>
+            <td th:text="${#temporals.format(t.hoaDon.ngayLap, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${#numbers.formatDecimal(t.soTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
+            <td th:text="'CS' + ${t.hoaDon.maHD}"></td>
+            <td>
+                <span th:if="${t.trangThai == 'DA_THANH_TOAN'}">Đã nhận tiền</span>
+                <span th:if="${t.trangThai != 'DA_THANH_TOAN' and t.hoaDon.trangThai == 'HUY'}">Đã hủy</span>
+                <span th:if="${t.trangThai != 'DA_THANH_TOAN' and t.hoaDon.trangThai == 'CHO_XAC_NHAN'}">Chờ khách chuyển</span>
+            </td>
+            <td th:if="${t.trangThai != 'DA_THANH_TOAN' and t.hoaDon.trangThai == 'CHO_XAC_NHAN'}">
+                <form th:action="@{/admin/thanh-toan/{id}/duyet(id=${t.maTT})}" method="post" style="display:inline"
+                      onsubmit="return confirm('Bạn đã kiểm tra sao kê và thấy tiền của đơn này đã về?')">
+                    <button class="btn btn-primary" type="submit">Duyệt thủ công</button>
+                </form>
+                <form th:action="@{/admin/thanh-toan/{id}/tu-choi(id=${t.maTT})}" method="post" style="display:inline"
+                      onsubmit="return confirm('Hủy đơn này? Hàng sẽ được hoàn kho.')">
+                    <button class="btn btn-danger" type="submit">Hủy đơn</button>
+                </form>
+            </td>
+            <td th:unless="${t.trangThai != 'DA_THANH_TOAN' and t.hoaDon.trangThai == 'CHO_XAC_NHAN'}"></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
