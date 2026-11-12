@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Giỏ hàng</title>
+</head>
+<body>
+
+<main class="container">
+    <h1>Giỏ hàng</h1>
+    <p class="alert alert-error" th:if="${loi}" th:text="${loi}"></p>
+    <p class="alert alert-success" th:if="${thongBao}" th:text="${thongBao}"></p>
+
+    <p th:if="${gioHang.empty}">Giỏ hàng đang trống. <a th:href="@{/}">Tiếp tục mua sắm</a></p>
+
+    <table class="table" th:unless="${gioHang.empty}">
+        <thead>
+        <tr><th>Sản phẩm</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="d : ${gioHang.dong}">
+            <td>
+                <img th:if="${d.hinhAnh}" th:src="@{${d.hinhAnh}}" alt="" width="64">
+                <a th:href="@{/san-pham/{id}(id=${d.maSP})}" th:text="${d.tenSP}"></a>
+            </td>
+            <td th:text="${#numbers.formatDecimal(d.donGia, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
+            <td>
+                <form th:action="@{/gio-hang/cap-nhat}" method="post">
+                    <input type="hidden" name="maSP" th:value="${d.maSP}">
+                    <input type="number" name="soLuong" min="0" th:value="${d.soLuong}">
+                    <button class="btn" type="submit">Cập nhật</button>
+                </form>
+            </td>
+            <td th:text="${#numbers.formatDecimal(d.thanhTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></td>
+            <td>
+                <form th:action="@{/gio-hang/xoa}" method="post"
+                      onsubmit="return confirm('Xóa sản phẩm này khỏi giỏ hàng?')">
+                    <input type="hidden" name="maSP" th:value="${d.maSP}">
+                    <button class="btn btn-danger" type="submit">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr>
+            <td colspan="3"><strong>Tổng tiền</strong></td>
+            <td colspan="2"><strong th:text="${#numbers.formatDecimal(gioHang.tongTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></strong></td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <a class="btn btn-primary" th:unless="${gioHang.empty}" th:href="@{/thanh-toan}">Thanh toán</a>
+</main>
+</body>
+</html>

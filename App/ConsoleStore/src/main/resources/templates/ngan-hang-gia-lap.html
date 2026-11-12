@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ngân hàng giả lập</title>
+    <style>
+        body { margin:0; font-family:"Segoe UI",Arial,sans-serif; background:#0b3d91; min-height:100vh;
+            display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box; }
+        .card { background:#fff; border-radius:16px; padding:24px; width:100%; max-width:400px; }
+        .tag { background:#fff3cd; color:#7a5b00; font-size:12px; padding:6px 10px; border-radius:8px; text-align:center; }
+        dl { margin:16px 0; } dt { color:#666; font-size:13px; margin-top:10px; } dd { margin:2px 0 0; font-weight:600; }
+        .tien { font-size:28px; color:#0b3d91; }
+        button { width:100%; padding:14px; border:0; border-radius:999px; background:#107C10; color:#fff;
+            font-size:16px; cursor:pointer; }
+        .ok { color:#107C10; } .xau { color:#b00020; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <p class="tag">NGÂN HÀNG GIẢ LẬP, CHỈ DÙNG ĐỂ DEMO</p>
+
+    <div th:if="${trangThai == 'CHO'}">
+        <h2>Xác nhận chuyển tiền</h2>
+        <dl>
+            <dt>Người nhận</dt><dd>CÔNG TY CONSOLESTORE</dd>
+            <dt>Số tài khoản</dt><dd>0123 456 789</dd>
+            <dt>Số tiền</dt>
+            <dd class="tien" th:text="${#numbers.formatDecimal(soTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></dd>
+            <dt>Nội dung</dt><dd th:text="'CS' + ${maHD}"></dd>
+        </dl>
+        <form th:action="@{/ngan-hang-gia-lap/{id}/chuyen(id=${maHD})}" method="post">
+            <button type="submit">Xác nhận chuyển tiền</button>
+        </form>
+    </div>
+
+    <div th:if="${trangThai == 'DA_THANH_TOAN'}">
+        <h2 class="ok">Chuyển tiền thành công</h2>
+        <p>Đã chuyển <strong th:text="${#numbers.formatDecimal(soTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></strong>
+            cho nội dung <strong th:text="'CS' + ${maHD}"></strong>. Bạn có thể đóng trang này.</p>
+    </div>
+
+    <div th:if="${trangThai == 'DA_HUY'}">
+        <h2 class="xau">Đơn đã bị hủy</h2>
+        <p>Đơn hàng này đã bị hủy nên không thể chuyển tiền.</p>
+    </div>
+
+    <div th:if="${trangThai == 'KHONG_TIM_THAY'}">
+        <h2 class="xau">Không tìm thấy giao dịch</h2>
+    </div>
+</div>
+</body>
+</html>

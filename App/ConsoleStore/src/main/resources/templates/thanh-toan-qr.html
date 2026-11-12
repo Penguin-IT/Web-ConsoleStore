@@ -1,0 +1,23 @@
+<main class="container">
+    <h1>Quét mã QR để thanh toán</h1>
+    <img th:src="@{/thanh-toan/qr-anh/{id}(id=${hoaDon.maHD})}" alt="Mã QR thanh toán" width="260">
+    <p>Số tiền: <strong th:text="${#numbers.formatDecimal(hoaDon.tongTien, 1, 'POINT', 0, 'COMMA')} + ' ₫'"></strong></p>
+    <p>Nội dung chuyển khoản: <strong th:text="'CS' + ${hoaDon.maHD}"></strong></p>
+    <p id="trangThai" class="alert">Đang chờ bạn chuyển khoản... trang sẽ tự cập nhật khi nhận được tiền.</p>
+
+    <p><a th:href="@{/ngan-hang-gia-lap/{id}(id=${hoaDon.maHD})}" target="_blank">
+        Không có điện thoại? Mở ngân hàng giả lập trên máy này</a></p>
+</main>
+
+<script th:inline="javascript">
+    const urlTrangThai = /*[[@{/thanh-toan/trang-thai/{id}(id=${hoaDon.maHD})}]]*/ '';
+    const urlKetQua = /*[[@{/thanh-toan/ket-qua/{id}(id=${hoaDon.maHD})}]]*/ '';
+    const hien = document.getElementById('trangThai');
+    const timer = setInterval(async () => {
+        try {
+            const t = (await (await fetch(urlTrangThai)).text()).trim();
+            if (t === 'PAID') { clearInterval(timer); location.href = urlKetQua; }
+            else if (t === 'CANCELLED') { clearInterval(timer); hien.textContent = 'Đơn hàng đã bị hủy.'; }
+        } catch (e) { /* mất mạng thoáng qua, thử lại lần sau */ }
+    }, 2000);
+</script>
