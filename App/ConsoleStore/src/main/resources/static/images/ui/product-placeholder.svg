@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+<rect width="800" height="800" fill="#f7f4fa"/>
+<circle cx="400" cy="320" r="155" fill="#e1d8ea"/>
+<g fill="none" stroke="#b7a8c5" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+<path d="M280 275Q400 240 520 275L558 404Q564 449 528 435L472 386H328L272 435Q236 449 242 404Z"/>
+<path d="M286 321h60m-30-30v60"/><circle cx="476" cy="305" r="7"/><circle cx="500" cy="329" r="7"/><circle cx="452" cy="329" r="7"/><circle cx="476" cy="353" r="7"/>
+</g><text x="400" y="555" text-anchor="middle" fill="#8c7e98" font-family="Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="4">CONSOLE STORE</text>
+<text x="400" y="595" text-anchor="middle" fill="#8c7e98" font-family="Arial,sans-serif" font-size="18">Ảnh sản phẩm sẽ được bổ sung</text></svg>
