@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header th:fragment="header"
+        class="site-header"
+        data-store-header
+        th:attr="data-active=${activeStoreMenu ?: 'home'}">
+
+    <a class="skip-link" href="#main-content">
+        Đến nội dung chính
+    </a>
+
+    <div class="container store-container home-navigation">
+        <a class="store-brand"
+           th:href="@{/}"
+           aria-label="Console Store — Trang chủ">
+
+            <span class="brand-logo">
+                <img th:src="@{/images/banners/logo.png}"
+                     alt="Console Store"
+                     width="174"
+                     height="174">
+            </span>
+        </a>
+
+        <button class="home-menu-toggle"
+                type="button"
+                data-store-menu
+                aria-label="Mở menu"
+                aria-controls="homeNavigation"
+                aria-expanded="false">
+            <span></span>
+            <span></span>
+        </button>
+
+        <nav id="homeNavigation"
+             class="home-nav-links"
+             aria-label="Điều hướng chính">
+
+            <a th:href="@{/}" data-main-nav="home">
+                Trang chủ
+            </a>
+
+            <a th:href="@{/products(category='Máy console')}"
+               data-main-nav="consoles">
+                Máy console
+            </a>
+
+            <a th:href="@{/products(category='Đĩa game')}"
+               data-main-nav="games">
+                Trò chơi
+            </a>
+
+            <a th:href="@{/products(category='Tay cầm')}"
+               data-main-nav="controllers">
+                Tay cầm
+            </a>
+        </nav>
+
+        <div class="header-actions">
+            <a class="login-button" th:href="@{/login}">
+                Đăng nhập
+            </a>
+
+            <a class="register-button" th:href="@{/register}">
+                Tạo tài khoản ↗
+            </a>
+
+            <a class="cart-button"
+               th:href="@{/cart}"
+               aria-label="Xem giỏ hàng">
+
+                <svg viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.6"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M3 3h2l2.2 11h10.6l2-8H6M8 14l-1 3h12"/>
+                    <circle cx="9" cy="20" r="1"/>
+                    <circle cx="18" cy="20" r="1"/>
+                </svg>
+
+                <span class="cart-count" data-cart-count>0</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<article th:fragment="product(item)" class="product-card">
+    <div class="product-image image-frame">
+        <span class="product-category"
+              th:text="${item.platform}">
+        </span>
+
+        <img th:src="@{${item.image}}"
+             th:attr="data-product-image=${item.image}"
+             th:alt="${item.name}"
+             width="600"
+             height="600"
+             loading="lazy"
+             decoding="async">
+    </div>
+
+    <div class="product-info">
+        <p class="product-platform" th:text="${item.platform}"></p>
+
+        <h3 th:text="${item.name}"></h3>
+
+        <div class="product-bottom">
+            <p class="product-price"
+               th:text="${#numbers.formatDecimal(
+                   item.price, 0, 'POINT', 0, 'COMMA'
+               ) + ' đ'}">
+            </p>
+
+            <a class="product-button"
+               th:href="@{/products/{id}(id=${item.id})}"
+               th:aria-label="${'Xem ' + item.name}">
+                <span aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </div>
+</article>
+
+<article th:fragment="heroSlide(image, title, slogan, description, index)"
+         class="cs-slide"
+         data-hero-slide
+         aria-roledescription="slide"
+         th:classappend="${index == 0 ? 'is-active' : ''}
+             + ${image == 'banner11.jpg'
+                 ? ' cs-slide--poster' : ' cs-slide--wide'}"
+         th:attr="aria-hidden=${index != 0},
+                  inert=${index == 0 ? null : 'inert'}">
+
+    <div class="cs-slide-art">
+        <img th:src="@{/images/banners/{file}(file=${image})}"
+             th:alt="${title}"
+             th:loading="${index == 0 ? 'eager' : 'lazy'}"
+             th:attr="fetchpriority=${index == 0 ? 'high' : 'auto'}"
+             decoding="async">
+    </div>
+
+    <div class="cs-slide-shade" aria-hidden="true"></div>
+
+    <div class="container store-container cs-slide-inner">
+        <div class="cs-slide-copy">
+            <p class="cs-slide-kicker">
+                <span aria-hidden="true"></span>
+                CONSOLE STORE / PLAY YOUR WAY
+            </p>
+
+            <h1 th:if="${index == 0}"
+                class="cs-slide-title"
+                th:text="${title}">
+            </h1>
+
+            <h2 th:unless="${index == 0}"
+                class="cs-slide-title"
+                th:text="${title}">
+            </h2>
+
+            <p class="cs-slide-slogan" th:text="${slogan}"></p>
+
+            <p class="cs-slide-description"
+               th:text="${description}">
+            </p>
+
+            <div class="cs-slide-actions">
+                <a class="cs-hero-primary"
+                   th:href="@{/products(
+                       category=${index == 0
+                           ? 'Máy chơi game' : 'Đĩa game'}
+                   )}">
+
+                    <span th:text="${index == 0
+                        ? 'Khám phá máy console'
+                        : 'Khám phá trò chơi'}">
+                    </span>
+
+                    <span aria-hidden="true">↗</span>
+                </a>
+
+                <a class="cs-hero-secondary"
+                   th:href="@{/products(category='Tay cầm')}">
+                    Tìm tay cầm
+                </a>
+            </div>
+        </div>
+    </div>
+</article>
+
+<a th:fragment="bannerCard(file, title)"
+   class="cs-decoration-card"
+   th:href="@{/products(category='Đĩa game')}">
+
+    <div class="cs-decoration-image">
+        <img th:src="@{/images/banners/{file}(file=${file})}"
+             th:alt="${title}"
+             loading="lazy"
+             decoding="async">
+    </div>
+
+    <div class="cs-decoration-caption">
+        <h3 th:text="${title}"></h3>
+        <span aria-hidden="true">↗</span>
+    </div>
+</a>
+<section th:fragment="customerRibbon(kicker, title, description, file)"
+         class="customer-ribbon">
+
+    <div class="customer-ribbon-copy">
+        <span class="customer-ribbon-kicker"
+              th:text="${kicker}">
+        </span>
+
+        <h2 th:text="${title}"></h2>
+
+        <p th:text="${description}"></p>
+    </div>
+
+    <div class="customer-ribbon-art" aria-hidden="true">
+        <img th:src="@{/images/banners/{name}(name=${file})}"
+             alt=""
+             loading="lazy"
+             decoding="async">
+    </div>
+</section>
+<footer th:fragment="footer" class="site-footer">
+    <div class="container store-container">
+        <div class="home-footer-grid">
+            <div>
+                <a class="store-brand"
+                   th:href="@{/}"
+                   aria-label="Console Store — Trang chủ">
+
+                    <span class="brand-logo">
+                        <img th:src="@{/images/banners/logo.png}"
+                             alt="Console Store"
+                             width="174"
+                             height="174"
+                             loading="lazy">
+                    </span>
+                </a>
+
+                <p class="footer-description">
+                    Your next setup starts here.<br>
+                    Thiết bị dành cho cách chơi của bạn.
+                </p>
+            </div>
+
+            <div>
+                <h2>Khám phá</h2>
+
+                <a th:href="@{/products(category='Máy chơi game')}">
+                    Máy console
+                </a>
+
+                <a th:href="@{/products(category='Tay cầm')}">
+                    Tay cầm
+                </a>
+
+                <a th:href="@{/products(category='Đĩa game')}">
+                    Trò chơi
+                </a>
+
+                <a th:href="@{/} + '#trade-in'">
+                    Thu cũ đổi mới
+                </a>
+            </div>
+
+            <div>
+                <h2>Dành cho bạn</h2>
+
+                <a th:href="@{/login}">Đăng nhập</a>
+
+                <a th:href="@{/register}">Tạo tài khoản</a>
+
+                <a th:href="@{/account}"  data-customer-link>
+                    Hồ sơ tài khoản
+                </a>
+
+                <a th:href="@{/orders}"data-customer-link>
+                    Đơn hàng của tôi
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© Console Store</span>
+
+            <span class="footer-signature">
+                FOR THE LOVE OF PLAY.
+            </span>
+
+            <a href="#main-content">Về đầu trang ↑</a>
+        </div>
+    </div>
+</footer>
+
+<th:block th:fragment="dialogs"></th:block>
+
+</body>
+</html>
