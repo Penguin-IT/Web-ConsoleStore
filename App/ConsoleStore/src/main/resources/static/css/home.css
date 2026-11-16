@@ -2128,11 +2128,7 @@ body.customer-page .product-category {
     z-index: 2;
 }
 
-body.customer-page .detail-photo {
-    border-radius: 22px;
-    background:
-            radial-gradient(circle at 50% 40%, #fff 25%, #f4eff9 100%);
-}
+
 
 body.customer-page .detail-copy {
     padding: 20px 0;
