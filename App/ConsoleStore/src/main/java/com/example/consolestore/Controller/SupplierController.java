@@ -1,6 +1,6 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.Dto.SupplierForm;
+import com.example.consolestore.DTO.SupplierForm;
 import com.example.consolestore.Service.SupplierService;
 
 import jakarta.servlet.http.HttpServletResponse;

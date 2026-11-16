@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.SupplierForm;
+import com.example.consolestore.DTO.SupplierForm;
 import com.example.consolestore.Entity.NhaCungCap;
 import com.example.consolestore.Repository.*;
 

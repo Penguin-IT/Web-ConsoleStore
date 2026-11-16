@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.RegisterRequest;
+import com.example.consolestore.DTO.RegisterRequest;
 import com.example.consolestore.Entity.KhachHang;
 import com.example.consolestore.Entity.TaiKhoan;
 import com.example.consolestore.Repository.KhachHangRepository;

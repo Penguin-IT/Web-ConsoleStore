@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.*;
+import com.example.consolestore.DTO.*;
 import com.example.consolestore.Entity.*;
 import com.example.consolestore.Repository.*;
 

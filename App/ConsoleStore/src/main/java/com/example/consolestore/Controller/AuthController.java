@@ -1,6 +1,6 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.Dto.RegisterRequest;
+import com.example.consolestore.DTO.RegisterRequest;
 import com.example.consolestore.Service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;

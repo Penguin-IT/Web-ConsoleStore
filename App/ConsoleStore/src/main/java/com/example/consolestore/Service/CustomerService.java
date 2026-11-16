@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.CustomerForm;
+import com.example.consolestore.DTO.CustomerForm;
 import com.example.consolestore.Entity.KhachHang;
 import com.example.consolestore.Repository.*;
 
