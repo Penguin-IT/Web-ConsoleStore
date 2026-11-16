@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Nhập hàng | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Lịch sử nhập hàng</h1>
+
+        <a class="ui-btn ui-primary"
+           th:href="@{/purchases/new}">
+            ＋ Lập phiếu nhập
+        </a>
+    </div>
+
+    <section class="ui-panel">
+        <form method="get"
+              th:action="@{/purchases}"
+              class="ui-toolbar">
+
+            <label class="ui-field">
+                <span>Tìm kiếm</span>
+
+                <input name="keyword"
+                       maxlength="100"
+                       placeholder="Mã phiếu hoặc nhà cung cấp"
+                       th:value="${keyword}">
+            </label>
+
+            <label class="ui-field">
+                <span>Nhà cung cấp</span>
+
+                <select name="supplierId">
+                    <option value="">Tất cả</option>
+
+                    <option th:each="supplier : ${options.suppliers}"
+                            th:value="${supplier.id}"
+                            th:text="${supplier.name}"
+                            th:selected="${supplierId == supplier.id}">
+                    </option>
+                </select>
+            </label>
+
+            <label class="ui-field">
+                <span>Kho</span>
+
+                <select name="warehouseId">
+                    <option value="">Tất cả</option>
+
+                    <option th:each="warehouse : ${options.warehouses}"
+                            th:value="${warehouse.id}"
+                            th:text="${warehouse.name}"
+                            th:selected="${warehouseId == warehouse.id}">
+                    </option>
+                </select>
+            </label>
+
+            <button class="ui-btn" type="submit">
+                Lọc
+            </button>
+
+            <a class="ui-btn" th:href="@{/purchases}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã phiếu</th>
+                    <th>Ngày nhập</th>
+                    <th>Nhà cung cấp</th>
+                    <th>Kho nhận</th>
+                    <th>Nhân viên</th>
+                    <th>Tổng tiền</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="receipt : ${receipts.content}">
+                    <td th:text="${'PN' + receipt.id}"></td>
+
+                    <td th:text="${#temporals.format(
+                        receipt.createdAt,
+                        'dd/MM/yyyy HH:mm'
+                    )}"></td>
+
+                    <td th:text="${receipt.supplierName}"></td>
+                    <td th:text="${receipt.warehouseName}"></td>
+                    <td th:text="${receipt.employeeName}"></td>
+
+                    <td th:text="${#numbers.formatDecimal(
+                        receipt.totalAmount,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+                    <td>
+                        <a class="ui-btn"
+                           th:href="@{/purchases/{id}(
+                               id=${receipt.id}
+                           )}">
+                            Chi tiết
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${receipts.empty}">
+                    <td colspan="7">
+                        Chưa có phiếu nhập phù hợp.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${receipts.totalElements + ' phiếu'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${receipts.hasPrevious()}"
+                   th:href="@{/purchases(
+                       page=${receipts.number - 1},
+                       keyword=${keyword},
+                       supplierId=${supplierId},
+                       warehouseId=${warehouseId}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (receipts.number + 1)
+                    + ' / '
+                    + (receipts.totalPages == 0
+                        ? 1 : receipts.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${receipts.hasNext()}"
+                   th:href="@{/purchases(
+                       page=${receipts.number + 1},
+                       keyword=${keyword},
+                       supplierId=${supplierId},
+                       warehouseId=${warehouseId}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

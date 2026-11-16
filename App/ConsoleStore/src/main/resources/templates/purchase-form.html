@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Lập phiếu nhập | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+
+    <style>
+        .purchase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .purchase-total {
+            font-size: 24px;
+            font-weight: 750;
+            margin: 24px 0;
+        }
+
+        @media (max-width: 600px) {
+            .purchase-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Lập phiếu nhập</h1>
+
+        <a class="ui-btn" th:href="@{/purchases}">
+            ← Lịch sử nhập hàng
+        </a>
+    </div>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <form id="purchase-form"
+          method="post"
+          th:action="@{/purchases}">
+
+        <input type="hidden"
+               name="token"
+               th:value="${form.token}">
+
+        <section class="ui-panel">
+            <div class="ui-form">
+                <label class="ui-field">
+                    <span>Nhà cung cấp</span>
+
+                    <select name="supplierId" required>
+                        <option value="">Chọn nhà cung cấp</option>
+
+                        <option th:each="supplier : ${options.suppliers}"
+                                th:value="${supplier.id}"
+                                th:text="${supplier.name}"
+                                th:selected="${supplier.id == form.supplierId}">
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field">
+                    <span>Kho nhận</span>
+
+                    <select name="warehouseId" required>
+                        <option value="">Chọn kho</option>
+
+                        <option th:each="warehouse : ${options.warehouses}"
+                                th:value="${warehouse.id}"
+                                th:text="${warehouse.name}"
+                                th:selected="${warehouse.id == form.warehouseId}">
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field ui-full">
+                    <span>Ghi chú</span>
+
+                    <input name="note"
+                           maxlength="180"
+                           th:value="${form.note}">
+                </label>
+            </div>
+        </section>
+
+        <section class="ui-panel">
+            <h2>Sản phẩm nhập</h2>
+
+            <div id="purchase-lines">
+                <article class="pos-line"
+                         th:each="item, row : ${form.items}">
+
+                    <div class="pos-line-heading">
+                        <strong>
+                            Dòng
+                            <span data-number
+                                  th:text="${row.count}">
+                            </span>
+                        </strong>
+
+                        <button class="pos-remove"
+                                type="button"
+                                data-remove>
+                            Xóa
+                        </button>
+                    </div>
+
+                    <label class="pos-field">
+                        <span>Sản phẩm</span>
+
+                        <select data-key="productId"
+                                required
+                                th:name="${'items[' + row.index + '].productId'}">
+
+                            <option value="">Chọn sản phẩm</option>
+
+                            <option th:each="product : ${options.products}"
+                                    th:value="${product.id}"
+                                    th:text="${product.name
+                                        + (product.condition == 'CU'
+                                            ? ' · Cũ' : ' · Mới')}"
+                                    th:selected="${product.id == item.productId}"
+                                    th:attr="data-machine=${product.machine}">
+                            </option>
+                        </select>
+                    </label>
+
+                    <div class="purchase-grid">
+                        <label class="pos-field">
+                            <span>Số lượng</span>
+
+                            <input data-key="quantity"
+                                   type="number"
+                                   min="1"
+                                   max="2147483647"
+                                   required
+                                   th:value="${item.quantity}"
+                                   th:name="${'items[' + row.index + '].quantity'}">
+                        </label>
+
+                        <label class="pos-field">
+                            <span>Giá nhập mỗi sản phẩm (đ)</span>
+
+                            <input data-key="price"
+                                   inputmode="numeric"
+                                   pattern="[0-9]{1,18}"
+                                   maxlength="18"
+                                   required
+                                   th:value="${item.price}"
+                                   th:name="${'items[' + row.index + '].price'}">
+                        </label>
+                    </div>
+
+                    <label class="pos-field"
+                           data-serial-field>
+                        <span>Danh sách serial máy</span>
+
+                        <textarea data-key="serials"
+                                  rows="5"
+                                  maxlength="22000"
+                                  placeholder="Mỗi dòng một serial"
+                                  th:name="${'items[' + row.index + '].serials'}"
+                                  th:text="${item.serials}">
+                        </textarea>
+
+                        <small data-serial-count></small>
+                    </label>
+                </article>
+            </div>
+
+            <button id="add-purchase-line"
+                    class="ui-btn"
+                    type="button">
+                ＋ Thêm sản phẩm
+            </button>
+
+            <p class="purchase-total">
+                Tổng nhập:
+                <output id="purchase-total">0 ₫</output>
+            </p>
+
+            <div class="pos-actions">
+                <button class="ui-btn ui-primary"
+                        type="submit"
+                        th:disabled="${#lists.isEmpty(options.suppliers)
+                            or #lists.isEmpty(options.warehouses)
+                            or #lists.isEmpty(options.products)}">
+                    Lưu phiếu nhập
+                </button>
+            </div>
+        </section>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+
+<script>
+    (() => {
+        const list = document.getElementById('purchase-lines');
+        const add = document.getElementById('add-purchase-line');
+
+        function total() {
+            let amount = 0n;
+            let valid = true;
+
+            for (const row of list.children) {
+                const quantity = row
+                    .querySelector('[data-key="quantity"]').value;
+
+                const price = row
+                    .querySelector('[data-key="price"]').value;
+
+                if (
+                    !/^[0-9]{1,10}$/.test(quantity)
+                    || !/^[0-9]{1,18}$/.test(price)
+                ) {
+                    valid = false;
+                    continue;
+                }
+
+                amount += BigInt(quantity) * BigInt(price);
+            }
+
+            document.getElementById('purchase-total').textContent =
+                valid
+                    ? new Intl.NumberFormat('vi-VN').format(amount) + ' ₫'
+                    : '—';
+        }
+
+        function reindex() {
+            [...list.children].forEach((row, index) => {
+                row.querySelector('[data-number]').textContent =
+                    String(index + 1);
+
+                row.querySelectorAll('[data-key]').forEach(input => {
+                    input.name =
+                        'items[' + index + '].' + input.dataset.key;
+                });
+
+                row.querySelector('[data-remove]').disabled =
+                    list.children.length === 1;
+            });
+
+            add.disabled = list.children.length >= 30;
+            total();
+        }
+
+        function prepare(row) {
+            const product = row.querySelector('[data-key="productId"]');
+            const quantity = row.querySelector('[data-key="quantity"]');
+            const serials = row.querySelector('[data-key="serials"]');
+
+            function update() {
+                const machine =
+                    product.selectedOptions[0]?.dataset.machine === 'true';
+
+                row.querySelector('[data-serial-field]').hidden =
+                    !machine;
+
+                serials.disabled = !machine;
+                serials.required = machine;
+
+                if (!machine) {
+                    serials.value = '';
+                }
+
+                const count = serials.value
+                    .split(/\r\n|\r|\n/)
+                    .filter(line => line.trim())
+                    .length;
+
+                row.querySelector('[data-serial-count]').textContent =
+                    count + ' / ' + (quantity.value || '0') + ' serial';
+
+                serials.setCustomValidity(
+                    machine
+                    && Number(quantity.value) > 0
+                    && count !== Number(quantity.value)
+                        ? 'Số serial phải bằng số lượng máy nhập.'
+                        : ''
+                );
+
+                total();
+            }
+
+            product.addEventListener('change', () => {
+                serials.value = '';
+                update();
+            });
+
+            quantity.addEventListener('input', update);
+            serials.addEventListener('input', update);
+
+            row.querySelector('[data-key="price"]')
+                .addEventListener('input', total);
+
+            row.querySelector('[data-remove]')
+                .addEventListener('click', () => {
+                    if (list.children.length <= 1) return;
+
+                    row.remove();
+                    reindex();
+                });
+
+            update();
+        }
+
+        add.addEventListener('click', () => {
+            if (list.children.length >= 30) return;
+
+            const row = list.firstElementChild.cloneNode(true);
+
+            row.querySelectorAll('input,textarea').forEach(input => {
+                input.value = '';
+            });
+
+            row.querySelector('[data-key="quantity"]').value = '1';
+            row.querySelector('select').value = '';
+
+            list.append(row);
+
+            prepare(row);
+            reindex();
+
+            row.querySelector('select').focus();
+        });
+
+        [...list.children].forEach(prepare);
+        reindex();
+    })();
+</script>
+</body>
+</html>
