@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <meta name="description"
+          content="Console Store — Máy console, tay cầm và thiết bị dành cho cách chơi của bạn.">
+
+    <title>Console Store | For the love of play.</title>
+
+    <link rel="icon"
+          type="image/png"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/home.css(v='20261113-3')}">
+
+    <script th:src="@{/js/store.js(v='20261113-3')}"
+            defer></script>
+</head>
+
+<body class="home-page customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content" tabindex="-1">
+    <section class="cs-showcase"
+             aria-label="Bộ sưu tập nổi bật"
+             aria-roledescription="carousel"
+             data-hero-carousel
+             data-interval="6500">
+
+        <div class="cs-showcase-track">
+            <article th:replace="~{fragments/store :: heroSlide(
+                'bannerconsole.jpg',
+                'Next gear. New possibilities.',
+                'Make room for your next setup.',
+                'Máy console, tay cầm và thiết bị dành cho cách chơi của riêng bạn.',
+                0
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner14.jpg',
+                'Red Dead Redemption II',
+                'Leave your own legend.',
+                'Một chân trời mới. Những chuyến phiêu lưu đang chờ bạn khám phá.',
+                1
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner15.jpg',
+                'Elden Ring Nightreign',
+                'Brave the unknown.',
+                'Chọn thử thách tiếp theo và bắt đầu hành trình theo cách của bạn.',
+                2
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner11.jpg',
+                'Hollow Knight Silksong',
+                'Small hero. Endless discovery.',
+                'Tìm cảm hứng cho cuộc chơi từ những thế giới đầy cá tính.',
+                3
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner10.jpg',
+                'Black Myth Wukong',
+                'Every choice tells a story.',
+                'Những câu chuyện đáng nhớ bắt đầu từ một lựa chọn.',
+                4
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner 13.jpg',
+                'Halo 5 Guardians',
+                'Find your next world.',
+                'Bắt đầu nhiệm vụ mới và khám phá những thế giới khoa học viễn tưởng.',
+                5
+            )}"></article>
+
+            <article th:replace="~{fragments/store :: heroSlide(
+                'banner4.jpg',
+                'Grand Theft Auto VI',
+                'Choose your next escape.',
+                'Một thành phố mới. Những câu chuyện đang chờ được khám phá.',
+                6
+            )}"></article>
+        </div>
+
+        <div class="container store-container cs-showcase-bottom">
+            <span class="cs-showcase-signature">
+                CONSOLE STORE <span>/</span> FOR THE LOVE OF PLAY.
+            </span>
+
+            <div class="cs-carousel-controls"
+                 role="group"
+                 aria-label="Điều khiển banner">
+
+                <button type="button"
+                        data-hero-prev
+                        aria-label="Banner trước">
+                    ‹
+                </button>
+
+                <button type="button"
+                        data-hero-pause
+                        aria-label="Tạm dừng tự chuyển"
+                        aria-pressed="false">
+                    <span data-hero-pause-icon aria-hidden="true">
+                        ❚❚
+                    </span>
+                </button>
+
+                <div class="cs-carousel-dots"></div>
+
+                <button type="button"
+                        data-hero-next
+                        aria-label="Banner tiếp">
+                    ›
+                </button>
+            </div>
+
+            <span class="cs-carousel-count"
+                  data-hero-count
+                  aria-hidden="true">
+                01 / 07
+            </span>
+        </div>
+    </section>
+
+    <section class="cs-brand-strip" aria-label="Chọn nền tảng">
+        <div class="container store-container cs-brand-list">
+            <span class="cs-brand-caption">CHOOSE YOUR SIDE</span>
+
+            <a th:href="@{/products(platform='PlayStation')}">
+                PlayStation
+            </a>
+
+            <a th:href="@{/products(platform='Xbox')}">
+                Xbox
+            </a>
+
+            <a th:href="@{/products(platform='Nintendo')}">
+                Nintendo
+            </a>
+
+            <a th:href="@{/products(platform='PC / Steam')}">
+                PC / Steam
+            </a>
+        </div>
+    </section>
+
+    <section id="consoles" class="cs-home-section">
+        <div class="container store-container">
+            <div class="cs-home-heading">
+                <div>
+                    <p class="cs-home-kicker">01 / THE HARDWARE</p>
+                    <h2>Cuộc chơi bắt đầu<br>từ chiếc máy của bạn.</h2>
+                </div>
+
+                <a class="cs-home-link"
+                   th:href="@{/products(category='Máy console')}">
+                    Khám phá máy console ↗
+                </a>
+            </div>
+
+            <div class="home-product-grid">
+                <div th:each="item : ${consoles}">
+                    <article th:replace="~{fragments/store :: product(${item})}">
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cs-decoration-section">
+        <div class="container store-container">
+            <div class="cs-decoration-layout">
+                <div class="cs-decoration-intro">
+                    <p class="cs-home-kicker">BEYOND THE HARDWARE</p>
+
+                    <h2>A console.<br>A thousand stories.</h2>
+
+                    <p>
+                        Chiếc máy là khởi đầu.
+                        Những thế giới phía sau mới là điều khiến bạn ở lại.
+                    </p>
+
+                    <a class="cs-home-link"
+                       th:href="@{/products(category='Đĩa game')}">
+                        Tìm hành trình tiếp theo ↗
+                    </a>
+                </div>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner2.jpg',
+                    'God of War Ragnarök'
+                )}"></a>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner3.jpg',
+                    'The Last of Us'
+                )}"></a>
+            </div>
+        </div>
+    </section>
+
+    <section id="portable"
+             class="cs-home-section cs-home-section--compact">
+
+        <div class="container store-container">
+            <div class="cs-gear-feature">
+                <div class="cs-gear-copy">
+                    <p class="cs-home-kicker">BUILT AROUND YOU</p>
+
+                    <h2>Your space.<br>Your setup.</h2>
+
+                    <p>
+                        Một chiếc máy phù hợp. Một tay cầm vừa vặn.
+                        Hoàn thiện góc chơi theo cách của bạn.
+                    </p>
+
+                    <a class="cs-home-button"
+                       th:href="@{/products(category='Tay cầm')}">
+                        Tìm thiết bị của bạn
+                        <span aria-hidden="true">↗</span>
+                    </a>
+
+                    <span class="cs-gear-note">
+                        CONSOLE STORE / PLAY YOUR WAY
+                    </span>
+                </div>
+
+                <div class="cs-gear-art">
+                    <img th:src="@{/images/banners/bannerconsole.jpg}"
+                         alt="Tay cầm PlayStation"
+                         loading="lazy"
+                         decoding="async">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cs-decoration-section cs-decoration-section--soft">
+        <div class="container store-container">
+            <div class="cs-decoration-heading">
+                <div>
+                    <p class="cs-home-kicker">DIFFERENT WORLDS</p>
+                    <h2>Đổi góc nhìn.<br>Mở thế giới mới.</h2>
+                </div>
+
+                <p>
+                    Từ những thành phố tương lai<br>
+                    đến miền đất chưa từng đặt chân.
+                </p>
+            </div>
+
+            <div class="cs-decoration-trio">
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner8.jpg',
+                    'Horizon Forbidden West'
+                )}"></a>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner5.jpg',
+                    'Cyberpunk 2077'
+                )}"></a>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner9.jpg',
+                    'Elden Ring Nightreign'
+                )}"></a>
+            </div>
+        </div>
+    </section>
+
+    <section id="accessories" class="cs-home-section">
+        <div class="container store-container">
+            <div class="cs-home-heading">
+                <div>
+                    <p class="cs-home-kicker">02 / FINISH YOUR SETUP</p>
+                    <h2>Chi tiết nhỏ.<br>Trải nghiệm khác.</h2>
+                </div>
+
+                <a class="cs-home-link"
+                   th:href="@{/products(category='Tay cầm')}">
+                    Khám phá tay cầm ↗
+                </a>
+            </div>
+
+            <div class="home-accessory-grid">
+                <div th:each="item : ${accessories}">
+                    <article th:replace="~{fragments/store :: product(${item})}">
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="cs-home-section"
+             th:if="${games != null && !#lists.isEmpty(games)}">
+
+        <div class="container store-container">
+            <div class="cs-home-heading">
+                <div>
+                    <p class="cs-home-kicker">
+                        THE NEXT ADVENTURE
+                    </p>
+
+                    <h2>Trò chơi dành cho<br>hành trình tiếp theo.</h2>
+                </div>
+
+                <a class="cs-home-link"
+                   th:href="@{/products(category='Đĩa game')}">
+                    Xem tất cả trò chơi ↗
+                </a>
+            </div>
+
+            <div class="home-product-grid">
+                <div th:each="item : ${games}">
+                    <article th:replace="~{fragments/store :: product(${item})}">
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="play-stories"
+             class="cs-home-section cs-editorial-section">
+
+        <div class="container store-container">
+            <div class="cs-home-heading">
+                <div>
+                    <p class="cs-home-kicker">03 / AFTER THE SETUP</p>
+                    <h2>Máy đã sẵn sàng.<br>Chọn hành trình tiếp theo.</h2>
+                </div>
+
+                <a class="cs-home-link"
+                   th:href="@{/products(category='Đĩa game')}">
+                    Khám phá trò chơi ↗
+                </a>
+            </div>
+
+            <div class="cs-editorial-grid">
+                <a class="cs-editorial-card"
+                   th:href="@{/products(category='Đĩa game')}">
+
+                    <img th:src="@{/images/banners/banner.jpg}"
+                         alt="Ghost of Yōtei"
+                         loading="lazy"
+                         decoding="async">
+
+                    <div class="cs-editorial-copy">
+                        <span class="cs-editorial-label">
+                            THE NEXT ADVENTURE
+                        </span>
+
+                        <h3>Some worlds<br>stay with you.</h3>
+
+                        <span class="cs-editorial-action">
+                            Tìm câu chuyện của bạn ↗
+                        </span>
+                    </div>
+                </a>
+
+                <a class="cs-editorial-card cs-editorial-card--light"
+                   th:href="@{/products(category='Đĩa game')}">
+
+                    <img th:src="@{/images/banners/banner17.jpg}"
+                         alt="Resident Evil Requiem"
+                         loading="lazy"
+                         decoding="async">
+
+                    <div class="cs-editorial-copy">
+                        <span class="cs-editorial-label">
+                            ONE MORE CHAPTER
+                        </span>
+
+                        <h3>Stay curious.<br>Keep playing.</h3>
+
+                        <span class="cs-editorial-action">
+                            Khám phá thêm ↗
+                        </span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="trade-in" class="cs-home-section">
+        <div class="container store-container">
+            <div class="cs-upgrade-panel">
+                <div class="cs-upgrade-number" aria-hidden="true">↗</div>
+
+                <div class="cs-upgrade-copy">
+                    <p class="cs-home-kicker">NEXT GEAR. NEXT CHAPTER.</p>
+
+                    <h2>Đổi thiết bị.<br>Tiếp cuộc chơi.</h2>
+
+                    <p>
+                        Tìm hiểu dịch vụ thu cũ đổi mới trực tiếp tại cửa hàng.
+                        Một khởi đầu khác cho thiết bị và hành trình của bạn.
+                    </p>
+                </div>
+
+                <a class="cs-home-button"
+                   th:href="@{/products(category='Máy console')}">
+                    Khám phá thiết bị ↗
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="cs-decoration-section cs-decoration-section--dark">
+        <div class="container store-container">
+            <div class="cs-decoration-heading">
+                <div>
+                    <p class="cs-home-kicker">ONE MORE ROUND</p>
+                    <h2>Ready for<br>what comes next?</h2>
+                </div>
+
+                <a class="cs-home-link"
+                   th:href="@{/products(category='Đĩa game')}">
+                    Khám phá trò chơi ↗
+                </a>
+            </div>
+
+            <div class="cs-decoration-trio">
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner6.jpg',
+                    'Call of Duty: Modern Warfare'
+                )}"></a>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner7.jpg',
+                    'Battlefield 6'
+                )}"></a>
+
+                <a th:replace="~{fragments/store :: bannerCard(
+                    'banner12.jpg',
+                    'Phantom Blade Zero'
+                )}"></a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

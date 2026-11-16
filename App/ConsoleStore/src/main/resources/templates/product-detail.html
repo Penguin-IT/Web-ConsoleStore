@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title th:text="${product != null
+            ? product.name + ' | Console Store'
+            : 'Không tìm thấy sản phẩm | Console Store'}">
+        Chi tiết sản phẩm
+    </title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="icon" th:href="@{/images/banners/logo.png}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+
+    <style>
+        .detail-main {
+            min-height: 65vh;
+            padding-block: 45px 80px;
+        }
+
+        .detail-breadcrumb {
+            margin-bottom: 30px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 55px;
+            align-items: start;
+        }
+
+        .detail-photo {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: #fff;
+        }
+
+        .detail-photo img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            object-fit: contain;
+            object-position: center;
+        }
+
+        .detail-copy h1 {
+            margin: 15px 0;
+            font-size: clamp(28px, 3vw, 42px);
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .detail-price {
+            margin: 24px 0;
+            font-size: 30px;
+            font-weight: 750;
+        }
+
+        .detail-stock {
+            color: #655078;
+            font-size: 14px;
+        }
+
+        .detail-stock.is-empty {
+            color: #a33148;
+        }
+
+        .detail-facts {
+            margin: 25px 0;
+        }
+
+        .detail-facts > div {
+            display: grid;
+            grid-template-columns: 110px minmax(0, 1fr);
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-facts dt {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .detail-facts dd {
+            margin: 0;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .detail-description {
+            margin-top: 45px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .detail-description h2 {
+            margin: 0 0 18px;
+            font-size: 22px;
+        }
+
+        .detail-description p {
+            margin: 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.9;
+        }
+
+        .detail-empty {
+            padding-block: 60px;
+            text-align: center;
+        }
+
+        .detail-empty p {
+            margin: 20px 0 30px;
+            color: var(--muted);
+        }
+
+        .detail-copy button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 767px) {
+            .detail-main {
+                padding-block: 28px 50px;
+            }
+
+            .detail-layout {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .detail-photo {
+                padding: 22px;
+            }
+
+            .detail-description {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body class="customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container detail-main"
+      tabindex="-1">
+
+    <section class="detail-empty" th:if="${product == null}">
+        <p class="eyebrow">CONSOLE STORE</p>
+
+        <h1>Không tìm thấy sản phẩm</h1>
+
+        <p th:text="${message}">
+            Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.
+        </p>
+
+        <a class="button-primary" th:href="@{/products}">
+            Về danh sách sản phẩm
+        </a>
+    </section>
+
+    <section th:if="${product != null}">
+        <nav class="detail-breadcrumb" aria-label="Đường dẫn">
+            <a th:href="@{/}">Trang chủ</a>
+            <span aria-hidden="true"> / </span>
+            <a th:href="@{/products}">Sản phẩm</a>
+            <span aria-hidden="true"> / </span>
+            <span th:text="${product.name}"></span>
+        </nav>
+
+        <div class="detail-layout">
+            <div class="detail-photo">
+                <img th:src="@{${product.image}}"
+                     th:attr="data-product-image=${product.image}"
+                     th:alt="${product.name}"
+                     width="600"
+                     height="600"
+                     fetchpriority="high">
+            </div>
+
+            <div class="detail-copy">
+                <p class="eyebrow" th:text="${product.platform}"></p>
+
+                <h1 th:text="${product.name}"></h1>
+
+                <p class="detail-price"
+                   th:text="${#numbers.formatDecimal(
+                       product.price, 0, 'POINT', 0, 'COMMA'
+                   ) + ' đ'}">
+                </p>
+
+                <p class="detail-stock"
+                   th:classappend="${product.stock <= 0} ? 'is-empty'"
+                   th:text="${product.stock > 0
+                       ? 'Còn ' + product.stock + ' sản phẩm'
+                       : 'Hết hàng'}">
+                </p>
+
+                <dl class="detail-facts">
+                    <div>
+                        <dt>Mã sản phẩm</dt>
+                        <dd th:text="${product.id}"></dd>
+                    </div>
+
+                    <div>
+                        <dt>Loại</dt>
+                        <dd th:text="${product.category}"></dd>
+                    </div>
+
+                    <div>
+                        <dt>Nền tảng</dt>
+                        <dd th:text="${product.platform}"></dd>
+                    </div>
+
+                    <div>
+                        <dt>Tình trạng</dt>
+                        <dd th:text="${product.condition == 'CU'
+                            ? 'Cũ' : 'Mới'}">
+                        </dd>
+                    </div>
+                </dl>
+
+                <div th:if="${product.stock > 0}">
+                    <a th:if="${!authenticated}"
+                       class="button-primary"
+                       th:href="@{/login}">
+                        Đăng nhập để mua hàng
+                    </a>
+
+                    <form th:if="${customer}"
+                          method="post"
+                          th:action="@{/cart/items}"
+                          class="detail-cart-form">
+
+                        <input type="hidden"
+                               name="productId"
+                               th:value="${product.id}">
+
+                        <label for="cartQuantity">Số lượng</label>
+
+                        <input type="number"
+                               id="cartQuantity"
+                               name="quantity"
+                               value="1"
+                               min="1"
+                               th:max="${product.stock}"
+                               step="1"
+                               required>
+
+                        <button class="button-primary" type="submit">
+                            Thêm vào giỏ hàng
+                        </button>
+                    </form>
+
+                    <p th:if="${authenticated && !customer}">
+                        Mua hàng dành cho tài khoản khách hàng.
+                    </p>
+                </div>
+
+                <button th:if="${product.stock <= 0}"
+                        class="button-primary"
+                        type="button"
+                        disabled>
+                    Hết hàng
+                </button>
+            </div>
+        </div>
+
+        <section class="detail-description"
+                 aria-labelledby="descriptionTitle">
+            <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
+            <p th:text="${description}"></p>
+        </section>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
