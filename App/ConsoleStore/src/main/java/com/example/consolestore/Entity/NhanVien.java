@@ -1,6 +1,7 @@
 package com.example.consolestore.Entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 
@@ -11,96 +12,95 @@ public class NhanVien {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "maNV")
-    private Long maNV;
+    private Long id;
 
+    @Nationalized
     @Column(name = "hoTen", nullable = false, length = 100)
-    private String hoTen;
+    private String fullName;
 
-    @Column(name = "soDienThoai", nullable = false, unique = true, length = 10)
-    private String soDienThoai;
+    @Nationalized
+    @Column(name = "soDienThoai", nullable = false, length = 10)
+    private String phone;
 
+    @Nationalized
     @Column(name = "email", length = 100)
     private String email;
 
+    @Nationalized
     @Column(name = "diaChi", length = 255)
-    private String diaChi;
+    private String address;
 
+    @Nationalized
     @Column(name = "chucVu", length = 100)
-    private String chucVu;
+    private String position;
 
-    @Column(name = "ngayVaoLam", nullable = false)
-    private LocalDateTime ngayVaoLam;
+    @Column(name = "ngayVaoLam",nullable = false, columnDefinition = "datetime")
+    private LocalDateTime startedAt;
 
     @Column(name = "daNghiViec", nullable = false)
-    private boolean daNghiViec = false;
+    private boolean retired;
 
-    @PrePersist
-    void prePersist() {
-        if (ngayVaoLam == null) {
-            ngayVaoLam = LocalDateTime.now();
-        }
-    }
-    public Long getMaNV() {
-        return maNV;
+    protected NhanVien() {
     }
 
-    public void setMaNV(Long maNV) {
-        this.maNV = maNV;
+    public NhanVien(String fullName, String phone, String email, String address, String position) {
+        updateDetails(
+                fullName,
+                phone,
+                email,
+                address,
+                position,
+                false
+        );
+
+        this.startedAt = LocalDateTime.now();
     }
 
-    public String getHoTen() {
-        return hoTen;
+    public void updateDetails(
+            String fullName,
+            String phone,
+            String email,
+            String address,
+            String position,
+            boolean retired
+    ) {
+        this.fullName = fullName;
+        this.phone = phone;
+        this.email = email;
+        this.address = address;
+        this.position = position;
+        this.retired = retired;
     }
 
-    public void setHoTen(String hoTen) {
-        this.hoTen = hoTen;
+    public Long getId() {
+        return id;
     }
 
-    public String getSoDienThoai() {
-        return soDienThoai;
+    public String getFullName() {
+        return fullName;
     }
 
-    public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoai = soDienThoai;
+    public String getPhone() {
+        return phone;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public String getAddress() {
+        return address;
     }
 
-    public String getDiaChi() {
-        return diaChi;
+    public String getPosition() {
+        return position;
     }
 
-    public void setDiaChi(String diaChi) {
-        this.diaChi = diaChi;
+    public LocalDateTime getStartedAt() {
+        return startedAt;
     }
 
-    public String getChucVu() {
-        return chucVu;
-    }
-
-    public void setChucVu(String chucVu) {
-        this.chucVu = chucVu;
-    }
-
-    public LocalDateTime getNgayVaoLam() {
-        return ngayVaoLam;
-    }
-
-    public void setNgayVaoLam(LocalDateTime ngayVaoLam) {
-        this.ngayVaoLam = ngayVaoLam;
-    }
-
-    public boolean isDaNghiViec() {
-        return daNghiViec;
-    }
-
-    public void setDaNghiViec(boolean daNghiViec) {
-        this.daNghiViec = daNghiViec;
+    public boolean isRetired() {
+        return retired;
     }
 }

@@ -1,107 +1,124 @@
 package com.example.consolestore.Entity;
 
-
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="TaiKhoan")
+@Table(name = "TaiKhoan")
 public class TaiKhoan {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "maTK")
-    private Long maTK;
+    private Long id;
 
-    @Column(name = "tenDangNhap", nullable = false, unique = true, length = 100)
-    private String tenDangNhap;
+    @Nationalized
+    @Column(name = "tenDangNhap", nullable = false, length = 100)
+    private String username;
 
-    @Column(name = "matKhauMaHoa", nullable = false, length = 255)
-    private String matKhauMaHoa;
+    @Nationalized
+    @Column(name = "matKhau", nullable = false, length = 255)
+    private String passwordHash;
 
+    @Nationalized
     @Column(name = "vaiTro", nullable = false, length = 20)
-    private String vaiTro;
+    private String role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "maNV")
-    private NhanVien nhanVien;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "maKH")
-    private KhachHang khachHang;
+    private KhachHang customer;
 
     @Column(name = "biKhoa", nullable = false)
-    private boolean biKhoa = false;
+    private boolean locked;
 
-    @Column(name = "ngayTao", nullable = false)
-    private LocalDateTime ngayTao;
+    @Column(
+            name = "ngayTao",
+            nullable = false,
+            columnDefinition = "datetime"
+    )
+    private LocalDateTime createdAt;
 
-    @PrePersist
-    void prePersist() {
-        if (ngayTao == null) {
-            ngayTao = LocalDateTime.now();
-        }
-    }
-    public Long getMaTK() {
-        return maTK;
+    protected TaiKhoan() {
     }
 
-    public void setMaTK(Long maTK) {
-        this.maTK = maTK;
+    public TaiKhoan(
+            String username,
+            String passwordHash,
+            KhachHang customer
+    ) {
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.customer = customer;
+        this.role = "KHACHHANG";
+        this.locked = false;
+        this.createdAt = LocalDateTime.now();
     }
 
-    public String getTenDangNhap() {
-        return tenDangNhap;
+    public Long getId() {
+        return id;
     }
 
-    public void setTenDangNhap(String tenDangNhap) {
-        this.tenDangNhap = tenDangNhap;
+    public String getUsername() {
+        return username;
     }
 
-    public String getMatKhauMaHoa() {
-        return matKhauMaHoa;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setMatKhauMaHoa(String matKhauMaHoa) {
-        this.matKhauMaHoa = matKhauMaHoa;
+    public String getRole() {
+        return role;
     }
 
-    public String getVaiTro() {
-        return vaiTro;
+    public KhachHang getCustomer() {
+        return customer;
     }
 
-    public void setVaiTro(String vaiTro) {
-        this.vaiTro = vaiTro;
+    public boolean isLocked() {
+        return locked;
     }
 
-    public NhanVien getNhanVien() {
-        return nhanVien;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "maNV")
+    private NhanVien employee;
+
+    public NhanVien getEmployee() {
+        return employee;
     }
 
-    public void setNhanVien(NhanVien nhanVien) {
-        this.nhanVien = nhanVien;
+    public static TaiKhoan employeeAccount(
+            String username,
+            String passwordHash,
+            String role,
+            NhanVien employee
+    ) {
+        TaiKhoan account = new TaiKhoan();
+
+        account.username = username;
+        account.passwordHash = passwordHash;
+        account.role = role;
+        account.employee = employee;
+        account.customer = null;
+        account.locked = false;
+        account.createdAt = LocalDateTime.now();
+
+        return account;
     }
 
-    public KhachHang getKhachHang() {
-        return khachHang;
+    public void updateAccess(String role, boolean locked) {
+        this.role = role;
+        this.locked = locked;
     }
 
-    public void setKhachHang(KhachHang khachHang) {
-        this.khachHang = khachHang;
-    }
-
-    public boolean isBiKhoa() {
-        return biKhoa;
-    }
-
-    public void setBiKhoa(boolean biKhoa) {
-        this.biKhoa = biKhoa;
-    }
-
-    public LocalDateTime getNgayTao() {
-        return ngayTao;
-    }
-
-    public void setNgayTao(LocalDateTime ngayTao) {
-        this.ngayTao = ngayTao;
+    public void lock() {
+        this.locked = true;
     }
 }

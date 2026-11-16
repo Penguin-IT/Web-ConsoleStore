@@ -1,6 +1,7 @@
 package com.example.consolestore.Entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 
@@ -11,53 +12,49 @@ public class NhaCungCap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "maNCC")
-    private Long maNCC;
+    private Long id;
 
+    @Nationalized
+    @Column(name = "tenNCC", length = 100)
+    private String name;
 
-    @Column(name = "tenNCC", nullable = false, length = 100)
-    private String tenNCC;
-
+    @Nationalized
     @Column(name = "soDienThoai", length = 10)
-    private String soDienThoai;
+    private String phone;
 
+    @Nationalized
     @Column(name = "email", length = 100)
     private String email;
 
+    @Nationalized
     @Column(name = "diaChi", length = 255)
-    private String diaChi;
+    private String address;
 
-    @Column(name = "ngayTao", nullable = false)
-    private LocalDateTime ngayTao;
+    @Column(name = "ngayTao", columnDefinition = "datetime")
+    private LocalDateTime createdAt;
 
-    @PrePersist
-    void prePersist() {
-        if (ngayTao == null) {
-            ngayTao = LocalDateTime.now();
-        }
+    public Long getId() {
+        return id;
     }
 
-    public Long getMaNCC() {
-        return maNCC;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public void setMaNCC(Long maNCC) {
-        this.maNCC = maNCC;
+    public String getName() {
+        return name;
     }
 
-    public String getTenNCC() {
-        return tenNCC;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void setTenNCC(String tenNCC) {
-        this.tenNCC = tenNCC;
+    public String getPhone() {
+        return phone;
     }
 
-    public String getSoDienThoai() {
-        return soDienThoai;
-    }
-
-    public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoai = soDienThoai;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getEmail() {
@@ -68,19 +65,44 @@ public class NhaCungCap {
         this.email = email;
     }
 
-    public String getDiaChi() {
-        return diaChi;
+    public String getAddress() {
+        return address;
     }
 
-    public void setDiaChi(String diaChi) {
-        this.diaChi = diaChi;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
-    public LocalDateTime getNgayTao() {
-        return ngayTao;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setNgayTao(LocalDateTime ngayTao) {
-        this.ngayTao = ngayTao;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    protected NhaCungCap() {
+    }
+
+    public NhaCungCap(
+            String name,
+            String phone,
+            String email,
+            String address
+    ) {
+        updateDetails(name, phone, email, address);
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void updateDetails(
+            String name,
+            String phone,
+            String email,
+            String address
+    ) {
+        this.name = name;
+        this.phone = phone;
+        this.email = email;
+        this.address = address;
     }
 }
