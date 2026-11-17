@@ -1,6 +1,6 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.Dto.*;
+import com.example.consolestore.DTO.*;
 import com.example.consolestore.Service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.*;
