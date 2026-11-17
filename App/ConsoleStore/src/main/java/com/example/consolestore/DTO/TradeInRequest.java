@@ -2,7 +2,8 @@ package com.example.consolestore.DTO;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 public class TradeInRequest {
 
     private String token;
