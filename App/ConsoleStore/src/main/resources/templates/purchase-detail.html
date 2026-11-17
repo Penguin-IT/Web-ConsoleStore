@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1">
+
+  <title>Chi tiết phiếu nhập | Console Store</title>
+
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+  <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+  <div class="ui-page-heading">
+    <h1 th:text="${'Phiếu nhập PN' + detail.receipt.id}">
+    </h1>
+
+    <div class="pos-actions">
+      <a class="ui-btn" th:href="@{/purchases}">
+        Lịch sử nhập
+      </a>
+
+      <a class="ui-btn" th:href="@{/purchases/new}">
+        Lập phiếu mới
+      </a>
+    </div>
+  </div>
+
+  <section class="ui-panel">
+    <dl class="ui-details">
+      <div>
+        <dt>Ngày nhập</dt>
+        <dd th:text="${#temporals.format(
+                    detail.receipt.createdAt,
+                    'dd/MM/yyyy HH:mm'
+                )}"></dd>
+      </div>
+
+      <div>
+        <dt>Nhà cung cấp</dt>
+        <dd th:text="${detail.receipt.supplierName}"></dd>
+      </div>
+
+      <div>
+        <dt>Kho nhận</dt>
+        <dd th:text="${detail.receipt.warehouseName}"></dd>
+      </div>
+
+      <div>
+        <dt>Nhân viên</dt>
+        <dd th:text="${detail.receipt.employeeName}"></dd>
+      </div>
+
+      <div>
+        <dt>Ghi chú</dt>
+        <dd class="pos-note"
+            th:text="${#strings.isEmpty(detail.note)
+                        ? '—' : detail.note}">
+        </dd>
+      </div>
+    </dl>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Tình trạng</th>
+          <th>SL</th>
+          <th>Giá nhập</th>
+          <th>Thành tiền</th>
+          <th>Serial</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="line : ${detail.lines}">
+          <td th:text="${line.name}"></td>
+
+          <td th:text="${line.condition == 'CU'
+                        ? 'Cũ' : 'Mới'}">
+          </td>
+
+          <td th:text="${line.quantity}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.price,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.subtotal,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+          <td>
+                        <span th:if="${#lists.isEmpty(
+                            detail.serials[line.id]
+                        )}">
+                            —
+                        </span>
+
+            <div th:each="number : ${detail.serials[line.id]}"
+                 th:text="${number}">
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 th:text="${'Tổng nhập: '
+            + #numbers.formatDecimal(
+                detail.receipt.totalAmount,
+                1, 'POINT', 0, 'COMMA'
+            ) + ' ₫'}">
+    </h2>
+  </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

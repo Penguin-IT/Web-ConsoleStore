@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Chi phí nhập hàng | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/revenue.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Chi phí nhập hàng</h1>
+    </div>
+
+    <section class="ui-panel">
+        <form class="revenue-filters"
+              method="get"
+              th:action="@{/purchase-costs}">
+
+            <label class="ui-field">
+                <span>Từ tháng</span>
+
+                <input type="month"
+                       name="fromMonth"
+                       required
+                       min="1753-01"
+                       max="9998-12"
+                       th:value="${fromMonth}">
+            </label>
+
+            <label class="ui-field">
+                <span>Đến tháng</span>
+
+                <input type="month"
+                       name="toMonth"
+                       required
+                       min="1753-01"
+                       max="9998-12"
+                       th:value="${toMonth}">
+            </label>
+
+            <label class="ui-field">
+                <span>Nhà cung cấp</span>
+
+                <select name="supplierId">
+                    <option value="">Tất cả nhà cung cấp</option>
+
+                    <option th:each="supplier : ${suppliers}"
+                            th:value="${supplier.id}"
+                            th:text="${supplier.name}"
+                            th:selected="${supplier.id.toString() == supplierId}">
+                    </option>
+                </select>
+            </label>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Xem báo cáo
+            </button>
+        </form>
+    </section>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <th:block th:if="${report != null}">
+        <div class="revenue-period">
+            <span>Kỳ nhập hàng</span>
+            <strong th:text="${report.period}"></strong>
+        </div>
+
+        <section class="revenue-cards">
+            <article class="revenue-card">
+                <span>Tổng chi phí nhập</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    report.totalAmount, 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+            </article>
+
+            <article class="revenue-card revenue-card--counter">
+                <span>Phiếu nhập</span>
+                <strong th:text="${report.receiptCount}"></strong>
+            </article>
+
+            <article class="revenue-card revenue-card--online">
+                <span>Nhà cung cấp có phát sinh</span>
+
+                <strong th:text="${#lists.size(report.suppliers)}">
+                </strong>
+            </article>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <h2>Chi phí theo tháng</h2>
+
+            <div class="ui-table-wrap">
+                <table class="ui-table">
+                    <thead>
+                    <tr>
+                        <th>Tháng</th>
+                        <th>Số phiếu nhập</th>
+                        <th>Chi phí</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="row : ${report.months}">
+                        <td th:text="${row.label}"></td>
+                        <td th:text="${row.receiptCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                row.amount, 0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+                    </tbody>
+
+                    <tfoot>
+                    <tr>
+                        <th scope="row">Tổng cộng</th>
+                        <td th:text="${report.receiptCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                report.totalAmount,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <h2>Chi phí theo nhà cung cấp</h2>
+
+            <div class="ui-table-wrap">
+                <table class="ui-table">
+                    <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Nhà cung cấp</th>
+                        <th>Số phiếu nhập</th>
+                        <th>Chi phí</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="row : ${report.suppliers}">
+                        <td th:text="|NCC${row.id}|"></td>
+                        <td th:text="${row.name}"></td>
+                        <td th:text="${row.receiptCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                row.amount, 0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(report.suppliers)}">
+                        <td colspan="4" class="revenue-empty">
+                            Không phát sinh phiếu nhập trong kỳ.
+                        </td>
+                    </tr>
+                    </tbody>
+
+                    <tfoot>
+                    <tr>
+                        <th colspan="2" scope="row">Tổng cộng</th>
+                        <td th:text="${report.receiptCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                report.totalAmount,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
