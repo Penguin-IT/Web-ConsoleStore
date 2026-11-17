@@ -1,8 +1,8 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.CartView;
-import com.example.consolestore.Dto.ProductCard;
-import com.example.consolestore.Dto.ProductDetail;
+import com.example.consolestore.DTO.CartView;
+import com.example.consolestore.DTO.ProductCard;
+import com.example.consolestore.DTO.ProductDetail;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

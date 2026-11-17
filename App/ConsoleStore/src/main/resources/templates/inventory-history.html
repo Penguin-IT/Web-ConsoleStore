@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Biến động kho | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page"
+      th:with="events=${history.movements}">
+
+    <div class="ui-page-heading">
+        <div>
+            <h1>Biến động kho</h1>
+
+            <p th:text="${'SP' + history.productId
+                + ' · ' + history.productName}">
+            </p>
+        </div>
+
+        <a class="ui-btn"
+           th:href="@{/inventory(
+               warehouseId=${filter.warehouseId}
+           )}">
+            ← Tồn kho
+        </a>
+    </div>
+
+    <section class="ui-panel">
+        <dl class="ui-details">
+            <div>
+                <dt>Tình trạng</dt>
+                <dd th:text="${history.condition == 'CU'
+                    ? 'Cũ' : 'Mới'}">
+                </dd>
+            </div>
+
+            <div th:if="${history.deleted}">
+                <dt>Kinh doanh</dt>
+                <dd>Đã ngừng kinh doanh</dd>
+            </div>
+
+            <div>
+                <dt>Tồn khả dụng hiện tại</dt>
+
+                <dd>
+                    <strong th:text="${#numbers.formatInteger(
+                        history.currentQuantity, 1, 'POINT'
+                    )}"></strong>
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="ui-panel">
+        <form method="get"
+              th:action="@{/inventory/products/{id}(
+                  id=${history.productId}
+              )}"
+              class="ui-toolbar">
+
+            <label class="ui-field">
+                <span>Kho</span>
+
+                <select name="warehouseId">
+                    <option value="">Tất cả kho</option>
+
+                    <option th:each="warehouse : ${warehouses}"
+                            th:value="${warehouse.id}"
+                            th:text="${warehouse.name}"
+                            th:selected="${filter.warehouseId == warehouse.id}">
+                    </option>
+                </select>
+            </label>
+
+            <label class="ui-field">
+                <span>Loại biến động</span>
+
+                <select name="type">
+                    <option value="">Tất cả</option>
+
+                    <option th:each="item : ${movementLabels}"
+                            th:value="${item.key}"
+                            th:text="${item.value}"
+                            th:selected="${filter.type == item.key}">
+                    </option>
+                </select>
+            </label>
+
+            <label class="ui-field">
+                <span>Từ ngày</span>
+
+                <input type="date"
+                       name="from"
+                       th:value="${filter.from}">
+            </label>
+
+            <label class="ui-field">
+                <span>Đến ngày</span>
+
+                <input type="date"
+                       name="to"
+                       th:value="${filter.to}">
+            </label>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Lọc
+            </button>
+
+            <a class="ui-btn"
+               th:href="@{/inventory/products/{id}(
+                   id=${history.productId}
+               )}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Thời gian</th>
+                    <th>Kho</th>
+                    <th>Loại</th>
+                    <th>Thay đổi</th>
+                    <th>Trước</th>
+                    <th>Sau</th>
+                    <th>Nhân viên</th>
+                    <th>Chứng từ</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="event : ${events.content}">
+                    <td th:text="${'BD' + event.id}"></td>
+
+                    <td th:text="${#temporals.format(
+                        event.occurredAt,
+                        'dd/MM/yyyy HH:mm:ss'
+                    )}"></td>
+
+                    <td th:text="${event.warehouseName}"></td>
+
+                    <td th:text="${movementLabels[event.type]}">
+                    </td>
+
+                    <td th:text="${(event.type == 'BAN' ? '−' : '+')
+                        + #numbers.formatInteger(
+                            event.quantity, 1, 'POINT'
+                        )}">
+                    </td>
+
+                    <td th:text="${#numbers.formatInteger(
+                        event.beforeQuantity, 1, 'POINT'
+                    )}"></td>
+
+                    <td th:text="${#numbers.formatInteger(
+                        event.afterQuantity, 1, 'POINT'
+                    )}"></td>
+
+                    <td th:text="${event.employeeName ?: '—'}">
+                    </td>
+
+                    <td th:text="${event.documentId == null
+                        ? '—'
+                        : event.documentPrefix + event.documentId}">
+                    </td>
+                </tr>
+
+                <tr th:if="${events.empty}">
+                    <td colspan="9">
+                        Không có biến động trong điều kiện đã chọn.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${events.totalElements + ' biến động'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${events.hasPrevious()}"
+                   th:href="@{/inventory/products/{id}(
+                       id=${history.productId},
+                       page=${events.number - 1},
+                       warehouseId=${filter.warehouseId},
+                       type=${filter.type},
+                       from=${filter.from},
+                       to=${filter.to}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (events.number + 1)
+                    + ' / '
+                    + (events.totalPages == 0
+                        ? 1 : events.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${events.hasNext()}"
+                   th:href="@{/inventory/products/{id}(
+                       id=${history.productId},
+                       page=${events.number + 1},
+                       warehouseId=${filter.warehouseId},
+                       type=${filter.type},
+                       from=${filter.from},
+                       to=${filter.to}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
