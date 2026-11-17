@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>Nhân viên | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/staff.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Nhân viên</h1>
+
+        <div class="staff-actions">
+            <a class="ui-btn" th:href="@{/staff/accounts}">
+                Tài khoản
+            </a>
+
+            <a class="ui-btn ui-primary" th:href="@{/staff/new}">
+                ＋ Thêm nhân viên
+            </a>
+        </div>
+    </div>
+
+    <p role="status"
+       th:if="${success}"
+       th:text="${success}">
+    </p>
+
+    <section class="ui-panel">
+        <form class="staff-actions staff-search"
+              method="get"
+              th:action="@{/staff}">
+
+            <input name="keyword"
+                   maxlength="100"
+                   aria-label="Tìm nhân viên"
+                   placeholder="Họ tên hoặc số điện thoại"
+                   th:value="${keyword}">
+
+            <button class="ui-btn ui-primary" type="submit">
+                Tìm kiếm
+            </button>
+
+            <a class="ui-btn" th:href="@{/staff}">
+                Đặt lại
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Họ tên</th>
+                    <th>Điện thoại</th>
+                    <th>Email</th>
+                    <th>Chức vụ</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="employee : ${employees.content}">
+                    <td th:text="|NV${employee.id}|"></td>
+                    <td th:text="${employee.fullName}"></td>
+                    <td th:text="${employee.phone}"></td>
+                    <td th:text="${employee.email}"></td>
+                    <td th:text="${employee.position}"></td>
+
+                    <td>
+                        <span class="staff-status"
+                              th:classappend="${employee.retired}
+                                  ? 'staff-status--off' : ''"
+                              th:text="${employee.retired}
+                                  ? 'Đã nghỉ việc' : 'Đang làm'">
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="staff-actions">
+                            <a class="ui-btn"
+                               th:href="@{/staff/{id}/edit(
+                                   id=${employee.id}
+                               )}">
+                                Sửa
+                            </a>
+
+                            <a class="ui-btn"
+                               th:unless="${employee.retired}"
+                               th:href="@{/staff/{id}/account/new(
+                                   id=${employee.id}
+                               )}">
+                                Tạo tài khoản
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr th:if="${employees.empty}">
+                    <td colspan="7" class="staff-empty">
+                        Không tìm thấy nhân viên.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="staff-pagination" aria-label="Phân trang">
+            <a class="ui-btn"
+               th:if="${employees.hasPrevious()}"
+               th:href="@{/staff(
+                   keyword=${keyword},
+                   page=${employees.number - 1}
+               )}">
+                ← Trước
+            </a>
+
+            <span th:text="|Trang ${employees.number + 1}
+                / ${employees.totalPages == 0 ? 1 : employees.totalPages}|">
+            </span>
+
+            <a class="ui-btn"
+               th:if="${employees.hasNext()}"
+               th:href="@{/staff(
+                   keyword=${keyword},
+                   page=${employees.number + 1}
+               )}">
+                Sau →
+            </a>
+        </nav>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
