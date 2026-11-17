@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Phiếu bảo hành | Console Store</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/warranty-validation.css}">
+    <script th:src="@{/js/store.js}" defer></script>
+    <script th:src="@{/js/warranty-validation.js}" defer></script>
+</head>
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content" class="container store-container pos-page"
+      th:with="receipt=${detail.receipt}, lookup=${detail.lookup}">
+    <div class="ui-page-heading">
+        <h1 th:text="${'Phiếu bảo hành BH' + receipt.id}"></h1>
+        <a class="ui-btn" th:href="@{/warranties}">← Danh sách phiếu</a>
+    </div>
+
+    <p class="ui-alert validation-summary" role="alert" th:if="${error}" th:text="${error}"></p>
+    <p role="status" th:if="${success}" th:text="${success}"></p>
+
+    <section class="ui-panel">
+        <dl class="ui-details">
+            <div><dt>Thiết bị</dt><dd th:text="${lookup.productName}"></dd></div>
+            <div><dt>Serial</dt><dd th:text="${lookup.number}"></dd></div>
+            <div><dt>Khách mua</dt><dd th:text="${lookup.customerName ?: '—'}"></dd></div>
+            <div><dt>Số điện thoại</dt><dd th:text="${lookup.phone ?: '—'}"></dd></div>
+            <div><dt>Ngày tiếp nhận</dt><dd th:text="${receipt.receivedAt == null ? '—' : #temporals.format(receipt.receivedAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+            <div><dt>Bảo hành lúc nhận</dt><dd th:text="${receipt.covered ? 'Còn hạn' : 'Ngoài hạn'}"></dd></div>
+            <div><dt>Trạng thái</dt><dd th:text="${statusLabels[receipt.status]}"></dd></div>
+            <div><dt>Mô tả lỗi</dt><dd class="pos-note" th:text="${receipt.description}"></dd></div>
+        </dl>
+    </section>
+
+    <form method="post" th:action="@{/warranties/{id}(id=${receipt.id})}"
+          class="ui-panel validation-form" novalidate>
+        <input type="hidden" name="expectedStatus" th:value="${form.expectedStatus}">
+        <fieldset th:disabled="${receipt.status == 'HOAN_TAT'}" class="warranty-fieldset">
+            <div class="ui-form">
+                <label class="ui-field">
+                    <span>Ngày hẹn trả <b class="required-mark">*</b></span>
+                    <input id="dueAt" name="dueAt" type="datetime-local" step="60"
+                           required th:value="${form.dueAt}" aria-describedby="dueAt-error">
+                    <small class="field-error" id="dueAt-error" data-error-for="dueAt"></small>
+                </label>
+
+                <label class="ui-field">
+                    <span>Chi phí (đ) <b class="required-mark">*</b></span>
+                    <input id="cost" name="cost" type="number" inputmode="numeric"
+                           min="0" max="999999999999999999" step="1"
+                           required th:value="${form.cost}" aria-describedby="cost-error">
+                    <small class="field-error" id="cost-error" data-error-for="cost"></small>
+                </label>
+
+                <label class="ui-field ui-full">
+                    <span>Nội dung xử lý</span>
+                    <textarea name="notes" rows="4" maxlength="180"
+                              th:text="${form.notes}" aria-describedby="notes-error"></textarea>
+                    <small class="field-error" id="notes-error" data-error-for="notes"></small>
+                </label>
+            </div>
+
+            <div class="pos-actions" style="margin-top:20px"
+                 th:if="${receipt.status != 'HOAN_TAT'}">
+                <button class="ui-btn" name="action" value="save" type="submit">Lưu thông tin</button>
+                <button class="ui-btn ui-primary" th:if="${receipt.status == 'TIEP_NHAN'}"
+                        name="action" value="start" type="submit">Bắt đầu xử lý</button>
+                <button class="ui-btn ui-primary" th:if="${receipt.status == 'DANG_XU_LY'}"
+                        name="action" value="complete" type="submit"
+                        onclick="return confirm('Hoàn tất sửa chữa và trả máy?')">
+                    Hoàn tất / Trả máy
+                </button>
+            </div>
+        </fieldset>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

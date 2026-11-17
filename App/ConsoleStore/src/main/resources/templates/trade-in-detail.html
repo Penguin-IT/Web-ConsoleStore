@@ -5,11 +5,12 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1">
 
-    <title>Phiếu thu cũ | Console Store</title>
+    <title>Chi tiết phiếu thu cũ | Console Store</title>
 
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/thu-mua-cu.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
 </head>
@@ -17,12 +18,12 @@
 <body>
 <header th:replace="~{fragments/store :: header}"></header>
 
-<main id="main-content"
-      class="container store-container pos-page">
+<main id="main-content" class="container store-container pos-page trade-in-theme">
 
     <div class="ui-page-heading">
-        <h1 th:text="${'Phiếu thu cũ PTC' + detail.receipt.id}">
-        </h1>
+        <div><p class="trade-kicker">CHI TIẾT GIAO DỊCH</p>
+            <h1 th:text="${'Phiếu thu cũ PTC' + detail.receipt.id}"></h1>
+            <p class="trade-intro">Thông tin khách hàng, thiết bị tiếp nhận và tổng số tiền thu mua.</p></div>
 
         <div class="pos-actions">
             <a class="ui-btn" th:href="@{/trade-ins}">
@@ -35,7 +36,8 @@
         </div>
     </div>
 
-    <section class="ui-panel">
+    <section class="ui-panel trade-panel">
+        <div class="trade-section-heading"><span class="trade-section-icon">01</span><div><h2>Tổng quan phiếu thu</h2><p>Thông tin tiếp nhận và kết quả chi trả của giao dịch.</p></div></div>
         <dl class="ui-details">
             <div>
                 <dt>Ngày thu</dt>
@@ -115,7 +117,7 @@
             </table>
         </div>
 
-        <h2 th:text="${'Tổng chi: '
+        <h2 class="trade-grand-total" th:text="${'Tổng chi: '
             + #numbers.formatDecimal(
                 detail.receipt.totalAmount,
                 1, 'POINT', 0, 'COMMA'

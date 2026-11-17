@@ -158,9 +158,9 @@ public class WarrantyService {
             throw bad("Nhập serial tối đa 100 ký tự.");
         }
 
-        if (description.isEmpty() || description.length() > 255) {
+        if (description.length() < 5 || description.length() > 255) {
             throw bad(
-                    "Mô tả lỗi bắt buộc và tối đa 255 ký tự."
+                    "Mô tả lỗi phải từ 5 đến 255 ký tự."
             );
         }
 

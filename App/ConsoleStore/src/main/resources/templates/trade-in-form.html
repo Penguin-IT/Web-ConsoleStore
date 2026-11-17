@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/thu-mua-cu.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
 
@@ -37,11 +38,10 @@
 <body>
 <header th:replace="~{fragments/store :: header}"></header>
 
-<main id="main-content"
-      class="container store-container pos-page">
+<main id="main-content" class="container store-container pos-page trade-in-theme">
 
     <div class="ui-page-heading">
-        <h1>Lập phiếu thu cũ</h1>
+        <div><p class="trade-kicker">CONSOLE STORE · THU MUA THIẾT BỊ</p><h1>Lập phiếu thu cũ</h1><p class="trade-intro">Tiếp nhận thiết bị đã qua sử dụng, kiểm tra thông tin và xác nhận khoản chi cho khách hàng.</p></div>
 
         <a class="ui-btn" th:href="@{/trade-ins}">
             ← Danh sách phiếu
@@ -63,8 +63,8 @@
                name="token"
                th:value="${form.token}">
 
-        <section class="ui-panel">
-            <h2>Khách hàng</h2>
+        <section class="ui-panel trade-panel">
+            <div class="trade-section-heading"><span class="trade-section-icon">01</span><div><h2>Thông tin khách hàng</h2><p>Tra cứu khách hàng bằng số điện thoại hoặc nhập thông tin khách hàng mới.</p></div></div>
 
             <div class="ui-toolbar">
                 <label class="ui-field">
@@ -129,7 +129,8 @@
             </div>
         </section>
 
-        <section class="ui-panel">
+        <section class="ui-panel trade-panel">
+            <div class="trade-section-heading"><span class="trade-section-icon">02</span><div><h2>Thông tin tiếp nhận</h2><p>Chọn kho nhận thiết bị và bổ sung ghi chú cho phiếu.</p></div></div>
             <div class="ui-form">
                 <label class="ui-field">
                     <span>Kho nhận thiết bị</span>
@@ -155,8 +156,8 @@
             </div>
         </section>
 
-        <section class="ui-panel">
-            <h2>Thiết bị thu mua</h2>
+        <section class="ui-panel trade-panel">
+            <div class="trade-section-heading"><span class="trade-section-icon">03</span><div><h2>Danh sách thiết bị thu mua</h2><p>Chọn sản phẩm, khai báo serial, tình trạng và mức giá thu mua.</p></div></div>
 
             <div id="trade-lines">
                 <article class="pos-line"
@@ -258,8 +259,8 @@
                 ＋ Thêm thiết bị
             </button>
 
-            <p class="trade-total">
-                Tổng chi:
+            <p class="trade-total trade-total-panel">
+                Tổng tiền dự kiến chi:
                 <output id="trade-total">0 ₫</output>
             </p>
 
@@ -271,7 +272,7 @@
                        th:checked="${form.paid}">
 
                 <span>
-                    Đã nhận thiết bị và chi đủ tiền mặt cho khách
+                    Xác nhận đã tiếp nhận thiết bị và hoàn tất chi trả cho khách hàng
                 </span>
             </label>
 

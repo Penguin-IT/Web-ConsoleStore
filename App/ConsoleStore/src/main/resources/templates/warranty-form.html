@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Tiếp nhận bảo hành | Console Store</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/warranty-validation.css}">
+    <script th:src="@{/js/store.js}" defer></script>
+    <script th:src="@{/js/warranty-validation.js}" defer></script>
+</head>
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content" class="container store-container pos-page">
+    <div class="ui-page-heading">
+        <h1>Tiếp nhận bảo hành</h1>
+        <a class="ui-btn" th:href="@{/warranties}">← Danh sách phiếu</a>
+    </div>
+
+    <p class="ui-alert validation-summary" role="alert"
+       th:if="${error != null}" th:text="${error}"></p>
+    <div class="validation-summary" role="alert" aria-live="polite" data-validation-summary hidden></div>
+
+    <form method="post" th:action="@{/warranties}" th:object="${form}" class="validation-form" novalidate>
+        <input type="hidden" name="token" th:value="${form.token}">
+
+        <section class="ui-panel">
+            <div class="ui-toolbar">
+                <label class="ui-field">
+                    <span>Serial máy <b class="required-mark">*</b></span>
+                    <input id="serial-number" name="serial" type="text"
+                           minlength="3" maxlength="100"
+                           pattern="[A-Za-z0-9._/-]+"
+                           required autocomplete="off"
+                           th:value="${form.serial}"
+                           aria-describedby="serial-error">
+                    <small class="field-error"
+                           th:if="${#fields.hasErrors('serial')}"
+                           th:errors="*{serial}">
+                    </small>
+
+                </label>
+                <button class="ui-btn" type="submit"
+                        th:formaction="@{/warranties/lookup}" formnovalidate>
+                    Tra cứu
+                </button>
+            </div>
+
+            <p class="field-error" role="alert"
+               th:if="${lookup == null and form.serial != null and !#strings.isEmpty(form.serial)}">
+                Không tìm thấy serial hoặc serial không hợp lệ.
+            </p>
+
+            <div id="serial-result" th:if="${lookup != null}">
+                <dl class="ui-details">
+                    <div><dt>Thiết bị</dt><dd th:text="${lookup.productName}"></dd></div>
+                    <div><dt>Serial</dt><dd th:text="${lookup.number}"></dd></div>
+                    <div><dt>Khách mua</dt><dd th:text="${lookup.customerName ?: '—'}"></dd></div>
+                    <div><dt>Số điện thoại</dt><dd th:text="${lookup.phone ?: '—'}"></dd></div>
+                    <div><dt>Ngày bán</dt><dd th:text="${lookup.soldAt == null ? 'Chưa có giao dịch bán' : #temporals.format(lookup.soldAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+                    <div><dt>Hạn bảo hành</dt><dd th:text="${lookup.expiresAt == null ? '—' : #temporals.format(lookup.expiresAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+                    <div><dt>Bảo hành</dt><dd th:text="${lookup.covered ? 'Còn hạn' : 'Không còn hạn'}"></dd></div>
+                    <div><dt>Máy</dt><dd th:text="${lookup.serialStatus == 'DA_BAN' ? 'Đã bán' : (lookup.serialStatus == 'BAO_HANH' ? 'Đang bảo hành' : 'Trong kho')}"></dd></div>
+                </dl>
+                <a class="ui-btn" th:if="${lookup.activeId != null}"
+                   th:href="@{/warranties/{id}(id=${lookup.activeId})}">Mở phiếu đang xử lý</a>
+            </div>
+        </section>
+
+        <section class="ui-panel">
+            <div class="ui-form">
+                <label class="ui-field ui-full">
+                    <span>Mô tả lỗi <b class="required-mark">*</b></span>
+                    <textarea name="description" rows="4" minlength="5" maxlength="255"
+                              required th:text="${form.description}"
+                              aria-describedby="description-error"></textarea>
+                    <small class="field-error"
+                           th:if="${#fields.hasErrors('description')}"
+                           th:errors="*{description}">
+                    </small>
+                </label>
+
+                <label class="ui-field">
+                    <span>Ngày hẹn trả <b class="required-mark">*</b></span>
+                    <input id="dueAt" name="dueAt" type="datetime-local"
+                           step="60" required th:value="${form.dueAt}"
+                           aria-describedby="dueAt-error">
+                    <small class="field-error"
+                           th:if="${#fields.hasErrors('dueAt')}"
+                           th:errors="*{dueAt}">
+                    </small>
+                </label>
+            </div>
+
+            <div class="pos-actions" style="margin-top:20px">
+                <button id="receive-warranty" class="ui-btn ui-primary" type="submit"
+                        th:disabled="${lookup == null or !lookup.covered or lookup.serialStatus != 'DA_BAN' or lookup.activeId != null}">
+                    Lập phiếu tiếp nhận
+                </button>
+            </div>
+        </section>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

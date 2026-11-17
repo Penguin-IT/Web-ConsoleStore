@@ -5,11 +5,12 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
 
-  <title>Thu mua thiết bị cũ | Console Store</title>
+  <title>Danh sách phiếu thu cũ | Console Store</title>
 
   <link rel="stylesheet" th:href="@{/css/home.css}">
   <link rel="stylesheet" th:href="@{/css/app.css}">
   <link rel="stylesheet" th:href="@{/css/pos.css}">
+  <link rel="stylesheet" th:href="@{/css/thu-mua-cu.css}">
 
   <script th:src="@{/js/store.js}" defer></script>
 </head>
@@ -17,11 +18,10 @@
 <body>
 <header th:replace="~{fragments/store :: header}"></header>
 
-<main id="main-content"
-      class="container store-container pos-page">
+<main id="main-content" class="container store-container pos-page trade-in-theme">
 
   <div class="ui-page-heading">
-    <h1>Thu mua thiết bị cũ</h1>
+    <div><p class="trade-kicker">QUẢN LÝ GIAO DỊCH</p><h1>Thu mua thiết bị cũ</h1><p class="trade-intro">Theo dõi các phiếu thu mua, thông tin khách hàng và khoản chi tại cửa hàng.</p></div>
 
     <a class="ui-btn ui-primary"
        th:href="@{/trade-ins/new}">
@@ -29,7 +29,8 @@
     </a>
   </div>
 
-  <section class="ui-panel">
+  <section class="ui-panel trade-panel">
+    <div class="trade-section-heading"><span class="trade-section-icon">01</span><div><h2>Danh sách phiếu thu</h2><p>Tìm kiếm và mở chi tiết từng giao dịch thu mua thiết bị cũ.</p></div></div>
     <form method="get"
           th:action="@{/trade-ins}"
           class="ui-toolbar">
