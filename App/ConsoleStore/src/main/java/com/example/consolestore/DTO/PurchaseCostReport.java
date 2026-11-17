@@ -1,4 +1,4 @@
-package com.example.consolestore.Dto;
+package com.example.consolestore.DTO;
 
 import java.math.BigDecimal;
 import java.util.List;

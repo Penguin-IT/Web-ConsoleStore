@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Báo cáo hàng hóa | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/revenue.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Báo cáo hàng hóa</h1>
+    </div>
+
+    <section class="ui-panel">
+        <form class="revenue-filters"
+              method="get"
+              th:action="@{/stock-reports}">
+
+            <label class="ui-field">
+                <span>Bán chạy từ ngày</span>
+
+                <input type="date"
+                       name="from"
+                       required
+                       min="1753-01-01"
+                       max="9998-12-31"
+                       th:value="${from}">
+            </label>
+
+            <label class="ui-field">
+                <span>Đến ngày</span>
+
+                <input type="date"
+                       name="to"
+                       required
+                       min="1753-01-01"
+                       max="9998-12-31"
+                       th:value="${to}">
+            </label>
+
+            <label class="ui-field">
+                <span>Top sản phẩm</span>
+
+                <input type="number"
+                       name="top"
+                       required
+                       min="1"
+                       max="50"
+                       step="1"
+                       th:value="${top}">
+            </label>
+
+            <label class="ui-field">
+                <span>Cảnh báo tồn dưới</span>
+
+                <input type="number"
+                       name="threshold"
+                       required
+                       min="1"
+                       max="1000000"
+                       step="1"
+                       th:value="${threshold}">
+            </label>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Xem báo cáo
+            </button>
+        </form>
+    </section>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <th:block th:if="${report != null}">
+        <div class="revenue-period">
+            <span>Kỳ thống kê bán chạy</span>
+            <strong th:text="${report.period}"></strong>
+        </div>
+
+        <section class="revenue-cards">
+            <article class="revenue-card">
+                <span>Sản phẩm trong Top</span>
+
+                <strong th:text="${#lists.size(report.bestSellers)}">
+                </strong>
+            </article>
+
+            <article class="revenue-card revenue-card--counter">
+                <span>Số lượng bán trong Top</span>
+                <strong th:text="${report.topQuantity()}"></strong>
+            </article>
+
+            <article class="revenue-card revenue-card--online">
+                <span>Sản phẩm tồn dưới ngưỡng</span>
+
+                <strong th:text="${report.lowStock.totalElements}">
+                </strong>
+            </article>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <h2>Sản phẩm bán chạy</h2>
+
+            <div class="ui-table-wrap">
+                <table class="ui-table">
+                    <thead>
+                    <tr>
+                        <th>Hạng</th>
+                        <th>Ảnh</th>
+                        <th>Sản phẩm</th>
+                        <th>Tình trạng</th>
+                        <th>Số lượng bán</th>
+                        <th>Doanh thu sản phẩm</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="product, state : ${report.bestSellers}">
+                        <td>
+                            <strong class="report-rank"
+                                    th:text="${state.count}">
+                            </strong>
+                        </td>
+
+                        <td>
+                            <img class="report-thumbnail"
+                                 loading="lazy"
+                                 th:src="@{${product.image}}"
+                                 th:alt="${product.name}"
+                                 th:attr="data-fallback=@{/images/ui/product-placeholder.svg}"
+                                 onerror="this.onerror=null;this.src=this.dataset.fallback">
+                        </td>
+
+                        <td>
+                            <strong th:text="${product.name}"></strong>
+
+                            <div class="report-muted"
+                                 th:text="|SP${product.id}|">
+                            </div>
+
+                            <span class="report-muted"
+                                  th:if="${product.deleted}">
+                                Đã ngừng bán
+                            </span>
+                        </td>
+
+                        <td th:text="${product.condition}"></td>
+                        <td th:text="${product.quantity}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                product.revenue,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(report.bestSellers)}">
+                        <td colspan="6" class="revenue-empty">
+                            Không có sản phẩm bán ra đủ điều kiện trong kỳ.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <div class="revenue-chart-heading">
+                <h2>Hàng cần bổ sung</h2>
+
+                <span class="report-muted">
+                    Tồn khả dụng hiện tại · Tất cả kho
+                </span>
+            </div>
+
+            <p th:text="|Ngưỡng cảnh báo: tồn dưới ${report.threshold} sản phẩm.|">
+            </p>
+
+            <div class="ui-table-wrap">
+                <table class="ui-table">
+                    <thead>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Sản phẩm</th>
+                        <th>Loại</th>
+                        <th>Tình trạng</th>
+                        <th>Tồn khả dụng</th>
+                        <th>Cảnh báo</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="product : ${report.lowStock.content}">
+                        <td>
+                            <img class="report-thumbnail"
+                                 loading="lazy"
+                                 th:src="@{${product.image}}"
+                                 th:alt="${product.name}"
+                                 th:attr="data-fallback=@{/images/ui/product-placeholder.svg}"
+                                 onerror="this.onerror=null;this.src=this.dataset.fallback">
+                        </td>
+
+                        <td>
+                            <strong th:text="${product.name}"></strong>
+
+                            <div class="report-muted"
+                                 th:text="|SP${product.id}|">
+                            </div>
+                        </td>
+
+                        <td th:text="${product.category}"></td>
+                        <td th:text="${product.condition}"></td>
+                        <td th:text="${product.quantity}"></td>
+
+                        <td>
+                            <span class="report-stock-badge"
+                                  th:classappend="${product.quantity == 0}
+                                      ? 'report-stock-badge--empty' : ''"
+                                  th:text="${product.quantity == 0}
+                                      ? 'Hết hàng' : 'Sắp hết'">
+                            </span>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${report.lowStock.empty}">
+                        <td colspan="6" class="revenue-empty">
+                            Không có sản phẩm tồn dưới ngưỡng.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="report-pagination"
+                 aria-label="Phân trang hàng cần bổ sung">
+
+                <a class="ui-btn"
+                   th:if="${report.lowStock.hasPrevious()}"
+                   th:href="@{/stock-reports(
+                       from=${from},
+                       to=${to},
+                       top=${top},
+                       threshold=${threshold},
+                       page=${report.lowStock.number - 1}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="|Trang ${report.lowStock.number + 1}
+                    / ${report.lowStock.totalPages == 0
+                        ? 1 : report.lowStock.totalPages}|">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${report.lowStock.hasNext()}"
+                   th:href="@{/stock-reports(
+                       from=${from},
+                       to=${to},
+                       top=${top},
+                       threshold=${threshold},
+                       page=${report.lowStock.number + 1}
+                   )}">
+                    Sau →
+                </a>
+            </nav>
+        </section>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

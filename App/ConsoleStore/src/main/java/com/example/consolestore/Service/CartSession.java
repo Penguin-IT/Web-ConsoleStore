@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.CheckoutQuote;
+import com.example.consolestore.DTO.CheckoutQuote;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 

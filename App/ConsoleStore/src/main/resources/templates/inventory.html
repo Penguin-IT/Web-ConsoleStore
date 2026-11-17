@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Tồn kho | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Tồn kho</h1>
+    </div>
+
+    <section class="ui-panel">
+        <form method="get"
+              th:action="@{/inventory}"
+              class="ui-toolbar">
+
+            <label class="ui-field">
+                <span>Sản phẩm</span>
+
+                <input name="keyword"
+                       maxlength="100"
+                       placeholder="Tên hoặc mã sản phẩm"
+                       th:value="${filter.keyword}">
+            </label>
+
+            <label class="ui-field">
+                <span>Kho</span>
+
+                <select name="warehouseId">
+                    <option value="">Tất cả kho</option>
+
+                    <option th:each="warehouse : ${warehouses}"
+                            th:value="${warehouse.id}"
+                            th:text="${warehouse.name}"
+                            th:selected="${filter.warehouseId == warehouse.id}">
+                    </option>
+                </select>
+            </label>
+
+            <label class="ui-field">
+                <span>Tình trạng</span>
+
+                <select name="condition">
+                    <option value="">Tất cả</option>
+
+                    <option value="MOI"
+                            th:selected="${filter.condition == 'MOI'}">
+                        Mới
+                    </option>
+
+                    <option value="CU"
+                            th:selected="${filter.condition == 'CU'}">
+                        Cũ
+                    </option>
+                </select>
+            </label>
+
+            <label class="ui-field">
+                <span>Tồn khả dụng</span>
+
+                <select name="availability">
+                    <option value="ALL"
+                            th:selected="${filter.availability == 'ALL'}">
+                        Tất cả
+                    </option>
+
+                    <option value="IN_STOCK"
+                            th:selected="${filter.availability == 'IN_STOCK'}">
+                        Còn hàng
+                    </option>
+
+                    <option value="OUT_OF_STOCK"
+                            th:selected="${filter.availability == 'OUT_OF_STOCK'}">
+                        Hết hàng
+                    </option>
+                </select>
+            </label>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Lọc
+            </button>
+
+            <a class="ui-btn" th:href="@{/inventory}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã SP</th>
+                    <th>Sản phẩm</th>
+                    <th>Loại</th>
+                    <th>Tình trạng</th>
+                    <th>Kho</th>
+                    <th>Tồn khả dụng</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="stock : ${stocks.content}">
+                    <td th:text="${'SP' + stock.productId}"></td>
+
+                    <td>
+                        <strong th:text="${stock.productName}"></strong>
+
+                        <span class="ui-status"
+                              th:if="${stock.deleted}">
+                            Ngừng kinh doanh
+                        </span>
+                    </td>
+
+                    <td th:text="${stock.category}"></td>
+
+                    <td th:text="${stock.condition == 'CU'
+                        ? 'Cũ' : 'Mới'}">
+                    </td>
+
+                    <td th:text="${stock.warehouseName}"></td>
+
+                    <td>
+                        <strong th:text="${#numbers.formatInteger(
+                            stock.quantity, 1, 'POINT'
+                        )}"></strong>
+                    </td>
+
+                    <td>
+                        <a class="ui-btn"
+                           th:href="@{/inventory/products/{id}(
+                               id=${stock.productId},
+                               warehouseId=${stock.warehouseId}
+                           )}">
+                            Biến động kho
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${stocks.empty}">
+                    <td colspan="7">
+                        Không tìm thấy tồn kho phù hợp.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${stocks.totalElements + ' bản ghi'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${stocks.hasPrevious()}"
+                   th:href="@{/inventory(
+                       page=${stocks.number - 1},
+                       keyword=${filter.keyword},
+                       warehouseId=${filter.warehouseId},
+                       condition=${filter.condition},
+                       availability=${filter.availability}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (stocks.number + 1)
+                    + ' / '
+                    + (stocks.totalPages == 0
+                        ? 1 : stocks.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${stocks.hasNext()}"
+                   th:href="@{/inventory(
+                       page=${stocks.number + 1},
+                       keyword=${filter.keyword},
+                       warehouseId=${filter.warehouseId},
+                       condition=${filter.condition},
+                       availability=${filter.availability}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

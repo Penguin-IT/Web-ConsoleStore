@@ -1,4 +1,4 @@
-package com.example.consolestore.Dto;
+package com.example.consolestore.DTO;
 
 import com.example.consolestore.Entity.*;
 import com.example.consolestore.Repository.HoaDonRepository;

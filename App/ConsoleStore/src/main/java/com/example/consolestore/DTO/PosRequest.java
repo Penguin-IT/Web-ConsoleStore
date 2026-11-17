@@ -1,4 +1,4 @@
-package com.example.consolestore.Dto;
+package com.example.consolestore.DTO;
 
 import java.util.ArrayList;
 import java.util.List;

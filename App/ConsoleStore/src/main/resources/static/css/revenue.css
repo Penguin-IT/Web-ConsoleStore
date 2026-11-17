@@ -1,0 +1,270 @@
+.revenue-tabs,
+.revenue-filters,
+.revenue-legend,
+.revenue-chart-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.revenue-tabs {
+    margin-bottom: 24px;
+}
+
+.revenue-filters {
+    align-items: flex-end;
+    gap: 18px;
+}
+
+.revenue-filters .ui-field {
+    flex: 1;
+    min-width: 170px;
+}
+
+.revenue-period {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 26px 0 18px;
+    color: #6d6479;
+}
+
+.revenue-period strong {
+    color: #211d29;
+}
+
+.revenue-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.revenue-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 26px;
+    border: 1px solid #e5dfee;
+    border-top: 4px solid #211d29;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.revenue-card--counter {
+    border-top-color: #7651b7;
+}
+
+.revenue-card--online {
+    border-top-color: #247799;
+}
+
+.revenue-card > span,
+.revenue-card small {
+    color: #6d6479;
+}
+
+.revenue-card strong {
+    color: #211d29;
+    font-size: clamp(20px, 2vw, 30px);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.revenue-section {
+    margin-top: 24px;
+}
+
+.revenue-chart-heading {
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.revenue-chart-heading h2 {
+    margin: 0;
+}
+
+.revenue-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.revenue-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.revenue-dot--counter {
+    background: #7651b7;
+}
+
+.revenue-dot--online {
+    background: #247799;
+}
+
+.revenue-axis {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-left: 112px;
+    margin-bottom: 14px;
+    color: #6d6479;
+    font-size: 12px;
+}
+
+.revenue-chart {
+    max-height: 440px;
+    overflow-y: auto;
+    padding-right: 12px;
+}
+
+.revenue-chart-row {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.revenue-chart-label {
+    color: #51485e;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.revenue-bar-group {
+    display: grid;
+    gap: 5px;
+}
+
+.revenue-bar-track {
+    height: 13px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: #f1eef6;
+}
+
+.revenue-bar {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.revenue-bar--counter {
+    width: var(--counter, 0%);
+    background: #7651b7;
+}
+
+.revenue-bar--online {
+    width: var(--online, 0%);
+    background: repeating-linear-gradient(
+            135deg,
+            #247799 0,
+            #247799 5px,
+            #398eaf 5px,
+            #398eaf 8px
+    );
+}
+
+.revenue-empty {
+    padding: 30px 16px;
+    text-align: center;
+    color: #6d6479;
+}
+
+.revenue-money {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.revenue-section tfoot {
+    background: #f5f1fa;
+    font-weight: 700;
+}
+
+@media (max-width: 850px) {
+    .revenue-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .revenue-filters {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .revenue-filters .ui-field {
+        width: 100%;
+    }
+
+    .revenue-chart-row {
+        grid-template-columns: 80px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .revenue-axis {
+        margin-left: 90px;
+    }
+}
+.report-thumbnail {
+    display: block;
+    width: 70px;
+    height: 70px;
+    padding: 5px;
+    object-fit: contain;
+    border: 1px solid #e5dfee;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.report-muted {
+    margin-top: 6px;
+    color: #6d6479;
+    font-size: 12px;
+}
+
+.report-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #eee8fa;
+    color: #554176;
+}
+
+.report-stock-badge {
+    display: inline-flex;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #fff2df;
+    color: #865300;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.report-stock-badge--empty {
+    background: #fcecef;
+    color: #9b3048;
+}
+
+.report-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+    .report-pagination {
+        justify-content: center;
+    }
+}
