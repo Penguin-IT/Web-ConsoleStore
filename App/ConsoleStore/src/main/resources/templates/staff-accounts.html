@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>Tài khoản | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/staff.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Tài khoản</h1>
+
+        <a class="ui-btn" th:href="@{/staff}">
+            ← Nhân viên
+        </a>
+    </div>
+
+    <p role="status"
+       th:if="${success}"
+       th:text="${success}">
+    </p>
+
+    <section class="ui-panel">
+        <form class="staff-actions staff-search"
+              method="get"
+              th:action="@{/staff/accounts}">
+
+            <input name="keyword"
+                   maxlength="100"
+                   aria-label="Tên đăng nhập"
+                   placeholder="Tên đăng nhập"
+                   th:value="${keyword}">
+
+            <button class="ui-btn ui-primary" type="submit">
+                Tìm kiếm
+            </button>
+
+            <a class="ui-btn" th:href="@{/staff/accounts}">
+                Đặt lại
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Người sử dụng</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="account : ${accounts.content}">
+                    <td th:text="|TK${account.id}|"></td>
+                    <td th:text="${account.username}"></td>
+                    <td th:text="${account.owner}"></td>
+
+                    <td th:text="${account.role == 'ADMIN'}
+                            ? 'Quản trị'
+                            : (${account.role == 'NHANVIEN'}
+                                ? 'Nhân viên' : 'Khách hàng')">
+                    </td>
+
+                    <td>
+                        <span class="staff-status"
+                              th:classappend="${account.locked}
+                                  ? 'staff-status--off' : ''"
+                              th:text="${account.locked}
+                                  ? 'Đã khóa' : 'Hoạt động'">
+                        </span>
+                    </td>
+
+                    <td>
+                        <a class="ui-btn"
+                           th:href="@{/staff/accounts/{id}/edit(
+                               id=${account.id}
+                           )}">
+                            Quản lý
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${accounts.empty}">
+                    <td colspan="6" class="staff-empty">
+                        Không tìm thấy tài khoản.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="staff-pagination" aria-label="Phân trang">
+            <a class="ui-btn"
+               th:if="${accounts.hasPrevious()}"
+               th:href="@{/staff/accounts(
+                   keyword=${keyword},
+                   page=${accounts.number - 1}
+               )}">
+                ← Trước
+            </a>
+
+            <span th:text="|Trang ${accounts.number + 1}
+                / ${accounts.totalPages == 0 ? 1 : accounts.totalPages}|">
+            </span>
+
+            <a class="ui-btn"
+               th:if="${accounts.hasNext()}"
+               th:href="@{/staff/accounts(
+                   keyword=${keyword},
+                   page=${accounts.number + 1}
+               )}">
+                Sau →
+            </a>
+        </nav>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
