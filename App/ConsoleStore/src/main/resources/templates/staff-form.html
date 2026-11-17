@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>Hồ sơ nhân viên | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/staff.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1 th:text="${employeeId == null}
+                ? 'Thêm nhân viên' : 'Hồ sơ nhân viên'">
+        </h1>
+
+        <a class="ui-btn" th:href="@{/staff}">
+            ← Danh sách
+        </a>
+    </div>
+
+    <section class="ui-panel">
+        <p class="ui-alert"
+           role="alert"
+           th:if="${error}"
+           th:text="${error}">
+        </p>
+
+        <form method="post"
+              th:action="${employeeId == null}
+                  ? @{/staff}
+                  : @{/staff/{id}(id=${employeeId})}">
+
+            <input type="hidden"
+                   name="version"
+                   th:value="${form.version}">
+
+            <div class="staff-form-grid">
+                <label class="ui-field">
+                    <span>Họ tên *</span>
+                    <input name="fullName"
+                           required
+                           maxlength="100"
+                           th:value="${form.fullName}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Số điện thoại *</span>
+                    <input type="tel"
+                           name="phone"
+                           required
+                           maxlength="10"
+                           pattern="0[0-9]{9}"
+                           th:value="${form.phone}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Email</span>
+                    <input type="email"
+                           name="email"
+                           maxlength="100"
+                           th:value="${form.email}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Chức vụ</span>
+                    <input name="position"
+                           maxlength="100"
+                           th:value="${form.position}">
+                </label>
+
+                <label class="ui-field staff-full">
+                    <span>Địa chỉ</span>
+                    <textarea name="address"
+                              rows="3"
+                              maxlength="255"
+                              th:text="${form.address}">
+                    </textarea>
+                </label>
+
+                <label class="ui-field">
+                    <span>Trạng thái *</span>
+
+                    <select name="retired" required>
+                        <option value="false"
+                                th:selected="${form.retired == false}">
+                            Đang làm
+                        </option>
+
+                        <option value="true"
+                                th:if="${employeeId != null}"
+                                th:selected="${form.retired == true}">
+                            Đã nghỉ việc
+                        </option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="staff-actions">
+                <button class="ui-btn ui-primary" type="submit">
+                    Lưu hồ sơ
+                </button>
+
+                <a class="ui-btn" th:href="@{/staff}">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

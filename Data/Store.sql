@@ -3097,3 +3097,32 @@ FROM ThanhToan t
 JOIN HoaDon h ON h.maHD = t.maHD
 WHERE t.soTien <> h.tongTien;
 GO
+--====
+USE QLStoreConsole;
+GO
+
+ALTER TABLE dbo.TaiKhoan
+DROP CONSTRAINT CK_TaiKhoan_vaiTro;
+GO;
+
+ALTER TABLE dbo.TaiKhoan
+ADD CONSTRAINT CK_TaiKhoan_vaiTro
+CHECK (vaiTro IN (
+    N'ADMIN',
+    N'NHANVIEN',
+    N'KHACHHANG',
+    N'BANHANG',
+    N'KHO',
+    N'BAOHANH'
+));
+GO;
+
+
+
+SELECT
+    tenDangNhap,
+    vaiTro,
+    LEN(matKhau) AS DoDaiMatKhau,
+    LEFT(matKhau, 4) AS DauMaHoa
+FROM dbo.TaiKhoan
+WHERE vaiTro IN ('BANHANG', 'KHO', 'BAOHANH');

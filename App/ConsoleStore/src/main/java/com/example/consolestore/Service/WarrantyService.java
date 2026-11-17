@@ -158,9 +158,9 @@ public class WarrantyService {
             throw bad("Nhập serial tối đa 100 ký tự.");
         }
 
-        if (description.length() < 5 || description.length() > 255) {
+        if (description.isEmpty() || description.length() > 255) {
             throw bad(
-                    "Mô tả lỗi phải từ 5 đến 255 ký tự."
+                    "Mô tả lỗi bắt buộc và tối đa 255 ký tự."
             );
         }
 
@@ -325,13 +325,23 @@ public class WarrantyService {
     }
 
     private Long staff(String username) {
-        return accounts.posStaff(username)
-                .map(TaiKhoanRepository.PosStaff::getEmployeeId)
-                .orElseThrow(() ->
-                        new AccessDeniedException(
-                                "Staff access required"
-                        )
-                );
+        if (username == null || username.isBlank()) {
+            throw new AccessDeniedException("Warranty staff access required");
+        }
+
+        TaiKhoanRepository.LoginState state = accounts.loginState(username)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Warranty staff access required"
+                ));
+
+        if (!state.isUsable()
+                || !Set.of("ADMIN", "NHANVIEN", "BAOHANH")
+                .contains(state.getRole())
+                || state.getEmployeeId() == null) {
+            throw new AccessDeniedException("Warranty staff access required");
+        }
+
+        return state.getEmployeeId();
     }
 
     private static String tag(String value) {

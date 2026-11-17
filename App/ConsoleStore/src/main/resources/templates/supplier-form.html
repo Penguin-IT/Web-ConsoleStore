@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Thông tin nhà cung cấp | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1 th:text="${editing
+            ? 'Sửa nhà cung cấp NCC' + form.id
+            : 'Thêm nhà cung cấp'}">
+        </h1>
+
+        <a class="ui-btn" th:href="@{/suppliers}">
+            ← Danh sách nhà cung cấp
+        </a>
+    </div>
+
+    <p role="status"
+       th:if="${success}"
+       th:text="${success}">
+    </p>
+
+    <p class="ui-alert"
+       role="alert"
+       th:each="message : ${formErrors}"
+       th:text="${message}">
+    </p>
+
+    <form id="supplier-form"
+          method="post"
+          class="ui-panel"
+          th:action="${editing}
+              ? @{/suppliers/{id}(id=${form.id})}
+              : @{/suppliers}">
+
+        <input type="hidden"
+               name="version"
+               th:value="${form.version}">
+
+        <div class="ui-form">
+            <label class="ui-field">
+                <span>Tên nhà cung cấp *</span>
+
+                <input name="name"
+                       maxlength="100"
+                       required
+                       autocomplete="organization"
+                       th:value="${form.name}"
+                       th:attr="aria-invalid=${fieldErrors['name'] != null}">
+
+                <small class="ui-field-error"
+                       th:if="${fieldErrors['name'] != null}"
+                       th:text="${fieldErrors['name']}">
+                </small>
+            </label>
+
+            <label class="ui-field">
+                <span>Điện thoại</span>
+
+                <input name="phone"
+                       type="tel"
+                       inputmode="numeric"
+                       pattern="[0-9]{1,10}"
+                       maxlength="10"
+                       autocomplete="tel"
+                       th:value="${form.phone}"
+                       th:attr="aria-invalid=${fieldErrors['phone'] != null}">
+
+                <small class="ui-field-error"
+                       th:if="${fieldErrors['phone'] != null}"
+                       th:text="${fieldErrors['phone']}">
+                </small>
+            </label>
+
+            <label class="ui-field">
+                <span>Email</span>
+
+                <input name="email"
+                       type="email"
+                       maxlength="100"
+                       autocomplete="email"
+                       th:value="${form.email}"
+                       th:attr="aria-invalid=${fieldErrors['email'] != null}">
+
+                <small class="ui-field-error"
+                       th:if="${fieldErrors['email'] != null}"
+                       th:text="${fieldErrors['email']}">
+                </small>
+            </label>
+
+            <label class="ui-field ui-full">
+                <span>Địa chỉ</span>
+
+                <textarea name="address"
+                          rows="3"
+                          maxlength="255"
+                          autocomplete="street-address"
+                          th:text="${form.address}"
+                          th:attr="aria-invalid=${fieldErrors['address'] != null}">
+                </textarea>
+
+                <small class="ui-field-error"
+                       th:if="${fieldErrors['address'] != null}"
+                       th:text="${fieldErrors['address']}">
+                </small>
+            </label>
+        </div>
+
+        <div class="pos-actions" style="margin-top:20px">
+            <button id="save-supplier"
+                    class="ui-btn ui-primary"
+                    type="submit"
+                    th:text="${editing
+                        ? 'Lưu thay đổi'
+                        : 'Thêm nhà cung cấp'}">
+            </button>
+
+            <a class="ui-btn"
+               th:if="${editing}"
+               th:href="@{/suppliers/{id}/edit(id=${form.id})}">
+                Tải lại thông tin
+            </a>
+
+            <a class="ui-btn" th:href="@{/suppliers}">
+                Hủy
+            </a>
+        </div>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+
+<script>
+    document.getElementById('supplier-form')
+        .addEventListener('submit', () => {
+            const button = document.getElementById('save-supplier');
+
+            button.disabled = true;
+            button.textContent = 'Đang lưu…';
+        });
+</script>
+</body>
+</html>
