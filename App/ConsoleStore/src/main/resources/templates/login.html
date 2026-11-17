@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Đăng nhập | Console Store</title>
+
+    <link rel="icon"
+          type="image/png"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/home.css(v='20261113-4')}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/app.css(v='20261113-4')}">
+
+    <script th:src="@{/js/store.js(v='20261113-4')}"
+            defer></script>
+
+    <style>
+        .auth-main {
+            min-height: 70vh;
+            padding-block: 55px 80px;
+        }
+
+        .auth-main .ui-page-heading {
+            max-width: 1050px;
+            margin-inline: auto;
+            margin-bottom: 32px;
+        }
+
+        .auth-main .ui-auth-layout {
+            border: 1px solid var(--border);
+            border-radius: 22px;
+        }
+
+        .auth-main .ui-auth-art {
+            min-height: 440px;
+        }
+
+        .auth-main .ui-auth-form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 42px;
+            border: 0;
+        }
+
+        .auth-main .ui-auth-form > h2 {
+            margin: 0 0 12px;
+            font-size: 28px;
+        }
+
+        .auth-main .ui-auth-form > .ui-help {
+            margin: 0 0 26px;
+        }
+
+        .auth-main .ui-auth-form .ui-form {
+            margin: 0;
+        }
+
+        .auth-main .ui-auth-form .ui-field {
+            min-width: 0;
+        }
+
+        .auth-main .ui-auth-form input {
+            width: 100%;
+        }
+
+        .auth-main .auth-message {
+            margin-bottom: 22px;
+            padding: 14px 16px;
+            border: 1px solid #ddd1ee;
+            border-radius: 10px;
+            background: #f4eefb;
+            color: #58416c;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .auth-main .auth-message--error {
+            border-color: #efc9c6;
+            background: #fff2f1;
+            color: #a92c35;
+        }
+
+        .auth-main .auth-register {
+            margin: 22px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .auth-main .auth-register a {
+            color: #74509b;
+            font-weight: 650;
+        }
+
+        @media (max-width: 767px) {
+            .auth-main {
+                padding-block: 32px 50px;
+            }
+
+            .auth-main .ui-auth-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-main .ui-auth-art {
+                min-height: 230px;
+                padding: 32px;
+            }
+
+            .auth-main .ui-auth-form {
+                padding: 30px 24px;
+            }
+        }
+    </style>
+</head>
+
+<body class="shop-page customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="ui-container auth-main"
+      tabindex="-1">
+
+    <div class="ui-page-heading">
+        <div>
+            <p class="ui-kicker">FOR THE LOVE OF PLAY.</p>
+
+            <h1>Chào mừng trở lại</h1>
+
+            <p>Tiếp tục hành trình cùng Console Store.</p>
+        </div>
+    </div>
+
+    <div class="ui-auth-layout">
+        <div class="ui-auth-art">
+            <span class="ui-kicker">CONSOLE STORE</span>
+
+            <h2>Play your<br>own way.</h2>
+
+            <p>PlayStation · Xbox · Nintendo</p>
+
+            <img class="ui-auth-logo"
+                 th:src="@{/images/banners/logo.png}"
+                 alt=""
+                 aria-hidden="true">
+        </div>
+
+        <section class="ui-panel ui-auth-form"
+                 aria-labelledby="login-title">
+
+            <h2 id="login-title">Đăng nhập</h2>
+
+            <p class="ui-help">
+                Sử dụng tên đăng nhập và mật khẩu của bạn.
+            </p>
+
+            <div th:if="${param.error != null}"
+                 class="auth-message auth-message--error"
+                 role="alert">
+                Không thể đăng nhập. Vui lòng kiểm tra thông tin.
+                Tài khoản bị khóa sẽ không được phép truy cập.
+            </div>
+            <p class="auth-message"
+               role="status"
+               th:if="${param.passwordChanged != null}">
+                Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.
+            </p>
+            <div th:if="${param.logout != null}"
+                 class="auth-message"
+                 role="status">
+                Bạn đã đăng xuất thành công.
+            </div>
+
+            <form method="post"
+                  th:action="@{/login}"
+                  class="ui-form ui-single">
+
+                <div class="ui-field">
+                    <label for="username">Tên đăng nhập</label>
+
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           maxlength="100"
+                           autocomplete="username"
+                           autocapitalize="none"
+                           spellcheck="false"
+                           placeholder="Nhập tên đăng nhập"
+                           required>
+                </div>
+
+                <div class="ui-field">
+                    <label for="password">Mật khẩu</label>
+
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           maxlength="72"
+                           autocomplete="current-password"
+                           placeholder="Nhập mật khẩu"
+                           required>
+                </div>
+
+                <div class="ui-full">
+                    <button class="ui-btn ui-primary ui-wide"
+                            type="submit">
+                        Đăng nhập
+                    </button>
+                </div>
+            </form>
+
+            <p class="auth-register">
+                Chưa có tài khoản?
+                <a th:href="@{/register}">Đăng ký ngay</a>
+            </p>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
