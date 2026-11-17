@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title th:text="'Hóa đơn HD' + ${detail.invoice.id} +' - Console Store'">
+    </title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/invoices.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body class="invoice-detail-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page"
+      th:with="invoice=${detail.invoice}">
+
+    <div class="invoice-toolbar">
+        <a class="ui-btn" th:href="@{/invoices}">
+            ← Danh sách hóa đơn
+        </a>
+
+        <button class="ui-btn ui-primary"
+                type="button"
+                onclick="window.print()">
+            In lại hóa đơn
+        </button>
+    </div>
+
+    <article class="ui-panel invoice-document">
+        <div class="invoice-document-heading">
+            <div>
+                <p class="invoice-brand">CONSOLE STORE</p>
+                <h1 th:text="|HÓA ĐƠN HD${invoice.id}|"></h1>
+            </div>
+
+            <div>
+                <p th:text="${#temporals.format(
+                    invoice.createdAt, 'dd/MM/yyyy HH:mm'
+                )}">
+                </p>
+
+                <span class="invoice-badge"
+                      th:text="${invoice.statusLabel()}">
+                </span>
+            </div>
+        </div>
+
+        <div class="invoice-info-grid">
+            <section>
+                <h2>Khách hàng</h2>
+
+                <p>
+                    <strong th:text="${invoice.customerName}"></strong>
+                </p>
+
+                <p th:text="${invoice.phone}"></p>
+                <p th:text="${invoice.address}"></p>
+            </section>
+
+            <section>
+                <h2>Thông tin hóa đơn</h2>
+
+                <p>
+                    Kênh bán:
+                    <strong th:text="${invoice.channelLabel()}"></strong>
+                </p>
+
+                <p>
+                    Nhân viên:
+                    <span th:text="${invoice.employeeName}"></span>
+                </p>
+
+                <p>
+                    Kho trên hóa đơn:
+                    <span th:text="${invoice.warehouseName}"></span>
+                </p>
+            </section>
+        </div>
+
+        <h2>Sản phẩm</h2>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table invoice-lines">
+                <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Serial</th>
+                    <th>Kho</th>
+                    <th>SL</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="line : ${detail.lines}">
+                    <td>
+                        <strong th:text="${line.productName}"></strong>
+
+                        <div class="invoice-muted"
+                             th:text="|SP${line.productId} · ${line.condition}|">
+                        </div>
+                    </td>
+
+                    <td th:text="${line.serial}"></td>
+                    <td th:text="${line.warehouse}"></td>
+                    <td th:text="${line.quantity}"></td>
+
+                    <td class="invoice-money"
+                        th:text="|${#numbers.formatDecimal(
+                            line.price, 0, 'POINT', 0, 'COMMA'
+                        )} đ|">
+                    </td>
+
+                    <td class="invoice-money"
+                        th:text="|${#numbers.formatDecimal(
+                            line.subtotal, 0, 'POINT', 0, 'COMMA'
+                        )} đ|">
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(detail.lines)}">
+                    <td colspan="6" class="invoice-empty">
+                        Không có chi tiết sản phẩm.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="invoice-totals">
+            <p>
+                <span>Tổng hóa đơn</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    invoice.totalAmount, 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+            </p>
+
+            <p>
+                <span>Đã xác nhận thanh toán</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    detail.paidAmount(), 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+            </p>
+        </div>
+
+        <h2>Thanh toán</h2>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Phương thức</th>
+                    <th>Số tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày thanh toán</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="payment : ${detail.payments}">
+                    <td th:text="|TT${payment.id}|"></td>
+                    <td th:text="${payment.methodLabel()}"></td>
+
+                    <td class="invoice-money"
+                        th:text="|${#numbers.formatDecimal(
+                            payment.amount, 0, 'POINT', 0, 'COMMA'
+                        )} đ|">
+                    </td>
+
+                    <td th:text="${payment.statusLabel()}"></td>
+
+                    <td th:text="${payment.paidAt == null}
+                            ? '—'
+                            : ${#temporals.format(
+                                payment.paidAt, 'dd/MM/yyyy HH:mm'
+                            )}">
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(detail.payments)}">
+                    <td colspan="5" class="invoice-empty">
+                        Chưa có bản ghi thanh toán.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <section class="invoice-note">
+            <h2>Ghi chú</h2>
+            <p th:text="${invoice.note}"></p>
+        </section>
+    </article>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
