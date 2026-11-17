@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Sản phẩm | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/product-management.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1 th:text="${productId == null
+                ? 'Thêm sản phẩm' : 'Chỉnh sửa sản phẩm'}">
+        </h1>
+
+        <a class="ui-btn" th:href="@{/manage-products}">
+            ← Danh sách sản phẩm
+        </a>
+    </div>
+
+    <section class="ui-panel">
+        <div class="ui-alert"
+             role="alert"
+             th:if="${!#lists.isEmpty(formErrors)}">
+
+            <ul>
+                <li th:each="message : ${formErrors}"
+                    th:text="${message}">
+                </li>
+            </ul>
+        </div>
+
+        <form method="post"
+              th:action="${productId == null}
+                  ? @{/manage-products}
+                  : @{/manage-products/{id}(id=${productId})}">
+
+            <input type="hidden"
+                   name="version"
+                   th:value="${form.version}">
+
+            <div class="pm-form-grid">
+                <label class="ui-field pm-full">
+                    <span>Tên sản phẩm *</span>
+
+                    <input name="name"
+                           required
+                           maxlength="100"
+                           th:value="${form.name}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Giá bán *</span>
+
+                    <input type="number"
+                           name="price"
+                           required
+                           min="1"
+                           step="1"
+                           th:value="${form.price}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Tên file ảnh</span>
+
+                    <input id="productImage"
+                           name="image"
+                           maxlength="255"
+                           pattern="SP[1-9][0-9]*\.jpg"
+                           placeholder="SP1.jpg"
+                           th:value="${form.image}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Loại sản phẩm *</span>
+
+                    <select name="categoryId" required>
+                        <option value="">Chọn loại sản phẩm</option>
+
+                        <option th:each="category : ${categories}"
+                                th:value="${category.id}"
+                                th:text="${category.name}"
+                                th:selected="${category.id == form.categoryId}">
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field">
+                    <span>Nền tảng</span>
+
+                    <select name="platformId">
+                        <option value="">Không chọn</option>
+
+                        <option th:each="platform : ${platforms}"
+                                th:value="${platform.id}"
+                                th:text="${platform.name}"
+                                th:selected="${platform.id == form.platformId}">
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field">
+                    <span>Tình trạng *</span>
+
+                    <select name="condition" required>
+                        <option value="MOI"
+                                th:selected="${form.condition == 'MOI'}">
+                            Mới
+                        </option>
+
+                        <option value="CU"
+                                th:selected="${form.condition == 'CU'}">
+                            Cũ
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field">
+                    <span>Sản phẩm mới gốc</span>
+
+                    <select name="baseProductId">
+                        <option value="">Không liên kết</option>
+
+                        <option th:each="product : ${baseProducts}"
+                                th:value="${product.id}"
+                                th:text="${product.name}"
+                                th:selected="${product.id == form.baseProductId}">
+                        </option>
+                    </select>
+                </label>
+
+                <label class="ui-field pm-full">
+                    <span>Mô tả</span>
+
+                    <textarea name="description"
+                              rows="4"
+                              maxlength="255"
+                              th:text="${form.description}">
+                    </textarea>
+                </label>
+
+                <div class="pm-full">
+                    <img id="productPreview"
+                         class="pm-preview"
+                         alt="Ảnh sản phẩm"
+                         th:src="@{/images/ui/product-placeholder.svg}"
+                         th:attr="
+                            data-folder=@{/images/products/},
+                            data-fallback=@{/images/ui/product-placeholder.svg}">
+                </div>
+            </div>
+
+            <div class="pm-actions">
+                <button class="ui-btn ui-primary" type="submit">
+                    Lưu sản phẩm
+                </button>
+
+                <a class="ui-btn" th:href="@{/manage-products}">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+
+<script>
+    (() => {
+        const input = document.getElementById('productImage');
+        const preview = document.getElementById('productPreview');
+
+        function updatePreview() {
+            const filename = input.value.trim();
+
+            preview.src = /^SP[1-9][0-9]*\.jpg$/.test(filename)
+                ? preview.dataset.folder + encodeURIComponent(filename)
+                : preview.dataset.fallback;
+        }
+
+        preview.addEventListener('error', () => {
+            const fallback = new URL(
+                preview.dataset.fallback,
+                document.baseURI
+            ).href;
+
+            if (preview.src !== fallback) {
+                preview.src = fallback;
+            }
+        });
+
+        input.addEventListener('input', updatePreview);
+
+        updatePreview();
+    })();
+</script>
+</body>
+</html>

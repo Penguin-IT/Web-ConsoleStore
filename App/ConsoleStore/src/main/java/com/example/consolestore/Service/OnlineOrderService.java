@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.OnlineOrderData;
+import com.example.consolestore.DTO.OnlineOrderData;
 import com.example.consolestore.Entity.HoaDon;
 import com.example.consolestore.Entity.SerialMay;
 import com.example.consolestore.Repository.*;

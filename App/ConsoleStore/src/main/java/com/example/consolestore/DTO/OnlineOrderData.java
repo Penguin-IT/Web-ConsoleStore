@@ -1,4 +1,4 @@
-package com.example.consolestore.Dto;
+package com.example.consolestore.DTO;
 
 import com.example.consolestore.Entity.HoaDon;
 import com.example.consolestore.Entity.SerialMay;

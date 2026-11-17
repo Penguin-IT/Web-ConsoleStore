@@ -1,6 +1,6 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.Dto.PaymentReviewRequest;
+import com.example.consolestore.DTO.PaymentReviewRequest;
 import com.example.consolestore.Service.PaymentApprovalService;
 
 import jakarta.servlet.http.HttpServletResponse;

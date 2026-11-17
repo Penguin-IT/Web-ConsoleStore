@@ -1,6 +1,6 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.Dto.OnlineOrderData;
+import com.example.consolestore.DTO.OnlineOrderData;
 import com.example.consolestore.Service.OnlineOrderService;
 
 import jakarta.servlet.http.HttpServletResponse;

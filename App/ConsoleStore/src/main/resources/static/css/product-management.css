@@ -1,0 +1,146 @@
+.pm-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pm-actions form,
+.pm-dictionary-row form {
+    margin: 0;
+}
+
+.pm-filters {
+    display: grid;
+    grid-template-columns: minmax(200px, 2fr) repeat(2, minmax(150px, 1fr)) auto auto;
+    align-items: end;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.pm-form-grid,
+.pm-dictionaries {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.pm-form-grid {
+    margin-bottom: 24px;
+}
+
+.pm-full {
+    grid-column: 1 / -1;
+}
+
+.pm-thumbnail {
+    display: block;
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    border: 1px solid #e8e2f0;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.pm-preview {
+    display: block;
+    width: min(100%, 280px);
+    height: 220px;
+    padding: 16px;
+    object-fit: contain;
+    border: 1px solid #e8e2f0;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.pm-muted {
+    margin-top: 6px;
+    color: #6f667b;
+    font-size: 12px;
+}
+
+.pm-price {
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.pm-danger {
+    color: #a52640;
+}
+
+.pm-empty {
+    padding: 32px;
+    text-align: center;
+}
+
+.pm-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.pm-dictionary-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid #e8e2f0;
+}
+
+.pm-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.pm-name-input {
+    flex: 1;
+    min-width: 100px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #ded5eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #211d29;
+    font: inherit;
+}
+
+.pm-name-input:focus {
+    outline: 2px solid #b6a2e8;
+    outline-offset: 2px;
+}
+
+@media (max-width: 1050px) {
+    .pm-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pm-dictionaries {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .pm-filters,
+    .pm-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pm-full {
+        grid-column: auto;
+    }
+
+    .pm-dictionary-row {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .pm-pagination {
+        justify-content: center;
+    }
+}

@@ -1,6 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.PosData.Quote;
+import com.example.consolestore.DTO.PosData.Quote;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
