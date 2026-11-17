@@ -74,8 +74,10 @@
 
                     <td th:text="${account.role == 'ADMIN'}
                             ? 'Quản trị'
-                            : (${account.role == 'NHANVIEN'}
-                                ? 'Nhân viên' : 'Khách hàng')">
+                            : (${account.role == 'NHANVIEN'} ? 'Nhân viên'
+                            : (${account.role == 'BANHANG'} ? 'Nhân viên bán hàng'
+                            : (${account.role == 'KHO'} ? 'Nhân viên kho'
+                            : (${account.role == 'BAOHANH'} ? 'Nhân viên bảo hành' : 'Khách hàng'))))">
                     </td>
 
                     <td>

@@ -448,13 +448,25 @@ public class TradeInService {
     }
 
     private Long staff(String username) {
-        return accounts.posStaff(username)
-                .map(TaiKhoanRepository.PosStaff::getEmployeeId)
-                .orElseThrow(() ->
-                        new AccessDeniedException(
-                                "Staff access required"
-                        )
-                );
+        if (username == null || username.isBlank()) {
+            throw new AccessDeniedException("Bạn chưa đăng nhập.");
+        }
+
+        TaiKhoanRepository.LoginState state = accounts.loginState(username)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Không tìm thấy tài khoản."
+                ));
+
+        if (!state.isUsable()
+                || !Set.of("ADMIN", "NHANVIEN", "BAOHANH")
+                .contains(state.getRole())
+                || state.getEmployeeId() == null) {
+            throw new AccessDeniedException(
+                    "Bạn không có quyền thực hiện thu mua cũ."
+            );
+        }
+
+        return state.getEmployeeId();
     }
 
     private static String tag(String token) {

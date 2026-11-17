@@ -209,8 +209,9 @@ public class InvoiceService {
         }
     }
 
+
     private void requireStaff(String username) {
-        if (username == null) {
+        if (username == null || username.isBlank()) {
             throw denied();
         }
 
@@ -218,8 +219,11 @@ public class InvoiceService {
                 .orElseThrow(this::denied);
 
         if (!state.isUsable()
-                || !Set.of("ADMIN", "NHANVIEN")
-                .contains(state.getRole())) {
+                || !Set.of(
+                "ADMIN",
+                "NHANVIEN",
+                "BANHANG"
+        ).contains(state.getRole())) {
             throw denied();
         }
     }

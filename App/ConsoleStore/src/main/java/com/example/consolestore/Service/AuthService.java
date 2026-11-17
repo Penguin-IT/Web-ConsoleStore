@@ -25,7 +25,8 @@ public class AuthService implements UserDetailsService {
     private final KhachHangRepository khachHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
 
-    private final BCryptPasswordEncoder passwordEncoder =new BCryptPasswordEncoder(12);
+    private final BCryptPasswordEncoder passwordEncoder =
+            new BCryptPasswordEncoder(12);
 
     public AuthService(KhachHangRepository khachHangRepository, TaiKhoanRepository taiKhoanRepository) {
         this.khachHangRepository = khachHangRepository;
@@ -180,6 +181,7 @@ public class AuthService implements UserDetailsService {
     private String clean(String value) {
         return value == null ? "" : value.strip();
     }
+
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) {
@@ -201,16 +203,21 @@ public class AuthService implements UserDetailsService {
 
         String role = account.getRole();
 
+        // Cho phép các vai trò nhân viên mới đăng nhập
         if (role == null
                 || !Set.of(
                 "ADMIN",
                 "NHANVIEN",
-                "KHACHHANG"
+                "KHACHHANG",
+                "BANHANG",
+                "KHO",
+                "BAOHANH"
         ).contains(role)) {
             throw new UsernameNotFoundException(
                     "Account role is invalid"
             );
         }
+
         TaiKhoanRepository.LoginState state =
                 taiKhoanRepository.loginState(
                         account.getUsername()
@@ -223,6 +230,7 @@ public class AuthService implements UserDetailsService {
                     "Account is unavailable"
             );
         }
+
         return User.withUsername(account.getUsername())
                 .password(account.getPasswordHash())
                 .roles(role)

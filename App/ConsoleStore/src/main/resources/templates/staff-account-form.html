@@ -98,6 +98,24 @@
                             Nhân viên
                         </option>
 
+                        <option value="BANHANG"
+                                th:if="${form.employeeId != null}"
+                                th:selected="${form.role == 'BANHANG'}">
+                            Nhân viên bán hàng
+                        </option>
+
+                        <option value="KHO"
+                                th:if="${form.employeeId != null}"
+                                th:selected="${form.role == 'KHO'}">
+                            Nhân viên kho
+                        </option>
+
+                        <option value="BAOHANH"
+                                th:if="${form.employeeId != null}"
+                                th:selected="${form.role == 'BAOHANH'}">
+                            Nhân viên bảo hành
+                        </option>
+
                         <option value="ADMIN"
                                 th:if="${form.role != 'KHACHHANG'}"
                                 th:selected="${form.role == 'ADMIN'}">

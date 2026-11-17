@@ -165,13 +165,34 @@ public class InventoryService {
         }
     }
 
+
     private void staff(String username) {
-        if (accounts.posStaff(username).isEmpty()) {
+        if (username == null || username.isBlank()) {
             throw new AccessDeniedException(
-                    "Staff access required"
+                    "Bạn chưa đăng nhập."
+            );
+        }
+
+        TaiKhoanRepository.LoginState state =
+                accounts.loginState(username)
+                        .orElseThrow(() ->
+                                new AccessDeniedException(
+                                        "Không tìm thấy tài khoản."
+                                )
+                        );
+
+        if (!state.isUsable()
+                || !Set.of(
+                "ADMIN",
+                "NHANVIEN",
+                "KHO"
+        ).contains(state.getRole())) {
+            throw new AccessDeniedException(
+                    "Bạn không có quyền truy cập quản lý kho."
             );
         }
     }
+
 
     private static void validDate(LocalDate date) {
         if (date != null

@@ -1,17 +1,18 @@
 package com.example.consolestore.Repository;
 
 import com.example.consolestore.Entity.TaiKhoan;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
+public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Long> {
 
     boolean existsByUsernameIgnoreCase(String username);
     Optional<TaiKhoan> findByUsernameIgnoreCase(String username);
@@ -39,7 +40,9 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
             String username
     );
     interface PosStaff {
+
         Long getEmployeeId();
+
         String getRole();
     }
 
@@ -53,7 +56,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
                 WHERE LOWER(t.tenDangNhap) = LOWER(:username)
                   AND t.biKhoa = 0
                   AND n.daNghiViec = 0
-                  AND t.vaiTro IN (N'ADMIN', N'NHANVIEN')
+                  AND t.vaiTro IN (N'ADMIN', N'NHANVIEN',N'BANHANG')
                 """,
             nativeQuery = true
     )
@@ -63,6 +66,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
     );
     interface PaymentAdmin {
         Long getAccountId();
+
         Long getEmployeeId();
     }
 
@@ -101,7 +105,10 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"employee", "customer"})
+    @EntityGraph(attributePaths = {
+            "employee",
+            "customer"
+    })
     @Query("""
         select a
         from TaiKhoan a
@@ -134,7 +141,12 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
         WHERE maNV = :employeeId
         ORDER BY maTK
         """, nativeQuery = true)
-    List<TaiKhoan> lockEmployeeAccounts(@Param("employeeId") Long employeeId);
+    List<TaiKhoan> lockEmployeeAccounts(
+            @Param("employeeId") Long employeeId
+    );
+
+
+
 
     interface LoginState {
 
@@ -158,17 +170,23 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
             }
 
             return switch (getRole()) {
-                case "ADMIN" -> getCustomerId() == null;
-                case "NHANVIEN" ->
+
+                case "ADMIN" ->
+                        getCustomerId() == null;
+
+                case "NHANVIEN", "BANHANG", "KHO", "BAOHANH" ->
                         getEmployeeId() != null
                                 && getCustomerId() == null;
+
                 case "KHACHHANG" ->
                         getCustomerId() != null
                                 && getEmployeeId() == null;
+
                 default -> false;
             };
         }
     }
+
 
     @Query(value = """
         SELECT
@@ -182,5 +200,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Long> {
         LEFT JOIN NhanVien e ON e.maNV = a.maNV
         WHERE LOWER(a.tenDangNhap) = LOWER(:username)
         """, nativeQuery = true)
-    Optional<LoginState> loginState(@Param("username") String username);
+    Optional<LoginState> loginState(
+            @Param("username") String username
+    );
 }
