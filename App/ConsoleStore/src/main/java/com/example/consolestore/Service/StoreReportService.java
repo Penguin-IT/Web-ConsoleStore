@@ -18,7 +18,7 @@ import java.util.*;
 
 @Service
 @Transactional(readOnly = true, timeout = 20)
-public class StoreReportService {
+public class    StoreReportService {
 
     private static final DateTimeFormatter DAY_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");

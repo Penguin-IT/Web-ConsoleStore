@@ -5,7 +5,7 @@ import com.example.consolestore.Repository.PhieuNhapRepository;
 
 import java.util.*;
 
-public final class PurchaseData {
+public final class  PurchaseData {
 
     private PurchaseData() {
     }
