@@ -1,7 +1,6 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.Dto.PurchaseCostReport;
-import com.example.consolestore.Dto.StockReport;
+import com.example.consolestore.DTO.PurchaseCostReport;
 import com.example.consolestore.Repository.*;
 
 import org.springframework.data.domain.*;
@@ -18,7 +17,7 @@ import java.util.*;
 
 @Service
 @Transactional(readOnly = true, timeout = 20)
-public class StoreReportService {
+public class    StoreReportService {
 
     private static final DateTimeFormatter DAY_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
