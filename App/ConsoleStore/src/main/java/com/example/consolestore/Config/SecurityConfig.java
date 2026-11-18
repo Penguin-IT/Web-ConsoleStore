@@ -1,25 +1,29 @@
 package com.example.consolestore.Config;
+
 import com.example.consolestore.Repository.TaiKhoanRepository;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import com.example.consolestore.Service.AuthService;
+
 import jakarta.servlet.DispatcherType;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 @Configuration
 public class SecurityConfig {
-
+    // Các trang dành cho khách hàng
     private static final List<String> CUSTOMER_PAGES = List.of(
             "cart",
             "checkout",
@@ -27,6 +31,7 @@ public class SecurityConfig {
             "account"
     );
 
+    // Các trang nghiệp vụ nhân viên
     private static final List<String> STAFF_PAGES = List.of(
             "pos",
             "online-orders",
@@ -36,6 +41,26 @@ public class SecurityConfig {
             "invoices"
     );
 
+    // Nhân viên bán hàng
+    private static final List<String> SALES_PAGES = List.of(
+            "pos",
+            "online-orders",
+            "invoices"
+    );
+
+    // Nhân viên kho
+    private static final List<String> WAREHOUSE_PAGES = List.of(
+            "inventory",
+            "purchases"
+    );
+
+    // Nhân viên bảo hành
+    private static final List<String> WARRANTY_PAGES = List.of(
+            "warranties",
+            "trade-ins"
+    );
+
+    // Quản trị viên
     private static final List<String> ADMIN_PAGES = List.of(
             "customers",
             "payments",
@@ -72,14 +97,18 @@ public class SecurityConfig {
             DaoAuthenticationProvider authenticationProvider,
             TaiKhoanRepository taiKhoanRepository
     ) throws Exception {
+
         http.authenticationProvider(authenticationProvider);
 
         http.authorizeHttpRequests(authorize -> authorize
+
+                // Cho phép xử lý lỗi và chuyển tiếp
                 .dispatcherTypeMatchers(
                         DispatcherType.ERROR,
                         DispatcherType.FORWARD
                 ).permitAll()
 
+                // Tài nguyên công khai
                 .requestMatchers(
                         "/css/**",
                         "/js/**",
@@ -88,6 +117,7 @@ public class SecurityConfig {
                         "/favicon.ico"
                 ).permitAll()
 
+                // Đăng nhập, đăng ký
                 .requestMatchers(
                         "/login",
                         "/pages/login.html",
@@ -95,6 +125,7 @@ public class SecurityConfig {
                         "/pages/register.html"
                 ).permitAll()
 
+                // Trang công khai
                 .requestMatchers(
                         HttpMethod.GET,
                         "/",
@@ -109,15 +140,39 @@ public class SecurityConfig {
                         "/auth/session"
                 ).permitAll()
 
+                // Trang HTML của nhân viên bán hàng
+                .requestMatchers(pagePaths(SALES_PAGES))
+                .hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "BANHANG"
+                )
+
+                // Trang HTML của nhân viên kho
+                .requestMatchers(pagePaths(WAREHOUSE_PAGES))
+                .hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "KHO"
+                )
+
+                // Trang HTML của nhân viên bảo hành
+                .requestMatchers(pagePaths(WARRANTY_PAGES))
+                .hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "BAOHANH"
+                )
+
+                // Trang HTML quản trị
                 .requestMatchers(pagePaths(ADMIN_PAGES))
                 .hasRole("ADMIN")
 
-                .requestMatchers(pagePaths(STAFF_PAGES))
-                .hasAnyRole("ADMIN", "NHANVIEN")
-
+                // Trang HTML khách hàng
                 .requestMatchers(pagePaths(CUSTOMER_PAGES))
                 .hasRole("KHACHHANG")
 
+                // Chức năng khách hàng
                 .requestMatchers(
                         "/cart",
                         "/cart/**",
@@ -128,27 +183,51 @@ public class SecurityConfig {
                         "/account",
                         "/account/**"
                 ).hasRole("KHACHHANG")
+
+                // Chức năng bán hàng
                 .requestMatchers(
                         "/pos",
                         "/pos/**",
                         "/online-orders",
                         "/online-orders/**",
-                        "/trade-ins",
-                        "/trade-ins/**",
-                        "/warranties",
-                        "/warranties/**",
-                        "/inventory",
-                        "/inventory/**",
                         "/invoices",
                         "/invoices/**"
-                ).hasAnyRole("ADMIN", "NHANVIEN")
+                ).hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "BANHANG"
+                )
+
+                // Chức năng kho
+                .requestMatchers(
+                        "/inventory",
+                        "/inventory/**",
+                        "/purchases",
+                        "/purchases/**"
+                ).hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "KHO"
+                )
+
+                // Chức năng bảo hành
+                .requestMatchers(
+                        "/warranties",
+                        "/warranties/**",
+                        "/trade-ins",
+                        "/trade-ins/**"
+                ).hasAnyRole(
+                        "ADMIN",
+                        "NHANVIEN",
+                        "BAOHANH"
+                )
+
+                // Chức năng quản trị
                 .requestMatchers(
                         "/customers",
                         "/customers/**",
                         "/payments",
                         "/payments/**",
-                        "/purchases",
-                        "/purchases/**",
                         "/suppliers",
                         "/suppliers/**",
                         "/manage-products",
@@ -161,15 +240,19 @@ public class SecurityConfig {
                         "/purchase-costs/**",
                         "/stock-reports",
                         "/stock-reports/**"
-                ).hasAnyRole("ADMIN")
+                ).hasRole("ADMIN")
+
+                // Các đường dẫn chưa khai báo
                 .anyRequest().denyAll()
         );
 
+        // Cấu hình đăng nhập
         http.formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
                 .usernameParameter("username")
                 .passwordParameter("password")
+
                 .successHandler((request, response, authentication) -> {
                     String target = landingPage(
                             roleOf(authentication)
@@ -179,15 +262,17 @@ public class SecurityConfig {
                             request.getContextPath() + target
                     );
                 })
+
                 .failureHandler((request, response, exception) -> {
                     response.sendRedirect(
-                            request.getContextPath()
-                                    + "/login?error"
+                            request.getContextPath() + "/login?error"
                     );
                 })
+
                 .permitAll()
         );
 
+        // Cấu hình đăng xuất
         http.logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
@@ -197,31 +282,36 @@ public class SecurityConfig {
                 .permitAll()
         );
 
+        // Quản lý phiên đăng nhập
         http.sessionManagement(session -> session
-                .sessionFixation(fixation -> fixation
-                        .changeSessionId()
+                .sessionFixation(fixation ->
+                        fixation.changeSessionId()
                 )
         );
 
         http.requestCache(cache -> cache.disable());
+
+        // Kiểm tra trạng thái tài khoản
         http.addFilterBefore(
                 new AccountStatusFilter(taiKhoanRepository),
                 AuthorizationFilter.class
         );
+
         return http.build();
     }
 
+    // Chuyển tên trang thành đường dẫn HTML
     private static String[] pagePaths(List<String> pages) {
         return pages.stream()
                 .map(page -> "/pages/" + page + ".html")
                 .toArray(String[]::new);
     }
 
+    // Lấy vai trò của tài khoản đăng nhập
     public static String roleOf(Authentication authentication) {
         if (authentication == null
                 || !authentication.isAuthenticated()
-                || authentication
-                instanceof AnonymousAuthenticationToken) {
+                || authentication instanceof AnonymousAuthenticationToken) {
             return "GUEST";
         }
 
@@ -234,10 +324,13 @@ public class SecurityConfig {
                 .orElse("GUEST");
     }
 
+    // Chuyển hướng theo vai trò
     public static String landingPage(String role) {
         return switch (role) {
             case "ADMIN" -> "/revenue";
-            case "NHANVIEN" -> "/pos";
+            case "NHANVIEN", "BANHANG" -> "/pos";
+            case "KHO" -> "/inventory";
+            case "BAOHANH" -> "/warranties";
             default -> "/";
         };
     }
@@ -247,9 +340,18 @@ public class SecurityConfig {
             case "ADMIN" -> Stream.concat(
                     STAFF_PAGES.stream(),
                     ADMIN_PAGES.stream()
-            ).toList();
+            ).distinct().toList();
 
-            case "NHANVIEN" -> STAFF_PAGES;
+            case "NHANVIEN" -> Stream.concat(
+                    STAFF_PAGES.stream(),
+                    Stream.of("purchases")
+            ).distinct().toList();
+
+            case "BANHANG" -> SALES_PAGES;
+
+            case "KHO" -> WAREHOUSE_PAGES;
+
+            case "BAOHANH" -> WARRANTY_PAGES;
 
             case "KHACHHANG" -> CUSTOMER_PAGES;
 
@@ -261,11 +363,12 @@ public class SecurityConfig {
         return Stream.of(
                         CUSTOMER_PAGES,
                         STAFF_PAGES,
+                        WAREHOUSE_PAGES,
+                        WARRANTY_PAGES,
                         ADMIN_PAGES
                 )
                 .flatMap(List::stream)
                 .distinct()
                 .toList();
     }
-
 }
