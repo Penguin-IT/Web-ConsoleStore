@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Giỏ hàng | Console Store</title>
+
+    <link rel="icon"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body class="customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container cart-page">
+    <section th:replace="~{fragments/store :: customerRibbon(
+    'YOUR NEXT SETUP',
+    'One step closer to play.',
+    'Kiểm tra lựa chọn của bạn trước khi đặt hàng.',
+    'bannerconsole.jpg'
+    )}"></section>
+    <div class="cart-heading">
+        <div>
+            <p class="eyebrow">YOUR NEXT SETUP</p>
+            <h1>Giỏ hàng của bạn</h1>
+        </div>
+
+        <a th:href="@{/products}">Tiếp tục mua sắm ↗</a>
+    </div>
+
+    <p th:if="${cartSuccess}"
+       th:text="${cartSuccess}"
+       class="cart-message"
+       role="status">
+    </p>
+
+    <p th:if="${cartError}"
+       th:text="${cartError}"
+       class="cart-message cart-message--error"
+       role="alert">
+    </p>
+
+    <section th:if="${cart != null && cart.lines.isEmpty()}"
+             class="cart-empty">
+
+        <h2>Giỏ hàng đang trống</h2>
+
+        <p>Chọn thiết bị cho hành trình tiếp theo của bạn.</p>
+
+        <a class="button-primary" th:href="@{/products}">
+            Khám phá sản phẩm
+        </a>
+    </section>
+
+    <div th:if="${cart != null && !cart.lines.isEmpty()}"
+         class="cart-layout">
+
+        <section class="cart-items" aria-label="Sản phẩm trong giỏ">
+            <article th:each="line : ${cart.lines}"
+                     class="cart-item">
+
+                <a class="cart-item-image"
+                   th:href="@{/products/{id}(id=${line.productId})}">
+
+                    <img th:src="@{${line.image}}"
+                         th:attr="data-product-image=${line.image}"
+                         th:alt="${line.name}"
+                         width="160"
+                         height="160"
+                         loading="lazy">
+                </a>
+
+                <div class="cart-item-content">
+                    <a class="cart-item-name"
+                       th:href="@{/products/{id}(id=${line.productId})}"
+                       th:text="${line.name}">
+                    </a>
+
+                    <p class="cart-item-price"
+                       th:text="${#numbers.formatDecimal(
+                           line.price, 0, 'POINT', 0, 'COMMA'
+                       ) + ' đ'}">
+                    </p>
+
+                    <p class="cart-item-stock"
+                       th:text="${'Tồn kho: ' + line.stock}">
+                    </p>
+
+                    <p th:if="${!line.available}"
+                       th:text="${line.warning}"
+                       class="cart-warning">
+                    </p>
+
+                    <form method="post"
+                          th:action="@{/cart/items/{id}/quantity(
+                              id=${line.productId}
+                          )}"
+                          class="cart-quantity-form">
+
+                        <label th:for="${'quantity-' + line.productId}">
+                            Số lượng
+                        </label>
+
+                        <input type="number"
+                               th:id="${'quantity-' + line.productId}"
+                               name="quantity"
+                               th:value="${line.quantity}"
+                               min="1"
+                               th:max="${line.stock}"
+                               th:disabled="${line.stock <= 0}"
+                               step="1"
+                               required>
+
+                        <button type="submit"
+                                th:disabled="${line.stock <= 0}">
+                            Cập nhật
+                        </button>
+                    </form>
+                </div>
+
+                <div class="cart-item-actions">
+                    <strong th:text="${#numbers.formatDecimal(
+                        line.subtotal, 0, 'POINT', 0, 'COMMA'
+                    ) + ' đ'}">
+                    </strong>
+
+                    <form method="post"
+                          th:action="@{/cart/items/{id}/remove(
+                              id=${line.productId}
+                          )}">
+
+                        <button type="submit"
+                                class="cart-remove"
+                                th:aria-label="${'Xóa ' + line.name}">
+                            Xóa
+                        </button>
+                    </form>
+                </div>
+            </article>
+        </section>
+
+        <aside class="cart-summary">
+            <h2>Tóm tắt giỏ hàng</h2>
+
+            <div class="cart-summary-row">
+                <span>Số lượng sản phẩm</span>
+                <strong th:text="${cart.totalQuantity}"></strong>
+            </div>
+
+            <div class="cart-summary-row cart-summary-total">
+                <span>Tạm tính</span>
+
+                <strong th:text="${#numbers.formatDecimal(
+                    cart.totalAmount, 0, 'POINT', 0, 'COMMA'
+                ) + ' đ'}">
+                </strong>
+            </div>
+
+            <p class="cart-summary-note">
+                Giá và tồn kho được kiểm tra lại khi tải giỏ hàng.
+                Sản phẩm chưa được giữ chỗ.
+            </p>
+
+            <a th:if="${cart.readyToCheckout}"
+               class="button-primary cart-checkout"
+               th:href="@{/checkout}">
+                Tiếp tục thanh toán ↗
+            </a>
+
+            <button th:unless="${cart.readyToCheckout}"
+                    class="button-primary cart-checkout"
+                    type="button"
+                    disabled>
+                Kiểm tra lại sản phẩm
+            </button>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Xác nhận bán hàng | Console Store</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Xác nhận bán hàng</h1>
+        <a class="ui-btn"
+           th:if="${!pending}"
+           th:href="@{/pos}">
+            ← Sửa hóa đơn
+        </a>
+    </div>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${posError}"
+       th:text="${posError}"></p>
+
+    <section class="ui-panel">
+        <p>
+            Kho:
+            <strong th:text="${quote.warehouseName}"></strong>
+        </p>
+
+        <p>
+            Khách:
+            <strong th:text="${quote.customer.name}"></strong>
+            <span th:text="${quote.customer.phone}"></span>
+        </p>
+
+
+        <p th:if="${quote.tradeInId != null}">
+            Phiếu thu cũ:
+            <strong th:text="${quote.tradeInId}"></strong>
+        </p>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Serial</th>
+                    <th>SL</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="line : ${quote.lines}">
+                    <td th:text="${line.name}"></td>
+                    <td th:text="${line.serialNumber ?: '—'}"></td>
+                    <td th:text="${line.quantity}"></td>
+
+                    <td th:text="${
+                        #numbers.formatDecimal(
+                            line.price, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></td>
+
+                    <td th:text="${
+                        #numbers.formatDecimal(
+                            line.subtotal, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 th:text="${
+            'Tổng thanh toán: '
+            + #numbers.formatDecimal(
+                quote.total, 1, 'POINT', 0, 'COMMA'
+            ) + ' ₫'
+        }"></h2>
+    </section>
+
+    <form class="ui-panel"
+          method="post"
+          th:action="@{/pos/complete}"
+          th:object="${payment}">
+
+        <input type="hidden"
+               name="requestId"
+               th:value="${quote.requestId}">
+
+        <div class="ui-form">
+            <div class="ui-field">
+                <label for="method">Phương thức</label>
+
+                <select th:field="*{method}">
+                    <option value="TIEN_MAT">Tiền mặt</option>
+                    <option value="CHUYEN_KHOAN">Ngân hàng</option>
+                    <option value="MOMO">MoMo</option>
+                    <option value="ZALOPAY">ZaloPay</option>
+                </select>
+            </div>
+
+            <div class="ui-field" id="cash-fields">
+                <label for="cashReceived">
+                    Tiền khách đưa (đ)
+                </label>
+
+                <input th:field="*{cashReceived}"
+                       inputmode="numeric"
+                       pattern="[0-9]{1,18}"
+                       maxlength="18">
+
+                <p id="change-display"
+                   th:attr="data-total=${quote.total}"></p>
+            </div>
+
+            <div class="ui-full">
+                <label class="pos-check">
+                    <input type="checkbox"
+                           th:field="*{confirmed}"
+                           required>
+
+                    <span>Đã nhận đủ tiền</span>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit"
+                class="ui-btn ui-primary"
+                th:text="${pending
+            ? 'Kiểm tra lại giao dịch'
+            : 'Hoàn tất bán hàng'}">
+        </button>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+
+<script>
+    (() => {
+        const method = document.getElementById('method');
+        const cash = document.getElementById('cashReceived');
+        const box = document.getElementById('cash-fields');
+        const output = document.getElementById('change-display');
+
+        const total = BigInt(output.dataset.total);
+
+        const format = value =>
+            new Intl.NumberFormat('vi-VN').format(value) + ' ₫';
+
+        function update() {
+            const active = method.value === 'TIEN_MAT';
+
+            box.hidden = !active;
+            cash.disabled = !active;
+            cash.required = active;
+
+            if (!active) return;
+
+            if (!/^[0-9]{1,18}$/.test(cash.value)) {
+                output.textContent =
+                    'Nhập số tiền bằng chữ số, không có dấu phân cách.';
+                return;
+            }
+
+            const difference = BigInt(cash.value) - total;
+
+            output.textContent = difference >= 0n
+                ? 'Tiền thối: ' + format(difference)
+                : 'Còn thiếu: ' + format(-difference);
+        }
+
+        method.addEventListener('change', update);
+        cash.addEventListener('input', update);
+        update();
+    })();
+</script>
+</body>
+</html>

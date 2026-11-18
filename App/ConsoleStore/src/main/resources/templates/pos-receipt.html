@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hóa đơn tại quầy | Console Store</title>
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <link rel="stylesheet" th:href="@{/css/pos.css}">
+  <script th:src="@{/js/store.js}" defer></script>
+</head>
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+  <section class="ui-panel">
+    <h1 th:text="${
+            'Hóa đơn HD' + receipt.invoice.id
+        }"></h1>
+
+    <p th:text="${
+            #temporals.format(
+                receipt.invoice.createdAt,
+                'dd/MM/yyyy HH:mm'
+            )
+        }"></p>
+
+    <p>
+      Khách:
+      <strong th:text="${receipt.invoice.recipientName}"></strong>
+      <span th:text="${receipt.invoice.recipientPhone}"></span>
+    </p>
+
+    <p>
+      Phương thức:
+      <strong th:text="${receipt.methodLabel}"></strong>
+    </p>
+
+    <p>
+      Trạng thái hóa đơn:
+      <strong th:text="${receipt.invoice.status}"></strong>
+    </p>
+
+    <p>
+      Thanh toán:
+      <strong th:text="${receipt.payment.status}"></strong>
+    </p>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Serial</th>
+          <th>SL</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="line : ${receipt.lines}">
+          <td th:text="${line.name}"></td>
+          <td th:text="${line.serialNumber ?: '—'}"></td>
+          <td th:text="${line.quantity}"></td>
+
+          <td th:text="${
+                        #numbers.formatDecimal(
+                            line.price, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></td>
+
+          <td th:text="${
+                        #numbers.formatDecimal(
+                            line.subtotal, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 th:text="${
+            'Tổng: '
+            + #numbers.formatDecimal(
+                receipt.invoice.totalAmount,
+                1, 'POINT', 0, 'COMMA'
+            ) + ' ₫'
+        }"></h2>
+
+    <p class="pos-note"
+       th:text="${receipt.invoice.note}"></p>
+
+    <p th:each="id : ${receipt.tradeInIds}"
+       th:text="${
+               'Phiếu thu cũ liên kết: '
+               + id
+               + ' (không bù trừ tiền)'
+           }"></p>
+  </section>
+
+  <div class="pos-actions">
+    <a class="ui-btn ui-primary"
+       th:href="@{/pos}">
+      Lập hóa đơn mới
+    </a>
+
+    <button class="ui-btn"
+            type="button"
+            onclick="window.print()">
+      In hóa đơn
+    </button>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
