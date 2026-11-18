@@ -1,6 +1,7 @@
 package com.example.consolestore.Service;
 
 import com.example.consolestore.DTO.PurchaseCostReport;
+import com.example.consolestore.DTO.StockReport;
 import com.example.consolestore.Repository.*;
 
 import org.springframework.data.domain.*;

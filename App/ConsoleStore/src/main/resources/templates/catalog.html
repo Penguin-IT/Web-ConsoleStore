@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sản phẩm | Console Store</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.8/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/catalog.css}">
+    <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <script th:src="@{/js/store.js(v='a9be1059e2b7')}" defer></script>
+</head>
+<body class="catalog-page customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+<main id="main-content" class="container store-container catalog-main" tabindex="-1">
+    <section th:replace="~{fragments/store :: customerRibbon(
+    'FIND YOUR NEXT SETUP',
+    'Chọn cách chơi của bạn.',
+    'Máy console, đĩa game và tay cầm trong cùng một điểm đến.',
+    'bannerconsole.jpg'
+    )}"></section>
+    <div class="section-heading">
+        <div><p class="eyebrow">FOR THE LOVE OF PLAY.</p>
+            <h1>Khám phá sản phẩm</h1>
+            <p class="catalog-intro">Tìm thiết bị và tựa game cho hành trình tiếp theo.</p></div>
+    </div>
+    <nav class="catalog-chips" aria-label="Chọn loại sản phẩm"><a class="btn btn-outline-secondary btn-sm"
+                                                                  th:href="@{/products}">Tất
+        cả</a><a th:each="item : ${categoryLinks}"
+                 class="btn btn-outline-secondary btn-sm"
+                 th:classappend="${item.active} ? 'active'"
+                 th:href="${item.url}"
+                 th:text="${item.label}"></a></nav>
+    <nav class="catalog-chips catalog-platforms" aria-label="Chọn nền tảng">
+        <span>Nền tảng</span><a th:each="item : ${platformLinks}"
+                                class="btn btn-outline-secondary btn-sm"
+                                th:classappend="${item.active} ? 'active'"
+                                th:href="${item.url}"
+                                th:text="${item.label}"></a></nav>
+    <div class="catalog-layout">
+        <form id="catalogFilterForm"
+              class="ui-panel catalog-filters"
+              th:action="@{/products}"
+              method="get"
+              th:object="${filter}">
+            <h2>Lọc sản phẩm</h2>
+            <div class="ui-field"><label for="q">Từ khóa</label><input class="form-control"
+                                                                       type="search"
+                                                                       th:field="*{q}"
+                                                                       maxlength="100"
+                                                                       placeholder="Tên sản phẩm..."
+                                                                       th:errorclass="is-invalid">
+                <p class="catalog-field-error" th:if="${#fields.hasErrors('q')}" th:text="${filterErrors.get('q')}"></p>
+            </div>
+            <div class="ui-field"><label for="categoryId">Loại sản phẩm</label><select class="form-select"
+                                                                                       th:field="*{categoryId}">
+                <option value="">Tất cả</option>
+                <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+            </select>
+                <p class="catalog-field-error" th:text="${filterErrors.get('categoryId')}"></p></div>
+            <div class="ui-field"><label for="platformId">Nền tảng</label><select class="form-select"
+                                                                                  th:field="*{platformId}">
+                <option value="">Tất cả</option>
+                <option th:each="p : ${platforms}" th:value="${p.id}" th:text="${p.name}"></option>
+            </select>
+                <p class="catalog-field-error" th:text="${filterErrors.get('platformId')}"></p></div>
+            <div class="ui-field"><label for="condition">Tình trạng</label><select class="form-select"
+                                                                                   th:field="*{condition}">
+                <option value="">Tất cả</option>
+                <option value="MOI">Mới</option>
+                <option value="CU">Cũ</option>
+            </select>
+                <p class="catalog-field-error" th:text="${filterErrors.get('condition')}"></p></div>
+            <div class="ui-field"><label for="minPrice">Giá từ (đ)</label><input class="form-control"
+                                                                                 type="number"
+                                                                                 th:field="*{minPrice}"
+                                                                                 min="0"
+                                                                                 step="1"
+                                                                                 inputmode="numeric"
+                                                                                 th:errorclass="is-invalid">
+                <p class="catalog-field-error" th:text="${filterErrors.get('minPrice')}"></p></div>
+            <div class="ui-field"><label for="maxPrice">Giá đến (đ)</label><input class="form-control"
+                                                                                  type="number"
+                                                                                  th:field="*{maxPrice}"
+                                                                                  min="0"
+                                                                                  step="1"
+                                                                                  inputmode="numeric"
+                                                                                  th:errorclass="is-invalid">
+                <p class="catalog-field-error" th:text="${filterErrors.get('maxPrice')}"></p></div>
+            <button class="btn ui-btn ui-primary w-100" type="submit">Áp dụng bộ lọc</button>
+            <a class="btn ui-btn w-100 mt-2" th:href="@{/products}">Xóa bộ lọc</a>
+        </form>
+        <section aria-label="Kết quả tìm kiếm">
+            <div class="catalog-toolbar"><p><strong th:text="${result.totalElements}">0</strong> sản phẩm</p>
+                <div class="d-flex flex-wrap gap-2 align-items-center"><label for="sort">Sắp
+                    xếp</label><select id="sort"
+                                       name="sort"
+                                       class="form-select"
+                                       form="catalogFilterForm"
+                                       onchange="this.form.requestSubmit()">
+                    <option th:each="s : ${ {'recommended':'Đề xuất','priceAsc':'Giá tăng dần','priceDesc':'Giá giảm dần','nameAsc':'Tên A–Z','nameDesc':'Tên Z–A'} }"
+                            th:value="${s.key}"
+                            th:text="${s.value}"
+                            th:selected="${filter.sort == s.key}"></option>
+                </select><label class="visually-hidden" for="size">Sản phẩm mỗi trang</label><select id="size"
+                                                                                                     name="size"
+                                                                                                     class="form-select"
+                                                                                                     form="catalogFilterForm"
+                                                                                                     onchange="this.form.requestSubmit()">
+                    <option th:each="n : ${ {9,12,24} }"
+                            th:value="${n}"
+                            th:text="${n + ' / trang'}"
+                            th:selected="${filter.size == n}"></option>
+                </select></div>
+            </div>
+            <div class="alert alert-danger" role="alert" th:if="${#fields.hasErrors('${filter.*}')}">Vui lòng kiểm tra
+                bộ lọc.
+                <span th:if="${#fields.hasErrors('${filter.page}')}">Số trang không hợp lệ.</span><span th:if="${#fields.hasErrors('${filter.size}')}">Số sản phẩm mỗi trang không hợp lệ.</span><span
+                        th:if="${#fields.hasErrors('${filter.sort}')}">Cách sắp xếp không hợp lệ.</span></div>
+            <div class="ui-empty" th:if="${result.empty and !#fields.hasErrors('${filter.*}')}"><h2>Không tìm thấy sản
+                phẩm</h2>
+                <p>Thử từ khóa khác hoặc xóa bộ lọc.</p><a class="btn ui-btn" th:href="@{/products}">Xem tất cả</a>
+            </div>
+            <div class="row g-4 catalog-results">
+                <div class="col-12 col-sm-6 col-xl-4" th:each="item : ${result.content}">
+                    <article class="product-card h-100" th:attr="data-product-id=${item.id}">
+                        <a class="product-image image-frame"
+                           th:href="@{/products/{id}(id=${item.id})}">
+
+    <span class="product-category"
+          th:text="${item.platform}">
+    </span>
+
+                            <img th:src="@{${item.image}}"
+                                 th:attr="data-product-image=${item.image}"
+                                 th:alt="${item.name}"
+                                 loading="lazy"
+                                 width="600"
+                                 height="600">
+                        </a>
+                        <div class="product-info"><p class="product-platform"><span th:text="${item.category}"></span> ·
+                            <span th:text="${item.condition == 'CU' ? 'Cũ' : 'Mới'}"></span></p>
+                            <h2>
+                                <a th:href="@{/products/{id}(id=${item.id})}"
+                                   th:text="${item.name}">
+                                </a>
+                            </h2>
+                            <p class="catalog-stock"
+                               th:text="${item.stock > 0 ? 'Còn ' + item.stock + ' sản phẩm' : 'Hết hàng'}"></p>
+                            <div class="product-bottom"><strong class="product-price"
+                                                                th:text="${#numbers.formatDecimal(item.price,0,'POINT',0,'COMMA') + ' đ'}"></strong>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <nav class="catalog-pagination" th:if="${result.totalPages > 1}" aria-label="Phân trang sản phẩm"><span
+                    th:text="${'Trang ' + (result.number + 1) + ' / ' + result.totalPages}"></span>
+                <ul class="pagination mb-0">
+                    <li class="page-item" th:classappend="${result.first} ? 'disabled'"><a class="page-link"
+                                                                                           th:href="${previousUrl}"
+                                                                                           aria-label="Trang trước">‹</a>
+                    </li>
+                    <li class="page-item" th:each="link : ${pageLinks}" th:classappend="${link.active} ? 'active'"><a
+                            class="page-link"
+                            th:href="${link.url}"
+                            th:text="${link.label}"
+                            th:attr="aria-current=${link.active ? 'page' : null}"></a></li>
+                    <li class="page-item" th:classappend="${result.last} ? 'disabled'"><a class="page-link"
+                                                                                          th:href="${nextUrl}"
+                                                                                          aria-label="Trang sau">›</a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</main>
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

@@ -69,32 +69,35 @@ public interface PhieuThuCuRepository
 
     @Query(
             value = """
-            SELECT
-                p.maPTC AS id,
-                k.hoTen AS customerName,
-                k.soDienThoai AS phone,
-                w.tenKho AS warehouseName,
-                p.ngayThu AS createdAt,
-                p.tongTienThu AS totalAmount,
-                p.maHD AS invoiceId
-            FROM PhieuThuCu p
-            JOIN KhachHang k ON k.maKH = p.maKH
-            JOIN Kho w ON w.maKho = p.maKho
-            WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
-               OR k.hoTen LIKE :keyword ESCAPE '~'
-               OR CONVERT(NVARCHAR(30), p.maPTC)
-                  LIKE :keyword ESCAPE '~'
-            ORDER BY p.ngayThu DESC, p.maPTC DESC
-            """,
+        SELECT
+            p.maPTC AS id,
+            k.hoTen AS customerName,
+            k.soDienThoai AS phone,
+            w.tenKho AS warehouseName,
+            p.ngayThu AS createdAt,
+            p.tongTienThu AS totalAmount,
+            p.maHD AS invoiceId
+        FROM PhieuThuCu p
+        JOIN KhachHang k ON k.maKH = p.maKH
+        JOIN Kho w ON w.maKho = p.maKho
+        WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
+           OR k.hoTen LIKE :keyword ESCAPE '~'
+           OR (
+               N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)
+           ) LIKE :keyword ESCAPE '~'
+        ORDER BY p.ngayThu DESC, p.maPTC DESC
+        """,
             countQuery = """
-            SELECT COUNT_BIG(*)
-            FROM PhieuThuCu p
-            JOIN KhachHang k ON k.maKH = p.maKH
-            WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
-               OR k.hoTen LIKE :keyword ESCAPE '~'
-               OR CONVERT(NVARCHAR(30), p.maPTC)
-                  LIKE :keyword ESCAPE '~'
-            """,
+        SELECT COUNT_BIG(*)
+        FROM PhieuThuCu p
+        JOIN KhachHang k ON k.maKH = p.maKH
+        JOIN Kho w ON w.maKho = p.maKho
+        WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
+           OR k.hoTen LIKE :keyword ESCAPE '~'
+           OR (
+               N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)
+           ) LIKE :keyword ESCAPE '~'
+        """,
             nativeQuery = true
     )
     org.springframework.data.domain.Page<ReceiptRow> searchReceipts(
