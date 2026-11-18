@@ -2,16 +2,27 @@ package com.example.consolestore.DTO;
 
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 public class TradeInRequest {
 
+    @NotBlank(message = "Token không được để trống")
     private String token;
+
+    @NotBlank(message = "Số điện thoại không được để trống")
+    @Pattern(regexp = "^0\\d{9}$", message = "Số điện thoại không hợp lệ")
     private String phone;
+
+    @NotNull(message = "warehouseId không được null")
     private Long warehouseId;
+
     private String note;
     private boolean paid;
 
-    private List<Item> items =
-            new ArrayList<>(List.of(new Item()));
+    @Valid
+    @NotEmpty(message = "Danh sách items không được rỗng")
+    private List<Item> items = new ArrayList<>();
+
 
     public String getToken() {
         return token;
@@ -89,8 +100,11 @@ public class TradeInRequest {
     }
     public static class Item {
 
+        @NotNull(message = "productId không được null")
         private Long productId;
+        @Min(value = 1, message = "Số lượng phải >= 1")
         private Integer quantity = 1;
+        @NotBlank(message = "Giá không được để trống")
         private String price;
         private String serial;
         private String condition;

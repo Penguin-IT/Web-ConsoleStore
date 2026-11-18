@@ -58,16 +58,11 @@ public class OrderService {
                         invoiceId,
                         customerId
                 ).orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Không tìm thấy đơn hàng."
-                        )
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.")
                 );
 
         if (!"ONLINE".equals(invoice.getChannel())) {
-            throw new IllegalArgumentException(
-                    "Không thể hủy đơn tại quầy từ trang này."
-            );
+            throw new IllegalArgumentException("Không thể hủy đơn tại quầy từ trang này.");
         }
 
         // Hủy lặp không cập nhật hóa đơn và không hoàn tồn lần nữa.
@@ -76,22 +71,13 @@ public class OrderService {
         }
 
         if (!"CHO_XAC_NHAN".equals(invoice.getStatus())) {
-            throw new IllegalArgumentException(
-                    "Chỉ được hủy đơn online đang chờ xác nhận."
-            );
+            throw new IllegalArgumentException("Chỉ được hủy đơn online đang chờ xác nhận.");
         }
 
-        invoices.lockOrderPayment(invoiceId)
-                .ifPresent(payment -> {
-                    if (!"CHUA_THANH_TOAN".equals(
-                            payment.getStatus()
-                    )) {
-                        throw new IllegalArgumentException(
-                                "Đơn đã thanh toán, "
-                                        + "không thể hủy theo cách này."
-                        );
-                    }
-                });
+        var payment = invoices.lockOrderPayment(invoiceId);
+        if (payment.isPresent() && !"CHUA_THANH_TOAN".equals(payment.get().getStatus())) {
+            throw new IllegalArgumentException("Đơn đã thanh toán, không thể hủy theo cách này.");
+        }
 
         int updated = invoices.cancelUnpaidOrder(
                 invoiceId,
@@ -101,8 +87,7 @@ public class OrderService {
         if (updated != 1) {
             throw new IllegalArgumentException(
                     "Trạng thái đơn vừa thay đổi. "
-                            + "Vui lòng tải lại."
-            );
+                            + "Vui lòng tải lại.");
         }
 
 
@@ -112,17 +97,13 @@ public class OrderService {
         TaiKhoan account = accounts.findWithCustomer(
                 username
         ).orElseThrow(
-                () -> new AccessDeniedException(
-                        "Account is missing"
-                )
+                () -> new AccessDeniedException("Account is missing")
         );
 
         if (account.isLocked()
                 || !"KHACHHANG".equals(account.getRole())
                 || account.getCustomer() == null) {
-            throw new AccessDeniedException(
-                    "Customer access required"
-            );
+            throw new AccessDeniedException("Customer access required");
         }
 
         return account.getCustomer().getId();
