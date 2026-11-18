@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>Chi tiết đơn online | Console Store</title>
+
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+  <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page"
+      th:with="order=${detail.invoice}, payment=${detail.payment}">
+
+  <div class="ui-page-heading">
+    <h1 th:text="${'Đơn hàng HD' + order.id}"></h1>
+
+    <a class="ui-btn" th:href="@{/online-orders}">
+      ← Danh sách đơn
+    </a>
+  </div>
+
+  <p class="ui-alert"
+     role="alert"
+     th:if="${error}"
+     th:text="${error}">
+  </p>
+
+  <p role="status"
+     th:if="${success}"
+     th:text="${success}">
+  </p>
+
+  <section class="ui-panel">
+    <dl class="ui-details">
+      <div>
+        <dt>Ngày đặt</dt>
+        <dd th:text="${#temporals.format(
+                    order.createdAt,
+                    'dd/MM/yyyy HH:mm'
+                )}"></dd>
+      </div>
+
+      <div>
+        <dt>Khách hàng</dt>
+        <dd th:text="${order.recipientName}"></dd>
+      </div>
+
+      <div>
+        <dt>Số điện thoại</dt>
+        <dd th:text="${order.recipientPhone}"></dd>
+      </div>
+
+      <div>
+        <dt>Địa chỉ</dt>
+        <dd th:text="${order.address}"></dd>
+      </div>
+
+      <div>
+        <dt>Ghi chú</dt>
+        <dd th:text="${order.note ?: '—'}"></dd>
+      </div>
+
+      <div>
+        <dt>Trạng thái</dt>
+        <dd th:text="${statusLabels[order.status]}"></dd>
+      </div>
+
+      <div>
+        <dt>Thanh toán</dt>
+        <dd th:text="${payment == null
+                    ? 'Chưa có thanh toán'
+                    : statusLabels[payment.status]}"></dd>
+      </div>
+
+      <div th:if="${payment != null}">
+        <dt>Phương thức</dt>
+
+        <dd th:text="${payment.method == 'CHUYEN_KHOAN'
+                    ? 'Ngân hàng'
+                    : (payment.method == 'MOMO'
+                        ? 'MoMo'
+                        : (payment.method == 'ZALOPAY'
+                            ? 'ZaloPay'
+                            : payment.method))}">
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="ui-panel">
+    <h2>Sản phẩm</h2>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Kho xuất</th>
+          <th>SL</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+          <th>Serial</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="line : ${detail.lines}">
+          <td th:text="${line.name}"></td>
+
+          <td th:text="${line.warehouseName
+                        ?: 'Chưa xác định kho'}"></td>
+
+          <td th:text="${line.quantity}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.price, 1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.subtotal, 1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+          <td>
+                        <span th:if="${line.serialId != null}"
+                              th:text="${line.serialNumber}">
+                        </span>
+
+            <span th:if="${!line.machine}">—</span>
+
+            <form th:if="${line.machine
+                                  and line.serialId == null
+                                  and order.status == 'DA_XAC_NHAN'}"
+                  method="post"
+                  th:action="@{/online-orders/{id}/serial(
+                                  id=${order.id}
+                              )}"
+                  class="ui-inline-actions">
+
+              <input type="hidden"
+                     name="lineId"
+                     th:value="${line.id}">
+
+              <select name="serialId"
+                      required
+                      aria-label="Serial máy">
+
+                <option value="">Chọn serial</option>
+
+                <option th:each="serial : ${detail.serials[line.id]}"
+                        th:value="${serial.id}"
+                        th:text="${serial.number}">
+                </option>
+              </select>
+
+              <button class="ui-btn"
+                      type="submit"
+                      th:disabled="${#lists.isEmpty(
+                                        detail.serials[line.id]
+                                    )}">
+                Gán
+              </button>
+            </form>
+
+            <span th:if="${line.machine
+                                  and line.serialId == null
+                                  and order.status != 'DA_XAC_NHAN'}">
+                            Chưa gán
+                        </span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 th:text="${'Tổng tiền: '
+            + #numbers.formatDecimal(
+                order.totalAmount, 1, 'POINT', 0, 'COMMA'
+            ) + ' ₫'}">
+    </h2>
+  </section>
+
+  <section class="ui-panel">
+    <form method="post"
+          th:action="@{/online-orders/{id}/status(id=${order.id})}"
+          class="pos-actions">
+
+      <button th:if="${order.status == 'CHO_XAC_NHAN'}"
+              th:disabled="${payment == null
+                        or payment.status != 'DA_THANH_TOAN'
+                        or payment.amount.compareTo(order.totalAmount) != 0}"
+              class="ui-btn ui-primary"
+              name="action"
+              value="confirm"
+              type="submit">
+        Xác nhận đơn
+      </button>
+
+      <button th:if="${order.status == 'DA_XAC_NHAN'}"
+              class="ui-btn ui-primary"
+              name="action"
+              value="ship"
+              type="submit">
+        Giao hàng
+      </button>
+
+      <button th:if="${order.status == 'DANG_GIAO'}"
+              class="ui-btn ui-primary"
+              name="action"
+              value="complete"
+              type="submit">
+        Hoàn tất
+      </button>
+
+      <button th:if="${order.status == 'CHO_XAC_NHAN'
+                        and (payment == null
+                             or payment.status == 'CHUA_THANH_TOAN')}"
+              class="ui-btn"
+              name="action"
+              value="cancel"
+              type="submit"
+              onclick="return confirm('Hủy đơn hàng này?')">
+        Hủy đơn
+      </button>
+    </form>
+  </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
