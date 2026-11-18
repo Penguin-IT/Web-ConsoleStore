@@ -288,7 +288,12 @@ public class WarrantyService {
                     "Chi phí phải là số nguyên không âm."
             );
         }
-
+        BigDecimal cost;
+        try {
+            cost = new BigDecimal(costText).setScale(0, java.math.RoundingMode.UNNECESSARY);
+        } catch (NumberFormatException | ArithmeticException e) {
+            throw bad("Chi phí không hợp lệ.");
+        }
         var serial = serials.findById(receipt.getSerialId())
                 .orElseThrow(WarrantyService::notFound);
 
@@ -309,13 +314,15 @@ public class WarrantyService {
         }
 
         String prefix = tagPrefix(receipt.getNotes());
-
+        if (prefix.isEmpty()) {
+            throw bad("Dữ liệu phiếu bị lỗi (thiếu mã phiên). Liên hệ quản trị.");
+        }
         cases.updateCase(
                 id,
                 receipt.getStatus(),
                 target,
                 prefix + notes,
-                new BigDecimal(costText),
+                cost,
                 form.getDueAt()
         );
 
@@ -323,7 +330,6 @@ public class WarrantyService {
             throw bad("Chưa cập nhật được phiếu.");
         }
     }
-
     private Long staff(String username) {
         if (username == null || username.isBlank()) {
             throw new AccessDeniedException("Warranty staff access required");
@@ -392,4 +398,5 @@ public class WarrantyService {
                 HttpStatus.NOT_FOUND
         );
     }
+
 }

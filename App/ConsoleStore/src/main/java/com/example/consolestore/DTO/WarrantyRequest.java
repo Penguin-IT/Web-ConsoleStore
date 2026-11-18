@@ -2,20 +2,28 @@ package com.example.consolestore.DTO;
 
 
 import org.springframework.format.annotation.DateTimeFormat;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
 
 public class WarrantyRequest {
 
+    @NotBlank(message = "Token không được để trống")
     private String token;
+    @NotBlank(message = "Serial không được để trống")
     private String serial;
     private String description;
     private String notes;
+
+    @Pattern(regexp = "^\\d+(\\.\\d+)?$", message = "Cost phải là số không âm")
     private String cost = "0";
+    @NotBlank(message = "Action không được để trống")
+    @Pattern(regexp = "^(save|submit|approve|reject)$", message = "Action không hợp lệ")
     private String action = "save";
     private String expectedStatus;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @Future(message = "dueAt không được ở quá khứ")
     private LocalDateTime dueAt;
 
     public String getToken() {

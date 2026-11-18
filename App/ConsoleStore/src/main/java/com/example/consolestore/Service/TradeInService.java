@@ -254,10 +254,11 @@ public class TradeInService {
                 throw bad("Giá thu phải là số nguyên dương.");
             }
 
-            BigDecimal price = new BigDecimal(priceText);
+            BigDecimal price;
 
-            if (price.signum() <= 0) {
-                throw bad("Giá thu phải lớn hơn 0.");
+            try {
+                price = new BigDecimal(priceText).setScale(0, java.math.RoundingMode.UNNECESSARY);
+            } catch (NumberFormatException | ArithmeticException e) {    throw bad("Giá thu phải lớn hơn 0.");
             }
 
             String condition = clean(item.getCondition());
