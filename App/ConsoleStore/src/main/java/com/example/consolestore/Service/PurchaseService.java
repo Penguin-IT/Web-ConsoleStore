@@ -48,7 +48,7 @@ public class PurchaseService {
     }
 
     public PurchaseData.Options options(String username) {
-        admin(username);
+        staff(username);
 
         return new PurchaseData.Options(
                 suppliers.findAll(Sort.by("id")),
@@ -64,7 +64,7 @@ public class PurchaseService {
             Long warehouseId,
             int page
     ) {
-        admin(username);
+        staff(username);
 
         if (supplierId != null
                 && (supplierId < 1
@@ -103,7 +103,7 @@ public class PurchaseService {
             String username,
             Long id
     ) {
-        admin(username);
+        staff(username);
 
         var header = receipts.header(id)
                 .orElseThrow(PurchaseService::notFound);
@@ -138,7 +138,7 @@ public class PurchaseService {
             String username,
             String token
     ) {
-        var actor = admin(username);
+        var actor = staff(username);
 
         return receipts.findByTag(tag(token)).map(receipt -> {
             if (!Objects.equals(
@@ -167,11 +167,11 @@ public class PurchaseService {
             String username,
             PurchaseRequest form
     ) {
-        var actor = admin(username);
+        var actor = staff(username);
 
         if (actor.getEmployeeId() == null) {
             throw bad(
-                    "Tài khoản ADMIN cần liên kết nhân viên "
+                    "Tài khoản cần liên kết nhân viên "
                             + "để lập phiếu nhập."
             );
         }
@@ -449,15 +449,31 @@ public class PurchaseService {
         return receipt.getId();
     }
 
-    private TaiKhoanRepository.PaymentAdmin admin(
-            String username
-    ) {
-        return accounts.paymentAdmin(username)
-                .orElseThrow(() ->
-                        new AccessDeniedException(
-                                "Admin access required"
-                        )
-                );
+    private record PurchaseActor(Long employeeId) {
+        Long getEmployeeId() {
+            return employeeId;
+        }
+    }
+
+    private PurchaseActor staff(String username) {
+        if (username == null || username.isBlank()) {
+            throw new AccessDeniedException("Bạn chưa đăng nhập.");
+        }
+
+        TaiKhoanRepository.LoginState state = accounts.loginState(username)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Không tìm thấy tài khoản."
+                ));
+
+        if (!state.isUsable()
+                || !Set.of("ADMIN", "NHANVIEN", "KHO")
+                .contains(state.getRole())) {
+            throw new AccessDeniedException(
+                    "Bạn không có quyền quản lý phiếu nhập."
+            );
+        }
+
+        return new PurchaseActor(state.getEmployeeId());
     }
 
     private static String tag(String value) {

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Tài khoản của tôi | Console Store</title>
+
+    <link rel="icon"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/home.css}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/app.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+
+    <style>
+        .account-page {
+            padding-block: 48px 72px;
+        }
+
+        .account-page .account-message {
+            padding: 15px 18px;
+            margin-bottom: 20px;
+            border: 1px solid #ded5ed;
+            border-radius: 12px;
+            background: #f7f3fc;
+        }
+
+        .account-page .account-error {
+            color: #903e2c;
+            background: #fff5f1;
+            border-color: #eccfc4;
+        }
+
+        .account-page input[readonly] {
+            background: #f1eef6;
+            color: #716780;
+        }
+
+        .account-page .ui-panel {
+            align-self: start;
+        }
+
+        .account-page .account-help {
+            margin: 0 0 20px;
+            color: #73697f;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+    </style>
+</head>
+
+<body class="customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container account-page">
+    <section th:replace="~{fragments/store :: customerRibbon(
+    'YOUR PLAYER PROFILE',
+    'Một tài khoản. Nhiều trải nghiệm.',
+    'Quản lý thông tin cá nhân và bảo mật tài khoản.',
+    'banner15.jpg'
+    )}"></section>
+    <div class="ui-page-heading">
+        <div>
+            <p class="eyebrow">
+                YOUR ACCOUNT. YOUR WAY TO PLAY.
+            </p>
+
+            <h1>Tài khoản của tôi</h1>
+
+            <p>Thông tin cá nhân và bảo mật tài khoản.</p>
+        </div>
+
+        <a class="ui-btn"
+           th:href="@{/orders}">
+            Đơn hàng của tôi ↗
+        </a>
+    </div>
+
+    <p class="account-message"
+       role="status"
+       th:if="${accountSuccess}"
+       th:text="${accountSuccess}">
+    </p>
+
+    <p class="account-message account-error"
+       role="alert"
+       th:if="${accountError}"
+       th:text="${accountError}">
+    </p>
+
+    <div class="ui-two-columns"
+         th:if="${account != null}">
+
+        <section class="ui-panel">
+            <h2>Thông tin cá nhân</h2>
+
+            <form class="ui-form"
+                  th:action="@{/account/profile}"
+                  th:object="${profileForm}"
+                  method="post">
+
+                <div class="ui-alert ui-full"
+                     th:if="${#fields.hasGlobalErrors()}">
+
+                    <p th:each="message : ${#fields.globalErrors()}"
+                       th:text="${message}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="username">
+                        Tên đăng nhập
+                    </label>
+
+                    <input id="username"
+                           th:value="${account.username}"
+                           readonly>
+                </div>
+
+                <div class="ui-field">
+                    <label for="email">Email</label>
+
+                    <input id="email"
+                           type="email"
+                           th:value="${account.email}"
+                           readonly>
+                </div>
+
+                <div class="ui-field">
+                    <label for="fullName">
+                        Họ và tên *
+                    </label>
+
+                    <input th:field="*{fullName}"
+                           maxlength="100"
+                           autocomplete="name"
+                           required>
+
+                    <small class="ui-field-error"
+                           th:errors="*{fullName}">
+                    </small>
+                </div>
+
+                <div class="ui-field">
+                    <label for="phone">
+                        Số điện thoại *
+                    </label>
+
+                    <input th:field="*{phone}"
+                           type="tel"
+                           maxlength="10"
+                           pattern="0[0-9]{9}"
+                           title="10 chữ số, bắt đầu bằng 0"
+                           autocomplete="tel"
+                           required>
+
+                    <small class="ui-field-error"
+                           th:errors="*{phone}">
+                    </small>
+                </div>
+
+                <div class="ui-field ui-full">
+                    <label for="address">
+                        Địa chỉ *
+                    </label>
+
+                    <textarea th:field="*{address}"
+                              rows="3"
+                              maxlength="255"
+                              autocomplete="street-address"
+                              required></textarea>
+
+                    <small class="ui-field-error"
+                           th:errors="*{address}">
+                    </small>
+                </div>
+
+                <div class="ui-full">
+                    <button class="ui-btn ui-primary"
+                            type="submit">
+                        Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="ui-panel">
+            <h2>Đổi mật khẩu</h2>
+
+            <p class="account-help">
+                Mật khẩu mới tối thiểu 8 ký tự, tối đa 72 byte.
+                Sau khi đổi thành công, bạn cần đăng nhập lại.
+            </p>
+
+            <form class="ui-form ui-single"
+                  th:action="@{/account/password}"
+                  th:object="${passwordForm}"
+                  method="post">
+
+                <div class="ui-alert"
+                     th:if="${#fields.hasGlobalErrors()}">
+
+                    <p th:each="message : ${#fields.globalErrors()}"
+                       th:text="${message}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="currentPassword">
+                        Mật khẩu hiện tại *
+                    </label>
+
+                    <input id="currentPassword"
+                           name="currentPassword"
+                           type="password"
+                           maxlength="72"
+                           autocomplete="current-password"
+                           required>
+
+                    <small class="ui-field-error"
+                           th:errors="*{currentPassword}">
+                    </small>
+                </div>
+
+                <div class="ui-field">
+                    <label for="newPassword">
+                        Mật khẩu mới *
+                    </label>
+
+                    <input id="newPassword"
+                           name="newPassword"
+                           type="password"
+                           minlength="8"
+                           maxlength="72"
+                           autocomplete="new-password"
+                           required>
+
+                    <small class="ui-field-error"
+                           th:errors="*{newPassword}">
+                    </small>
+                </div>
+
+                <div class="ui-field">
+                    <label for="confirmPassword">
+                        Xác nhận mật khẩu mới *
+                    </label>
+
+                    <input id="confirmPassword"
+                           name="confirmPassword"
+                           type="password"
+                           minlength="8"
+                           maxlength="72"
+                           autocomplete="new-password"
+                           required>
+
+                    <small class="ui-field-error"
+                           th:errors="*{confirmPassword}">
+                    </small>
+                </div>
+
+                <button class="ui-btn ui-primary"
+                        type="submit">
+                    Đổi mật khẩu
+                </button>
+            </form>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

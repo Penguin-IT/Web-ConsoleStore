@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Khách hàng | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Khách hàng</h1>
+
+        <a class="ui-btn ui-primary"
+           th:href="@{/customers/new}">
+            ＋ Thêm khách hàng
+        </a>
+    </div>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <p role="status"
+       th:if="${success}"
+       th:text="${success}">
+    </p>
+
+    <section class="ui-panel">
+        <form class="ui-toolbar"
+              method="get"
+              th:action="@{/customers}">
+
+            <label class="ui-field">
+                <span>Tìm kiếm</span>
+
+                <input name="keyword"
+                       maxlength="100"
+                       placeholder="Mã, họ tên, số điện thoại, email"
+                       th:value="${keyword}">
+            </label>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Tìm kiếm
+            </button>
+
+            <a class="ui-btn" th:href="@{/customers}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã KH</th>
+                    <th>Họ tên</th>
+                    <th>Số điện thoại</th>
+                    <th>Email</th>
+                    <th>Địa chỉ</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="customer : ${customers.content}">
+                    <td th:text="${'KH' + customer.id}"></td>
+
+                    <td>
+                        <strong th:text="${customer.fullName}"></strong>
+                    </td>
+
+                    <td th:text="${customer.phone}"></td>
+
+                    <td th:text="${#strings.isEmpty(customer.email)
+                        ? '—' : customer.email}">
+                    </td>
+
+                    <td th:text="${#strings.isEmpty(customer.address)
+                        ? '—' : customer.address}">
+                    </td>
+
+                    <td th:text="${#temporals.format(
+                        customer.createdAt,
+                        'dd/MM/yyyy HH:mm'
+                    )}"></td>
+
+                    <td>
+                        <div class="ui-inline-actions">
+                            <a class="ui-btn"
+                               th:href="@{/customers/{id}/edit(
+                                   id=${customer.id}
+                               )}">
+                                Sửa
+                            </a>
+
+                            <form method="post"
+                                  th:action="@{/customers/{id}/delete(
+                                      id=${customer.id}
+                                  )}"
+                                  onsubmit="return confirm('Xóa hồ sơ khách hàng này?')">
+
+                                <input type="hidden"
+                                       name="version"
+                                       th:value="${customer.version}">
+
+                                <button class="ui-btn" type="submit">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr th:if="${customers.empty}">
+                    <td colspan="7">
+                        Không tìm thấy khách hàng.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${customers.totalElements + ' khách hàng'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${customers.hasPrevious()}"
+                   th:href="@{/customers(
+                       page=${customers.number - 1},
+                       keyword=${keyword}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (customers.number + 1)
+                    + ' / '
+                    + (customers.totalPages == 0
+                        ? 1 : customers.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${customers.hasNext()}"
+                   th:href="@{/customers(
+                       page=${customers.number + 1},
+                       keyword=${keyword}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

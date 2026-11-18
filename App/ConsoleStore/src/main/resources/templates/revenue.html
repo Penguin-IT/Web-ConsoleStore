@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1">
+
+    <title>Báo cáo doanh thu | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/revenue.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <div>
+            <h1>Báo cáo doanh thu</h1>
+            <p>Hóa đơn hoàn tất và đã thanh toán đủ.</p>
+        </div>
+    </div>
+
+    <section class="ui-panel">
+        <nav class="revenue-tabs"
+             aria-label="Chế độ báo cáo">
+
+            <a class="ui-btn"
+               th:classappend="${mode == 'month'} ? 'ui-primary' : ''"
+               th:href="@{/revenue(mode='month')}">
+                Theo tháng
+            </a>
+
+            <a class="ui-btn"
+               th:classappend="${mode == 'range'} ? 'ui-primary' : ''"
+               th:href="@{/revenue(mode='range')}">
+                Khoảng ngày
+            </a>
+        </nav>
+
+        <form class="revenue-filters"
+              method="get"
+              th:action="@{/revenue}">
+
+            <input type="hidden"
+                   name="mode"
+                   th:value="${mode}">
+
+            <label class="ui-field"
+                   th:if="${mode != 'range'}">
+                <span>Tháng</span>
+
+                <input type="month"
+                       name="month"
+                       required
+                       min="1753-01"
+                       max="9998-12"
+                       th:value="${month}">
+            </label>
+
+            <th:block th:if="${mode == 'range'}">
+                <label class="ui-field">
+                    <span>Từ ngày lập</span>
+
+                    <input type="date"
+                           name="from"
+                           required
+                           min="1753-01-01"
+                           max="9998-12-31"
+                           th:value="${from}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Đến ngày lập</span>
+
+                    <input type="date"
+                           name="to"
+                           required
+                           min="1753-01-01"
+                           max="9998-12-31"
+                           th:value="${to}">
+                </label>
+
+                <label class="ui-field">
+                    <span>Tổng hợp theo</span>
+
+                    <select name="grouping">
+                        <option value="day"
+                                th:selected="${grouping == 'day'}">
+                            Ngày
+                        </option>
+
+                        <option value="month"
+                                th:selected="${grouping == 'month'}">
+                            Tháng
+                        </option>
+                    </select>
+                </label>
+            </th:block>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Xem báo cáo
+            </button>
+        </form>
+    </section>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <th:block th:if="${report != null}">
+        <div class="revenue-period">
+            <span>Ngày lập hóa đơn</span>
+            <strong th:text="${report.period}"></strong>
+        </div>
+
+        <section class="revenue-cards"
+                 aria-label="Tổng quan doanh thu">
+
+            <article class="revenue-card">
+                <span>Tổng doanh thu</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    report.totalRevenue(), 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+
+                <small th:text="|${report.invoiceCount()} hóa đơn|">
+                </small>
+            </article>
+
+            <article class="revenue-card revenue-card--counter">
+                <span>Bán tại quầy</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    report.counterRevenue, 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+
+                <small th:text="|${report.counterCount} hóa đơn|">
+                </small>
+            </article>
+
+            <article class="revenue-card revenue-card--online">
+                <span>Bán online</span>
+
+                <strong th:text="|${#numbers.formatDecimal(
+                    report.onlineRevenue, 0, 'POINT', 0, 'COMMA'
+                )} đ|">
+                </strong>
+
+                <small th:text="|${report.onlineCount} hóa đơn|">
+                </small>
+            </article>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <div class="revenue-chart-heading">
+                <h2>Doanh thu theo kênh</h2>
+
+                <div class="revenue-legend">
+                    <span>
+                        <i class="revenue-dot revenue-dot--counter"></i>
+                        Tại quầy
+                    </span>
+
+                    <span>
+                        <i class="revenue-dot revenue-dot--online"></i>
+                        Online
+                    </span>
+                </div>
+            </div>
+
+            <p class="revenue-empty"
+               th:if="${report.invoiceCount() == 0}">
+                Không có hóa đơn đủ điều kiện trong khoảng đã chọn.
+            </p>
+
+            <th:block th:if="${report.invoiceCount() > 0}">
+                <div class="revenue-axis" aria-hidden="true">
+                    <span>0 đ</span>
+
+                    <span th:text="|${#numbers.formatDecimal(
+                        report.chartMaximum, 0, 'POINT', 0, 'COMMA'
+                    )} đ|">
+                    </span>
+                </div>
+
+                <div class="revenue-chart"
+                     role="img"
+                     aria-label="Biểu đồ doanh thu tại quầy và online.
+                         Số liệu đầy đủ nằm trong bảng bên dưới.">
+
+                    <div class="revenue-chart-row"
+                         th:each="row : ${report.rows}"
+                         th:style="|--counter:${row.counterPercent}%;
+                             --online:${row.onlinePercent}%;|">
+
+                        <span class="revenue-chart-label"
+                              th:text="${row.label}">
+                        </span>
+
+                        <div class="revenue-bar-group">
+                            <div class="revenue-bar-track">
+                                <div class="revenue-bar revenue-bar--counter"
+                                     th:title="|Tại quầy: ${#numbers.formatDecimal(
+                                         row.counterRevenue,
+                                         0, 'POINT', 0, 'COMMA'
+                                     )} đ|">
+                                </div>
+                            </div>
+
+                            <div class="revenue-bar-track">
+                                <div class="revenue-bar revenue-bar--online"
+                                     th:title="|Online: ${#numbers.formatDecimal(
+                                         row.onlineRevenue,
+                                         0, 'POINT', 0, 'COMMA'
+                                     )} đ|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
+        </section>
+
+        <section class="ui-panel revenue-section">
+            <h2>Chi tiết doanh thu</h2>
+
+            <div class="ui-table-wrap">
+                <table class="ui-table">
+                    <thead>
+                    <tr>
+                        <th th:text="${report.grouping == 'month'}
+                            ? 'Tháng' : 'Ngày'">
+                        </th>
+
+                        <th>Số HĐ quầy</th>
+                        <th>Doanh thu quầy</th>
+                        <th>Số HĐ online</th>
+                        <th>Doanh thu online</th>
+                        <th>Tổng doanh thu</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="row : ${report.rows}">
+                        <td th:text="${row.label}"></td>
+                        <td th:text="${row.counterCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                row.counterRevenue,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+
+                        <td th:text="${row.onlineCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                row.onlineRevenue,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                row.totalRevenue(),
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+                    </tbody>
+
+                    <tfoot>
+                    <tr>
+                        <th scope="row">Tổng cộng</th>
+
+                        <td th:text="${report.counterCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                report.counterRevenue,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+
+                        <td th:text="${report.onlineCount}"></td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                report.onlineRevenue,
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+
+                        <td class="revenue-money"
+                            th:text="|${#numbers.formatDecimal(
+                                report.totalRevenue(),
+                                0, 'POINT', 0, 'COMMA'
+                            )} đ|">
+                        </td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

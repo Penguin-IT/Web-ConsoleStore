@@ -557,6 +557,9 @@
         const roleLabels = {
             ADMIN: 'Quản trị viên',
             NHANVIEN: 'Nhân viên',
+            BANHANG: 'Nhân viên bán hàng',
+            KHO: 'Nhân viên kho',
+            BAOHANH: 'Nhân viên bảo hành',
             KHACHHANG: 'Khách hàng'
         };
 
@@ -639,6 +642,7 @@
                 title: 'Kho & hậu mãi',
                 items: [
                     ['inventory', 'Tồn kho', '/inventory'],
+                    ['purchases', 'Nhập hàng', '/purchases'],
                     ['trade-ins', 'Thu mua thiết bị cũ', '/trade-ins'],
                     ['warranties', 'Bảo hành', '/warranties']
                 ]
@@ -742,7 +746,7 @@
         actions.className = 'session-actions';
 
         if (state.authenticated) {
-            if (['ADMIN', 'NHANVIEN'].includes(state.role)) {
+            if (['ADMIN', 'NHANVIEN', 'BANHANG', 'KHO', 'BAOHANH'].includes(state.role)) {
                 actions.append(createOperationsMenu(state));
             }
 

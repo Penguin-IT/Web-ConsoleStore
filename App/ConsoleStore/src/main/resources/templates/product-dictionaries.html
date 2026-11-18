@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Loại &amp; nền tảng | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+    <link rel="stylesheet" th:href="@{/css/product-management.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Loại &amp; nền tảng</h1>
+
+        <a class="ui-btn" th:href="@{/manage-products}">
+            ← Quản lý sản phẩm
+        </a>
+    </div>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <p role="status"
+       th:if="${success}"
+       th:text="${success}">
+    </p>
+
+    <div class="pm-dictionaries">
+        <section class="ui-panel">
+            <h2>Loại sản phẩm</h2>
+
+            <form class="pm-actions"
+                  method="post"
+                  th:action="@{/manage-products/categories/save}">
+
+                <input class="pm-name-input"
+                       name="name"
+                       required
+                       maxlength="100"
+                       aria-label="Tên loại sản phẩm mới"
+                       placeholder="Tên loại sản phẩm">
+
+                <button class="ui-btn ui-primary" type="submit">
+                    Thêm
+                </button>
+            </form>
+
+            <div class="pm-dictionary-row"
+                 th:each="category : ${categories}">
+
+                <form class="pm-actions pm-grow"
+                      method="post"
+                      th:action="@{/manage-products/categories/save}">
+
+                    <input type="hidden"
+                           name="id"
+                           th:value="${category.id}">
+
+                    <input class="pm-name-input"
+                           name="name"
+                           required
+                           maxlength="100"
+                           aria-label="Tên loại sản phẩm"
+                           th:value="${category.name}">
+
+                    <button class="ui-btn" type="submit">
+                        Lưu
+                    </button>
+                </form>
+
+                <form method="post"
+                      th:action="@{/manage-products/categories/{id}/delete(
+                          id=${category.id}
+                      )}"
+                      onsubmit="return confirm('Xóa loại sản phẩm này?')">
+
+                    <button class="ui-btn pm-danger" type="submit">
+                        Xóa
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="ui-panel">
+            <h2>Nền tảng</h2>
+
+            <form class="pm-actions"
+                  method="post"
+                  th:action="@{/manage-products/platforms/save}">
+
+                <input class="pm-name-input"
+                       name="name"
+                       required
+                       maxlength="100"
+                       aria-label="Tên nền tảng mới"
+                       placeholder="Tên nền tảng">
+
+                <button class="ui-btn ui-primary" type="submit">
+                    Thêm
+                </button>
+            </form>
+
+            <div class="pm-dictionary-row"
+                 th:each="platform : ${platforms}">
+
+                <form class="pm-actions pm-grow"
+                      method="post"
+                      th:action="@{/manage-products/platforms/save}">
+
+                    <input type="hidden"
+                           name="id"
+                           th:value="${platform.id}">
+
+                    <input class="pm-name-input"
+                           name="name"
+                           required
+                           maxlength="100"
+                           aria-label="Tên nền tảng"
+                           th:value="${platform.name}">
+
+                    <button class="ui-btn" type="submit">
+                        Lưu
+                    </button>
+                </form>
+
+                <form method="post"
+                      th:action="@{/manage-products/platforms/{id}/delete(
+                          id=${platform.id}
+                      )}"
+                      onsubmit="return confirm('Xóa nền tảng này?')">
+
+                    <button class="ui-btn pm-danger" type="submit">
+                        Xóa
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

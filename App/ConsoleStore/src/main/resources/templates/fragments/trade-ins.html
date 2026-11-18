@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Thu mua thiết bị cũ | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Thu mua thiết bị cũ</h1>
+
+        <a class="ui-btn ui-primary"
+           th:href="@{/trade-ins/new}">
+            ＋ Lập phiếu thu
+        </a>
+    </div>
+
+    <section class="ui-panel">
+        <form method="get"
+              th:action="@{/trade-ins}"
+              class="ui-toolbar">
+
+            <div class="ui-field">
+                <label for="keyword">Tìm kiếm</label>
+
+                <input id="keyword"
+                       name="keyword"
+                       maxlength="100"
+                       placeholder="Mã phiếu, khách hàng, số điện thoại"
+                       th:value="${keyword}">
+            </div>
+
+            <button class="ui-btn" type="submit">
+                Tìm kiếm
+            </button>
+
+            <a class="ui-btn" th:href="@{/trade-ins}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã phiếu</th>
+                    <th>Ngày thu</th>
+                    <th>Khách hàng</th>
+                    <th>Kho nhận</th>
+                    <th>Tổng chi</th>
+                    <th>Hóa đơn liên kết</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="receipt : ${receipts.content}">
+                    <td th:text="${'PTC' + receipt.id}"></td>
+
+                    <td th:text="${#temporals.format(
+                        receipt.createdAt,
+                        'dd/MM/yyyy HH:mm'
+                    )}"></td>
+
+                    <td>
+                        <strong th:text="${receipt.customerName}"></strong>
+                        <br>
+                        <span th:text="${receipt.phone}"></span>
+                    </td>
+
+                    <td th:text="${receipt.warehouseName}"></td>
+
+                    <td th:text="${#numbers.formatDecimal(
+                        receipt.totalAmount,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+                    <td th:text="${receipt.invoiceId == null
+                        ? '—'
+                        : 'HD' + receipt.invoiceId}">
+                    </td>
+
+                    <td>
+                        <a class="ui-btn"
+                           th:href="@{/trade-ins/{id}(
+                               id=${receipt.id}
+                           )}">
+                            Chi tiết
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${receipts.empty}">
+                    <td colspan="7">
+                        Không tìm thấy phiếu thu.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${receipts.totalElements + ' phiếu thu'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${receipts.hasPrevious()}"
+                   th:href="@{/trade-ins(
+                       page=${receipts.number - 1},
+                       keyword=${keyword}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (receipts.number + 1)
+                    + ' / '
+                    + (receipts.totalPages == 0
+                        ? 1 : receipts.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${receipts.hasNext()}"
+                   th:href="@{/trade-ins(
+                       page=${receipts.number + 1},
+                       keyword=${keyword}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

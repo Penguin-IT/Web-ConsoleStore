@@ -1,0 +1,29 @@
+/* Validation bổ sung cho các trang bảo hành; bố cục chính vẫn dùng home.css/app.css/pos.css */
+.validation-form .ui-field { min-width: 0; }
+.validation-form input:focus,
+.validation-form select:focus,
+.validation-form textarea:focus { outline: 2px solid #b596e6; outline-offset: 1px; }
+.validation-form .is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 .15rem rgba(220,53,69,.12);
+}
+.field-error {
+    display: block;
+    min-height: 0;
+    margin: 5px 0 0;
+    color: #b4233c;
+    font-size: 12px;
+    line-height: 1.45;
+}
+.field-error:empty { display: none; }
+.field-hint { color: #776d81; font-size: 11px; }
+.required-mark { color: #dc3545; }
+.validation-summary {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border: 1px solid #f1b8c0;
+    border-radius: 8px;
+    background: #fff4f5;
+    color: #9d1c32;
+}
+.warranty-fieldset { min-width: 0; padding: 0; border: 0; }

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Đăng ký | Console Store</title>
+
+    <link rel="icon"
+          type="image/png"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/home.css(v='20261113-4')}">
+
+    <link rel="stylesheet"
+          th:href="@{/css/app.css(v='20261113-4')}">
+
+    <script th:src="@{/js/store.js(v='20261113-4')}"
+            defer></script>
+
+    <style>
+        .register-main {
+            min-height: 70vh;
+            padding-block: 55px 80px;
+        }
+
+        .register-main .ui-page-heading {
+            max-width: 1050px;
+            margin-inline: auto;
+            margin-bottom: 32px;
+        }
+
+        .register-main .ui-auth-layout {
+            border: 1px solid var(--border);
+            border-radius: 22px;
+        }
+
+        .register-main .ui-auth-art {
+            min-height: 500px;
+        }
+
+        .register-main .ui-auth-form {
+            padding: 38px;
+            border: 0;
+        }
+
+        .register-main .ui-auth-form > h2 {
+            margin: 0 0 12px;
+            font-size: 27px;
+        }
+
+        .register-main .ui-auth-form > .ui-help {
+            margin: 0 0 26px;
+        }
+
+        .register-main .ui-field {
+            min-width: 0;
+        }
+
+        .register-main input {
+            width: 100%;
+        }
+
+        .register-main input[aria-invalid="true"] {
+            border-color: #b42318;
+        }
+
+        .register-main .register-field-error {
+            margin: 7px 0 0;
+            color: #b42318;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .register-main .register-message {
+            margin-bottom: 22px;
+            padding: 14px 16px;
+            border: 1px solid #ddd1ee;
+            border-radius: 10px;
+            background: #f4eefb;
+            color: #58416c;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .register-main .register-message p {
+            margin: 0;
+        }
+
+        .register-main .register-message a {
+            color: #67418b;
+            font-weight: 650;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .register-main .register-message--error {
+            border-color: #efc9c6;
+            background: #fff2f1;
+            color: #a92c35;
+        }
+
+        .register-main .register-login {
+            margin: 24px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .register-main .register-login a {
+            color: #74509b;
+            font-weight: 650;
+        }
+
+        @media (max-width: 767px) {
+            .register-main {
+                padding-block: 32px 50px;
+            }
+
+            .register-main .ui-auth-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .register-main .ui-auth-art {
+                min-height: 230px;
+                padding: 32px;
+            }
+
+            .register-main .ui-auth-form {
+                padding: 30px 24px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .register-main .ui-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="shop-page customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="ui-container register-main"
+      tabindex="-1">
+
+    <div class="ui-page-heading">
+        <div>
+            <p class="ui-kicker">FOR THE LOVE OF PLAY.</p>
+
+            <h1>Tạo tài khoản</h1>
+
+            <p>
+                Một tài khoản cho những cuộc phiêu lưu tiếp theo.
+            </p>
+        </div>
+    </div>
+
+    <div class="ui-auth-layout">
+        <div class="ui-auth-art">
+            <span class="ui-kicker">CONSOLE STORE</span>
+
+            <h2>Play your<br>own way.</h2>
+
+            <p>PlayStation · Xbox · Nintendo</p>
+
+            <img class="ui-auth-logo"
+                 th:src="@{/images/banners/logo.png}"
+                 alt=""
+                 aria-hidden="true">
+        </div>
+
+        <section class="ui-panel ui-auth-form"
+                 aria-labelledby="register-title">
+
+            <h2 id="register-title">
+                Tạo tài khoản của bạn
+            </h2>
+
+            <p class="ui-help">
+                Điền thông tin để bắt đầu cùng Console Store.
+            </p>
+
+            <div th:if="${registrationSuccess}"
+                 class="register-message"
+                 role="status">
+
+                <p>
+                    Đăng ký thành công.
+                    <a th:href="@{/login}">
+                        Đăng nhập ngay
+                    </a>
+                </p>
+            </div>
+
+            <form method="post"
+                  th:action="@{/register}"
+                  th:object="${form}"
+                  class="ui-form">
+
+                <input type="hidden"
+                       name="_registrationToken"
+                       th:value="${registrationToken}">
+
+                <div th:if="${#fields.hasGlobalErrors()}"
+                     class="register-message register-message--error ui-full"
+                     role="alert">
+
+                    <p th:each="error : ${#fields.globalErrors()}"
+                       th:text="${error}">
+                    </p>
+                </div>
+
+                <div class="ui-field ui-full">
+                    <label for="fullName">Họ và tên</label>
+
+                    <input type="text"
+                           id="fullName"
+                           th:field="*{fullName}"
+                           maxlength="100"
+                           autocomplete="name"
+                           placeholder="Nhập họ và tên"
+                           aria-describedby="fullName-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('fullName')}"
+                           required>
+
+                    <p id="fullName-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('fullName')}"
+                       th:errors="*{fullName}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="phone">Số điện thoại</label>
+
+                    <input type="tel"
+                           id="phone"
+                           th:field="*{phone}"
+                           maxlength="10"
+                           pattern="0[0-9]{9}"
+                           inputmode="numeric"
+                           autocomplete="tel"
+                           placeholder="Nhập số điện thoại"
+                           aria-describedby="phone-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('phone')}"
+                           required>
+
+                    <p id="phone-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('phone')}"
+                       th:errors="*{phone}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="email">Email</label>
+
+                    <input type="email"
+                           id="email"
+                           th:field="*{email}"
+                           maxlength="100"
+                           autocomplete="email"
+                           placeholder="Nhập email"
+                           aria-describedby="email-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('email')}"
+                           required>
+
+                    <p id="email-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('email')}"
+                       th:errors="*{email}">
+                    </p>
+                </div>
+
+                <div class="ui-field ui-full">
+                    <label for="username">Tên đăng nhập</label>
+
+                    <input type="text"
+                           id="username"
+                           th:field="*{username}"
+                           minlength="3"
+                           maxlength="30"
+                           pattern="[A-Za-z0-9_]{3,30}"
+                           autocomplete="username"
+                           autocapitalize="none"
+                           spellcheck="false"
+                           placeholder="Chữ không dấu, số hoặc dấu _"
+                           aria-describedby="username-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('username')}"
+                           required>
+
+                    <p id="username-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('username')}"
+                       th:errors="*{username}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="password">Mật khẩu</label>
+
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           minlength="8"
+                           maxlength="72"
+                           autocomplete="new-password"
+                           placeholder="Ít nhất 8 ký tự"
+                           aria-describedby="password-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('password')}"
+                           required>
+
+                    <p id="password-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('password')}"
+                       th:errors="*{password}">
+                    </p>
+                </div>
+
+                <div class="ui-field">
+                    <label for="confirmPassword">
+                        Xác nhận mật khẩu
+                    </label>
+
+                    <input type="password"
+                           id="confirmPassword"
+                           name="confirmPassword"
+                           minlength="8"
+                           maxlength="72"
+                           autocomplete="new-password"
+                           placeholder="Nhập lại mật khẩu"
+                           aria-describedby="confirmPassword-error"
+                           th:attr="aria-invalid=${#fields.hasErrors('confirmPassword')}"
+                           required>
+
+                    <p id="confirmPassword-error"
+                       class="register-field-error"
+                       th:if="${#fields.hasErrors('confirmPassword')}"
+                       th:errors="*{confirmPassword}">
+                    </p>
+                </div>
+
+                <div class="ui-full">
+                    <button class="ui-btn ui-primary ui-wide"
+                            type="submit">
+                        Tạo tài khoản
+                    </button>
+                </div>
+            </form>
+
+            <p class="register-login">
+                Đã có tài khoản?
+                <a th:href="@{/login}">Đăng nhập</a>
+            </p>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>
