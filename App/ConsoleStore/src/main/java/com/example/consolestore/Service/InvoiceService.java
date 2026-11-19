@@ -43,7 +43,7 @@ public class InvoiceService {
             String sort,
             int page
     ) {
-        requireStaff(username);
+        requireCommand(username);
 
         String query = clean(keyword);
         String selectedChannel = clean(channel);
@@ -129,7 +129,7 @@ public class InvoiceService {
             String username,
             Long id
     ) {
-        requireStaff(username);
+        requireCommand(username);
 
         var invoice = invoices.staffInvoice(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -210,7 +210,7 @@ public class InvoiceService {
     }
 
 
-    private void requireStaff(String username) {
+    private void requireCommand(String username) {
         if (username == null || username.isBlank()) {
             throw denied();
         }
