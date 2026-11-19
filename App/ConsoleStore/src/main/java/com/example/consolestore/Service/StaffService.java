@@ -21,6 +21,10 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class StaffService {
 
+    private static final Set<String> EMPLOYEE_ROLES = Set.of(
+            "ADMIN", "NHANVIEN", "BANHANG", "KHO", "BAOHANH"
+    );
+
     private final NhanVienRepository employees;
     private final TaiKhoanRepository accounts;
     private final PasswordEncoder passwordEncoder;
@@ -295,7 +299,7 @@ public class StaffService {
             throw invalid("Tên đăng nhập đã được sử dụng.");
         }
 
-        if (!Set.of("ADMIN", "NHANVIEN").contains(
+        if (!EMPLOYEE_ROLES.contains(
                 clean(form.role())
         )) {
             throw invalid("Vai trò nhân viên không hợp lệ.");
@@ -320,7 +324,7 @@ public class StaffService {
         TaiKhoan account = TaiKhoan.employeeAccount(
                 login,
                 passwordEncoder.encode(password),
-                form.role(),
+                clean(form.role()),
                 employee
         );
 
@@ -361,9 +365,9 @@ public class StaffService {
                 );
             }
         } else if (account.getEmployee() != null) {
-            if (!Set.of("ADMIN", "NHANVIEN").contains(role)) {
+            if (!EMPLOYEE_ROLES.contains(role)) {
                 throw invalid(
-                        "Nhân viên chỉ được cấp quyền ADMIN hoặc NHANVIEN."
+                        "Vai trò nhân viên không hợp lệ."
                 );
             }
 
