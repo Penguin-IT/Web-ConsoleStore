@@ -3103,7 +3103,7 @@ GO
 
 ALTER TABLE dbo.TaiKhoan
 DROP CONSTRAINT CK_TaiKhoan_vaiTro;
-GO;
+GO
 
 ALTER TABLE dbo.TaiKhoan
 ADD CONSTRAINT CK_TaiKhoan_vaiTro
@@ -3115,7 +3115,7 @@ CHECK (vaiTro IN (
     N'KHO',
     N'BAOHANH'
 ));
-GO;
+GO
 
 
 
