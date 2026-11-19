@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -40,8 +41,29 @@ public class LookupService {
 
     public record StaffSession(
             Long accountId,
-            String username
+            String username,
+            String role
     ) {
+    }
+
+    static List<String> commandsForRole(String role) {
+        if (role == null) {
+            return List.of();
+        }
+
+        return switch (role) {
+            case "ADMIN", "NHANVIEN" -> List.of("TONKHO", "BAOHANH");
+            case "KHO" -> List.of("TONKHO");
+            case "BAOHANH" -> List.of("BAOHANH");
+            default -> List.of();
+        };
+    }
+
+    static final class CommandDeniedException extends AccessDeniedException {
+
+        CommandDeniedException(String command) {
+            super("Tài khoản không có quyền sử dụng lệnh " + command + ".");
+        }
     }
 
     public StaffSession authenticate(
@@ -66,8 +88,8 @@ public class LookupService {
                 .orElseThrow(this::denied);
 
         if (!state.isUsable()
-                || !Set.of("ADMIN", "NHANVIEN")
-                .contains(state.getRole())) {
+                || !Objects.equals(state.getAccountId(), account.getId())
+                || commandsForRole(state.getRole()).isEmpty()) {
             throw denied();
         }
 
@@ -88,7 +110,8 @@ public class LookupService {
 
         return new StaffSession(
                 account.getId(),
-                account.getUsername()
+                account.getUsername(),
+                state.getRole()
         );
     }
 
@@ -96,7 +119,7 @@ public class LookupService {
             StaffSession session,
             String value
     ) {
-        requireStaff(session);
+        requireCommand(session,"TONKHO");
 
         String query = clean(value);
 
@@ -161,7 +184,7 @@ public class LookupService {
             StaffSession session,
             String value
     ) {
-        requireStaff(session);
+        requireCommand(session,"BAOHANH");
 
         String serial = clean(value);
 
@@ -212,7 +235,7 @@ public class LookupService {
         return result.toString();
     }
 
-    private void requireStaff(StaffSession session) {
+    private void requireCommand(StaffSession session, String command) {
         if (session == null) {
             throw denied();
         }
@@ -220,13 +243,14 @@ public class LookupService {
         var state = accounts.loginState(session.username())
                 .orElseThrow(this::denied);
 
-        if (!Objects.equals(
-                state.getAccountId(),
-                session.accountId()
-        ) || !state.isUsable()
-                || !Set.of("ADMIN", "NHANVIEN")
-                .contains(state.getRole())) {
+        if (!Objects.equals(state.getAccountId(), session.accountId())
+                || !state.isUsable()
+                || !Objects.equals(state.getRole(), session.role())) {
             throw denied();
+        }
+
+        if (!commandsForRole(state.getRole()).contains(command)) {
+            throw new CommandDeniedException(command);
         }
     }
 

@@ -82,15 +82,6 @@ public class LookupClient {
                     return;
                 }
 
-                System.out.println("""
-                        
-                        Các lệnh:
-                          TONKHO SP1
-                          TONKHO PlayStation
-                          BAOHANH serial_may
-                          QUIT
-                        """);
-
                 while (true) {
                     String line = input("\nTra cứu> ");
 
