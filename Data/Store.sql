@@ -3101,21 +3101,24 @@ GO
 USE QLStoreConsole;
 GO
 
+IF OBJECT_ID(N'dbo.CK_TaiKhoan_vaiTro', N'C') IS NOT NULL
+BEGIN
 ALTER TABLE dbo.TaiKhoan
 DROP CONSTRAINT CK_TaiKhoan_vaiTro;
-GO;
+END;
+GO
 
 ALTER TABLE dbo.TaiKhoan
 ADD CONSTRAINT CK_TaiKhoan_vaiTro
 CHECK (vaiTro IN (
-    N'ADMIN',
+    'ADMIN',
     N'NHANVIEN',
     N'KHACHHANG',
-    N'BANHANG',
+    'BANHANG',
     N'KHO',
     N'BAOHANH'
 ));
-GO;
+GO
 
 
 
