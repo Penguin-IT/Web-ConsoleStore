@@ -17,15 +17,16 @@ import java.security.Principal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import com.example.consolestore.Service.PricingService;
 import com.example.consolestore.Service.MemberService;
 import com.example.consolestore.Service.BundlePricing;
-
+import com.example.consolestore.Service.CartStore;
 @Controller
 public class CheckoutController {
 
     private static final Logger log =
             LoggerFactory.getLogger(CheckoutController.class);
-
+    private final CartStore cartStore;
     private final CheckoutService checkout;
     private final CartService carts;
     private final CartSession session;
@@ -34,12 +35,14 @@ public class CheckoutController {
             MemberService members,
             CheckoutService checkout,
             CartService carts,
-            CartSession session
+            CartSession session,
+            CartStore cartStore            // thêm
     ) {
-        this.members=members;
+        this.members = members;
         this.checkout = checkout;
         this.carts = carts;
         this.session = session;
+        this.cartStore = cartStore;        // thêm
     }
 
     @GetMapping({
@@ -53,7 +56,10 @@ public class CheckoutController {
     ) {
         noCache(response);
 
-        return session.locked(principal.getName(), () -> {
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {
             CheckoutQuote quote = session.currentQuote();
 
             if (quote != null && quote.submitted()) {
@@ -108,8 +114,10 @@ public class CheckoutController {
     ) {
         noCache(response);
 
-        return session.locked(principal.getName(), () -> {
-            Long completed = session.completed(requestId);
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {            Long completed = session.completed(requestId);
 
             if (completed != null) {
                 return redirect(completed);
@@ -245,7 +253,29 @@ public class CheckoutController {
             );
         });
     }
+    @PostMapping("/checkout/pricing")
+    @ResponseBody
+    public Map<String, Object> pricing(
+            @RequestParam(defaultValue = "") String province,
+            @RequestParam(defaultValue = "") String couponCode,
+            Principal principal
+    ) {
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {
+                    MemberService.Status member = members.status(principal.getName());
+                    CartView cart = carts.view(session.items(), member.tier().getPercent());
+                    PricingService.Quote quote = checkout.preview(
+                            principal.getName(), cart.totalAmount(), province, couponCode);
 
+                    Map<String, Object> view = quote.view();
+                    BigDecimal saved = cart.getSaved().add(quote.discount());
+                    view.put("hasSaved", saved.signum() > 0);
+                    view.put("totalSaved", PricingService.money(saved));
+                    return view;
+                });
+    }
     @GetMapping("/checkout/orders/{id}/payment")
     public String payment(
             @PathVariable Long id,
@@ -313,7 +343,11 @@ public class CheckoutController {
             MemberService.Status member = members.status(username);
             model.addAttribute("member", member);
 
-            CartView cart = carts.view(session.items(), member.tier().getPercent());            model.addAttribute("cart", cart);
+            CartView cart = carts.view(session.items(), member.tier().getPercent());
+            model.addAttribute("cart", cart);
+            CheckoutRequest current = (CheckoutRequest) model.getAttribute("form");
+            model.addAttribute("pricing", checkout.preview(
+                    username, cart.totalAmount(), current.getProvince(), current.getCouponCode()));
 
             if (cart.readyToCheckout()) {
                 Map<Long, BigDecimal> prices =

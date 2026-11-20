@@ -9,7 +9,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-
+import com.example.consolestore.Service.*;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.*;
@@ -27,7 +27,7 @@ public class CheckoutService {
             "ZALOPAY",
             "TIEN_MAT"
     );
-
+    private final PricingService pricing;
     private final TaiKhoanRepository accounts;
     private final SanPhamRepository products;
     private final TonKhoRepository stocks;
@@ -39,12 +39,14 @@ public class CheckoutService {
             SanPhamRepository products,
             TonKhoRepository stocks,
             HoaDonRepository invoices,
+            PricingService pricing,
             PlatformTransactionManager manager
     ) {
         this.accounts = accounts;
         this.products = products;
         this.stocks = stocks;
         this.invoices = invoices;
+        this.pricing = pricing;
 
         transaction = new TransactionTemplate(manager);
 
@@ -65,6 +67,12 @@ public class CheckoutService {
         form.setAddress(customer.getAddress());
 
         return form;
+    }
+
+    @Transactional(readOnly = true)
+    public PricingService.Quote preview(String username, BigDecimal goods,
+                                        String province, String coupon) {
+        return pricing.preview(goods, province, coupon, customer(username).getId());
     }
 
     @Transactional(readOnly = true)
@@ -255,7 +263,16 @@ public class CheckoutService {
                 || total.compareTo(MAX_AMOUNT) > 0) {
             throw rejected("Tổng tiền không hợp lệ.");
         }
+        PricingService.Quote priced = pricing.quoteForOrder(
+                total, form.getProvince(), form.getCouponCode(), customerId);
 
+        if (priced.shippingPending()) {
+            throw rejected("Vui lòng chọn Tỉnh/Thành phố để tính phí vận chuyển.");
+        }
+        if (!clean(form.getCouponCode()).isEmpty() && !priced.couponValid()) {
+            throw rejected(priced.message());   // không âm thầm bỏ mã
+        }
+        BigDecimal payable = priced.getPayable();
         List<StockAllocator.Allocation> allocations;
 
         try {
@@ -325,12 +342,13 @@ public class CheckoutService {
             );
         }
 
-        invoices.insertPayment(
+        invoices.applyAdjustments(
                 invoice.getId(),
-                method,
-                total
+                priced.shipping(),
+                priced.discount(),
+                priced.couponCode() == null ? "" : priced.couponCode()
         );
-
+        invoices.insertPayment(invoice.getId(), method, payable);
         return invoice.getId();
     }
 

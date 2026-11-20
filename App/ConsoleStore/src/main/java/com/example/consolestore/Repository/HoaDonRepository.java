@@ -67,6 +67,29 @@ public interface HoaDonRepository
             @Param("price") BigDecimal price
     );
 
+    @Query("select count(h) from HoaDon h where h.couponCode = :code and h.status <> 'HUY'")
+    long couponUses(@Param("code") String code);
+
+    @Query("""
+        select count(h) from HoaDon h
+        where h.couponCode = :code and h.customerId = :customerId and h.status <> 'HUY'
+        """)
+    long couponUsesByCustomer(@Param("code") String code, @Param("customerId") Long customerId);
+
+    @Modifying
+    @Query(value = """
+        UPDATE HoaDon
+        SET tongTien     = tongTien + :shipping - :discount,
+            phiVanChuyen = :shipping,
+            giamGia      = :discount,
+            maGiamGia    = NULLIF(:code, '')
+        WHERE maHD = :id
+        """, nativeQuery = true)
+    void applyAdjustments(@Param("id") Long id,
+                          @Param("shipping") BigDecimal shipping,
+                          @Param("discount") BigDecimal discount,
+                          @Param("code") String code);
+
     @Modifying
     @Query(
             value = """

@@ -503,9 +503,7 @@
 
         link.className = 'cart-button';
 
-        link.href = appUrl(
-            state.authenticated ? '/cart' : '/login'
-        );
+        link.href = appUrl('/cart');
 
         link.setAttribute('aria-label', 'Xem giỏ hàng');
 
@@ -881,7 +879,7 @@
 
             state.cartCount = 0;
 
-            if (state.role === 'KHACHHANG') {
+            if (state.role === 'KHACHHANG' || state.role === 'GUEST') {
                 try {
                     const cart = await readJson('/cart/count');
                     const quantity = Number(cart.quantity);

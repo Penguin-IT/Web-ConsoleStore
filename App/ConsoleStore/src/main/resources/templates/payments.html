@@ -129,15 +129,22 @@
                 }"></strong>
             </div>
 
+            <div class="co-sum-row">
+                <span>Tiền hàng</span>
+                <span th:text="${#numbers.formatDecimal(page.invoice.goodsAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="co-sum-row">
+                <span>Phí vận chuyển</span>
+                <span th:text="${page.invoice.shippingFee.signum() == 0 ? 'Miễn phí'
+              : #numbers.formatDecimal(page.invoice.shippingFee, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="co-sum-row" th:if="${page.invoice.discount.signum() > 0}">
+                <span th:text="${'Mã giảm giá ' + page.invoice.couponCode}"></span>
+                <span th:text="${'-' + #numbers.formatDecimal(page.invoice.discount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
             <div class="checkout-total">
                 <span>Tổng cộng</span>
-
-                <strong th:text="${
-                    #numbers.formatDecimal(
-                        page.invoice.totalAmount,
-                        1, 'POINT', 0, 'COMMA'
-                    ) + ' ₫'
-                }"></strong>
+                <strong th:text="${#numbers.formatDecimal(page.invoice.totalAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
             </div>
         </aside>
     </div>

@@ -3079,9 +3079,9 @@ SELECT
     COALESCE(SUM(c.soLuong * c.donGia), 0) AS tongChiTiet
 FROM HoaDon h
 LEFT JOIN ChiTietHoaDon c ON c.maHD = h.maHD
-GROUP BY h.maHD, h.tongTien
-HAVING h.tongTien
-    <> COALESCE(SUM(c.soLuong * c.donGia), 0);
+GROUP BY h.maHD, h.tongTien, h.phiVanChuyen, h.giamGia
+HAVING h.tongTien <> COALESCE(SUM(c.soLuong * c.donGia), 0) + h.phiVanChuyen - h.giamGia;
+
 
 SELECT
     t.maTT,
@@ -3121,3 +3121,89 @@ SELECT
     LEFT(matKhau, 4) AS DauMaHoa
 FROM dbo.TaiKhoan
 WHERE vaiTro IN ('BANHANG', 'KHO', 'BAOHANH');
+go
+
+
+IF OBJECT_ID(N'GioHang', N'U') IS NULL
+BEGIN
+    CREATE TABLE GioHang (
+        maGioHang BIGINT IDENTITY(1,1) NOT NULL,
+        maKH BIGINT NULL,
+        maKhach VARCHAR(36) NULL,
+        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ngayCapNhat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT PK_GioHang PRIMARY KEY (maGioHang),
+        CONSTRAINT FK_GioHang_KhachHang
+            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT CK_GioHang_chuSoHuu CHECK (
+            (maKH IS NOT NULL AND maKhach IS NULL)
+            OR (maKH IS NULL AND maKhach IS NOT NULL)
+        )
+    );
+
+    CREATE UNIQUE INDEX UX_GioHang_maKH
+        ON GioHang(maKH) WHERE maKH IS NOT NULL;
+    CREATE UNIQUE INDEX UX_GioHang_maKhach
+        ON GioHang(maKhach) WHERE maKhach IS NOT NULL;
+END;
+GO
+
+IF OBJECT_ID(N'ChiTietGioHang', N'U') IS NULL
+BEGIN
+    -- Cố ý không có FK tới SanPham: giỏ đã xử lý sản phẩm ngừng kinh doanh
+    CREATE TABLE ChiTietGioHang (
+        maGioHang BIGINT NOT NULL,
+        maSP BIGINT NOT NULL,
+        soLuong INT NOT NULL,
+        thuTu INT NOT NULL,
+
+        CONSTRAINT PK_ChiTietGioHang PRIMARY KEY (maGioHang, maSP),
+        CONSTRAINT FK_ChiTietGioHang_GioHang
+            FOREIGN KEY (maGioHang) REFERENCES GioHang(maGioHang)
+            ON DELETE CASCADE,
+        CONSTRAINT CK_ChiTietGioHang_soLuong CHECK (soLuong > 0)
+    );
+END;
+GO
+USE QLStoreConsole;
+GO
+
+ALTER TABLE HoaDon ADD
+    phiVanChuyen DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_phiVanChuyen DEFAULT 0,
+    giamGia      DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_giamGia      DEFAULT 0,
+    maGiamGia    VARCHAR(30)   NULL;
+GO
+
+CREATE TABLE MaGiamGia (
+    maCode        VARCHAR(30)   NOT NULL,
+    moTa          NVARCHAR(200) NOT NULL,
+    loai          VARCHAR(10)   NOT NULL,          -- PHAN_TRAM | SO_TIEN | FREESHIP
+    giaTri        DECIMAL(18,0) NOT NULL DEFAULT 0,
+    giamToiDa     DECIMAL(18,0) NULL,              -- chỉ dùng cho PHAN_TRAM
+    donToiThieu   DECIMAL(18,0) NOT NULL DEFAULT 0,
+    soLuong       INT           NULL,              -- NULL = không giới hạn
+    moiKhachToiDa INT           NOT NULL DEFAULT 1,
+    batDau        DATETIME      NOT NULL,
+    ketThuc       DATETIME      NOT NULL,
+    hienTrangChu  BIT           NOT NULL DEFAULT 1,
+    hoatDong      BIT           NOT NULL DEFAULT 1,
+    CONSTRAINT PK_MaGiamGia PRIMARY KEY (maCode),
+    CONSTRAINT CK_MaGiamGia_loai CHECK (loai IN ('PHAN_TRAM','SO_TIEN','FREESHIP')),
+    CONSTRAINT CK_MaGiamGia_giaTri CHECK (giaTri >= 0
+        AND (loai <> 'PHAN_TRAM' OR giaTri BETWEEN 1 AND 100)),
+    CONSTRAINT CK_MaGiamGia_thoiGian CHECK (ketThuc > batDau)
+);
+GO
+
+ALTER TABLE HoaDon ADD
+    CONSTRAINT CK_HoaDon_phiVanChuyen CHECK (phiVanChuyen >= 0),
+    CONSTRAINT CK_HoaDon_giamGia      CHECK (giamGia >= 0),
+    CONSTRAINT FK_HoaDon_MaGiamGia    FOREIGN KEY (maGiamGia) REFERENCES MaGiamGia(maCode);
+GO
+
+INSERT INTO MaGiamGia (maCode, moTa, loai, giaTri, giamToiDa, donToiThieu, soLuong, moiKhachToiDa, batDau, ketThuc) VALUES
+('WELCOME5', N'Giảm 5% cho đơn từ 1 triệu',          'PHAN_TRAM', 5,      500000, 1000000, NULL, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
+('GAME200K', N'Giảm 200.000₫ cho đơn từ 3 triệu',     'SO_TIEN',   200000, NULL,   3000000, 100,  1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
+('FREESHIP', N'Miễn phí vận chuyển cho đơn từ 500k',  'FREESHIP',  0,      NULL,   500000,  NULL, 3, GETDATE(), DATEADD(MONTH, 3, GETDATE()));
+GO

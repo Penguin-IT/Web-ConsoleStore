@@ -265,7 +265,7 @@
      * --------------------------------------------------------- */
 
     var ADDRESS_API = 'https://provinces.open-api.vn/api';
-    var REQUEST_TIMEOUT_MS = 8000;
+    var REQUEST_TIMEOUT_MS = 5000;
     var cache = {};
 
     function getJson(url) {
@@ -299,25 +299,93 @@
             });
     }
 
+    var OPEN_API = 'https://provinces.open-api.vn/api';
+    var ESGOO_API = 'https://esgoo.net/api-tinhthanh/';
+
+    function esgoo(path) {
+        return getJson(ESGOO_API + path + '.htm').then(function (data) {
+            if (!data || data.error !== 0 || !Array.isArray(data.data)) {
+                throw new Error('esgoo: dữ liệu không hợp lệ');
+            }
+
+            return data.data.map(function (item) {
+                return { name: item.full_name || item.name, code: item.id };
+            });
+        });
+    }
+
+    var PROVIDERS = [
+        {
+            provinces: function () {
+                return getJson(OPEN_API + '/p/');
+            },
+            districts: function (code) {
+                return getJson(
+                    OPEN_API + '/p/' + encodeURIComponent(code) + '?depth=2'
+                ).then(function (data) {
+                    return data.districts || [];
+                });
+            },
+            wards: function (code) {
+                return getJson(
+                    OPEN_API + '/d/' + encodeURIComponent(code) + '?depth=2'
+                ).then(function (data) {
+                    return data.wards || [];
+                });
+            }
+        },
+        {
+            provinces: function () { return esgoo('1/0'); },
+            districts: function (code) {
+                return esgoo('2/' + encodeURIComponent(code));
+            },
+            wards: function (code) {
+                return esgoo('3/' + encodeURIComponent(code));
+            }
+        }
+    ];
+
+    // Nguồn đã tải Tỉnh thành công; Quận/Phường phải dùng cùng nguồn đó
+    // vì mã (code) của mỗi nguồn khác nhau.
+    var active = 0;
+
     var source = {
         provinces: function () {
-            return getJson(ADDRESS_API + '/p/');
+            var index = 0;
+
+            function next() {
+                if (index >= PROVIDERS.length) {
+                    return Promise.reject(
+                        new Error('Không có nguồn địa chỉ nào hoạt động')
+                    );
+                }
+
+                var current = index++;
+
+                return PROVIDERS[current].provinces().then(function (items) {
+                    if (!Array.isArray(items) || !items.length) {
+                        throw new Error('Danh sách rỗng');
+                    }
+
+                    active = current;
+
+                    return items;
+                }).catch(function (error) {
+                    console.warn('Nguồn địa chỉ #' + current + ' lỗi:', error);
+
+                    return next();
+                });
+            }
+
+            return next();
         },
 
         districts: function (code) {
-            return getJson(
-                ADDRESS_API + '/p/' + encodeURIComponent(code) + '?depth=2'
-            ).then(function (data) {
-                return data.districts || [];
-            });
+            return PROVIDERS[active].districts(code);
         },
 
         wards: function (code) {
-            return getJson(
-                ADDRESS_API + '/d/' + encodeURIComponent(code) + '?depth=2'
-            ).then(function (data) {
-                return data.wards || [];
-            });
+            return PROVIDERS[active].wards(code);
         }
     };
 
@@ -498,11 +566,12 @@
             if (found) {
                 return loadWards(selectedWard);
             }
-        }).catch(function () {
-            fallbackToText(
-                ['district', 'ward'],
-                'Không tải được danh sách Quận / Huyện. '
-                    + 'Vui lòng nhập thủ công.'
+        }).catch(function (error) {
+            console.error('Không tải được địa chỉ:', error);
+            // Giữ nguyên các ô nhập tay do máy chủ dựng sẵn.
+            setHint(
+                'Không tải được danh sách địa phương. '
+                + 'Vui lòng nhập Tỉnh / Quận / Phường thủ công.'
             );
         });
     }
@@ -522,11 +591,11 @@
                 sortByName(items),
                 selectedName
             );
-        }).catch(function () {
-            fallbackToText(
-                ['ward'],
-                'Không tải được danh sách Phường / Xã. '
-                    + 'Vui lòng nhập thủ công.'
+        }).catch(function (error) {
+            console.error('Không tải được địa chỉ:', error);
+            setHint(
+                'Không tải được danh sách địa phương. '
+                + 'Vui lòng nhập Tỉnh / Quận / Phường thủ công.'
             );
         });
     }
