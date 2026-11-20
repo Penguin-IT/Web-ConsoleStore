@@ -9,7 +9,11 @@ public record CartView(
         BigDecimal totalAmount,
         boolean readyToCheckout
 ) {
-
+    public BigDecimal getSaved() {
+        return lines.stream()
+                .map(Line::getSaved)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
     public record Line(
             Long productId,
             String name,
