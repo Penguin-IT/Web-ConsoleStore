@@ -59,6 +59,8 @@ public class TradeInController {
     })
     public String list(
             @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "") String from,
+            @RequestParam(defaultValue = "") String to,
             @RequestParam(defaultValue = "0") int page,
             Principal principal,
             Model model,
@@ -71,11 +73,15 @@ public class TradeInController {
                 service.list(
                         principal.getName(),
                         keyword,
+                        from,
+                        to,
                         page
                 )
         );
 
         model.addAttribute("keyword", keyword);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
 
         return "trade-ins";
     }
@@ -100,6 +106,9 @@ public class TradeInController {
         TradeInRequest form = new TradeInRequest();
         form.setToken(token);
         form.setPhone(phone);
+        if (form.getItems().isEmpty()) {
+            form.getItems().add(new TradeInRequest.Item());
+        }
 
         model.addAttribute("form", form);
 
@@ -278,6 +287,10 @@ public class TradeInController {
         if (!form.isNewCustomer() || !wasNewCustomer) {
             form.setFullName("");
             form.setAddress("");
+        }
+
+        if (form.getItems().isEmpty()) {
+            form.getItems().add(new TradeInRequest.Item());
         }
 
         model.addAttribute("options", options);

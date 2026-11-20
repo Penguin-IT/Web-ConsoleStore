@@ -199,7 +199,14 @@ public class LookupSocketServer implements AutoCloseable {
                 return;
             }
 
-            send(writer, "OK", "Đăng nhập thành công.");
+            send(
+                    writer,
+                    "OK",
+                    "Đăng nhập thành công (" + session.role() + ").\n"
+                            + "Lệnh được phép: "
+                            + String.join(", ", LookupService.commandsForRole(session.role()))
+                            + ", QUIT"
+            );
 
             for (int request = 0; request < 100; request++) {
                 String line = readLine(reader, 1024);
@@ -235,14 +242,14 @@ public class LookupSocketServer implements AutoCloseable {
                     };
 
                     send(writer, "OK", result);
+                } catch (LookupService.CommandDeniedException exception) {
+                    send(writer, "ERR", exception.getMessage());
                 } catch (AccessDeniedException exception) {
                     send(
                             writer,
                             "ERR",
-                            "Phiên không còn quyền tra cứu. "
-                                    + "Hãy đăng nhập lại."
+                            "Phiên không còn quyền tra cứu. Hãy đăng nhập lại."
                     );
-
                     return;
                 } catch (IllegalArgumentException exception) {
                     send(writer, "ERR", exception.getMessage());

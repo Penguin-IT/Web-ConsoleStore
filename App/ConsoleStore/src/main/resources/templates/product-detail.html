@@ -7,12 +7,14 @@
     <title th:text="${product != null
             ? product.name + ' | Console Store'
             : 'Không tìm thấy sản phẩm | Console Store'}">
-        Chi tiết sản phẩm
+        Chi tiết sản phẩm | Console Store
     </title>
+
+    <link rel="icon" th:href="@{/images/banners/logo.png}">
 
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
-    <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
 
@@ -204,138 +206,316 @@
     </style>
 </head>
 
-<body class="customer-page">
+<body class="customer-page product-detail-page">
+
 <header th:replace="~{fragments/store :: header}"></header>
 
 <main id="main-content"
-      class="container store-container detail-main"
+      class="container store-container pd-main"
       tabindex="-1">
 
-    <section class="detail-empty" th:if="${product == null}">
-        <p class="eyebrow">CONSOLE STORE</p>
+    <section class="pd-empty" th:if="${product == null}">
+        <span class="pd-empty-symbol" aria-hidden="true">?</span>
+
+        <p class="pd-kicker">CONSOLE STORE</p>
 
         <h1>Không tìm thấy sản phẩm</h1>
 
-        <p th:text="${message}">
-            Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.
+        <p th:text="${message
+                ?: 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.'}">
         </p>
 
-        <a class="button-primary" th:href="@{/products}">
-            Về danh sách sản phẩm
+        <a class="pd-button pd-button--dark"
+           th:href="@{/products}">
+            Khám phá sản phẩm
+            <span aria-hidden="true">↗</span>
         </a>
     </section>
 
-    <section th:if="${product != null}">
-        <nav class="detail-breadcrumb" aria-label="Đường dẫn">
-            <a th:href="@{/}">Trang chủ</a>
-            <span aria-hidden="true"> / </span>
-            <a th:href="@{/products}">Sản phẩm</a>
-            <span aria-hidden="true"> / </span>
-            <span th:text="${product.name}"></span>
+    <div th:if="${product != null}"
+         th:with="used=${product.condition == 'CU'},
+                  available=${product.stock > 0}">
+
+        <nav class="pd-breadcrumb" aria-label="Đường dẫn">
+            <ol>
+                <li>
+                    <a th:href="@{/}">Trang chủ</a>
+                </li>
+
+                <li>
+                    <a th:href="@{/products}">Sản phẩm</a>
+                </li>
+
+                <li>
+                    <span aria-current="page"
+                          th:text="${product.name}">
+                    </span>
+                </li>
+            </ol>
         </nav>
 
-        <div class="detail-layout">
-            <div class="detail-photo">
-                <img th:src="@{${product.image}}"
-                     th:attr="data-product-image=${product.image}"
-                     th:alt="${product.name}"
-                     width="600"
-                     height="600"
-                     fetchpriority="high">
+        <section class="pd-hero" aria-labelledby="productTitle">
+
+            <div class="pd-gallery">
+                <div class="pd-gallery-top">
+                    <span class="pd-condition"
+                          th:classappend="${used ? 'pd-condition--used' : ''}"
+                          th:text="${used ? 'Hàng cũ' : 'Hàng mới'}">
+                    </span>
+
+                    <span class="pd-gallery-brand">
+                        CONSOLE STORE
+                    </span>
+                </div>
+
+                <div class="pd-visual">
+                    <img th:src="@{${product.image}}"
+                         th:attr="data-product-image=${product.image}"
+                         th:alt="${product.name}"
+                         width="780"
+                         height="780"
+                         fetchpriority="high"
+                         decoding="async">
+                </div>
+
+                <div class="pd-gallery-bottom">
+                    <span th:text="${product.platform}"></span>
+
+                    <a th:href="@{${product.image}}"
+                       target="_blank"
+                       rel="noopener"
+                       th:aria-label="${'Mở ảnh ' + product.name}">
+                        Xem ảnh gốc
+                        <span aria-hidden="true">↗</span>
+                    </a>
+                </div>
             </div>
 
-            <div class="detail-copy">
-                <p class="eyebrow" th:text="${product.platform}"></p>
-
-                <h1 th:text="${product.name}"></h1>
-
-                <p class="detail-price"
-                   th:text="${#numbers.formatDecimal(
-                       product.price, 0, 'POINT', 0, 'COMMA'
-                   ) + ' đ'}">
-                </p>
-
-                <p class="detail-stock"
-                   th:classappend="${product.stock <= 0} ? 'is-empty'"
-                   th:text="${product.stock > 0
-                       ? 'Còn ' + product.stock + ' sản phẩm'
-                       : 'Hết hàng'}">
-                </p>
-
-                <dl class="detail-facts">
-                    <div>
-                        <dt>Mã sản phẩm</dt>
-                        <dd th:text="${product.id}"></dd>
-                    </div>
-
-                    <div>
-                        <dt>Loại</dt>
-                        <dd th:text="${product.category}"></dd>
-                    </div>
-
-                    <div>
-                        <dt>Nền tảng</dt>
-                        <dd th:text="${product.platform}"></dd>
-                    </div>
-
-                    <div>
-                        <dt>Tình trạng</dt>
-                        <dd th:text="${product.condition == 'CU'
-                            ? 'Cũ' : 'Mới'}">
-                        </dd>
-                    </div>
-                </dl>
-
-                <div th:if="${product.stock > 0}">
-                    <a th:if="${!authenticated}"
-                       class="button-primary"
-                       th:href="@{/login}">
-                        Đăng nhập để mua hàng
+            <div class="pd-summary">
+                <div class="pd-heading-meta">
+                    <a class="pd-category"
+                       th:href="@{/products(category=${product.category})}"
+                       th:text="${product.category}">
                     </a>
 
-                    <form th:if="${customer}"
+                    <span class="pd-code"
+                          th:text="${'Mã #' + product.id}">
+                    </span>
+                </div>
+
+                <h1 id="productTitle"
+                    class="pd-title"
+                    th:text="${product.name}">
+                </h1>
+
+                <div class="pd-tags">
+                    <span class="pd-tag"
+                          th:text="${product.platform}">
+                    </span>
+
+                    <span class="pd-tag"
+                          th:text="${used ? 'Tình trạng: Cũ' : 'Tình trạng: Mới'}">
+                    </span>
+                </div>
+
+                <div class="pd-price-card">
+                    <span class="pd-price-label">Giá bán</span>
+
+                    <p class="pd-price">
+                        <span th:text="${#numbers.formatDecimal(
+                                product.price, 0, 'POINT', 0, 'COMMA'
+                        )}">
+                        </span>
+
+                        <span class="pd-currency">₫</span>
+                    </p>
+
+                    <div class="pd-stock"
+                         th:classappend="${available ? '' : 'pd-stock--empty'}">
+
+                        <span class="pd-stock-dot" aria-hidden="true"></span>
+
+                        <span th:text="${available
+                                ? 'Còn ' + product.stock + ' sản phẩm'
+                                : 'Tạm hết hàng'}">
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pd-purchase">
+
+                    <form th:if="${available && customer}"
+                          class="pd-cart-form"
                           method="post"
-                          th:action="@{/cart/items}"
-                          class="detail-cart-form">
+                          th:action="@{/cart/items}">
 
                         <input type="hidden"
                                name="productId"
                                th:value="${product.id}">
 
-                        <label for="cartQuantity">Số lượng</label>
+                        <div class="pd-quantity-field">
+                            <label for="cartQuantity">Số lượng</label>
 
-                        <input type="number"
-                               id="cartQuantity"
-                               name="quantity"
-                               value="1"
-                               min="1"
-                               th:max="${product.stock}"
-                               step="1"
-                               required>
+                            <input id="cartQuantity"
+                                   type="number"
+                                   name="quantity"
+                                   value="1"
+                                   min="1"
+                                   step="1"
+                                   th:max="${product.stock}"
+                                   inputmode="numeric"
+                                   required>
+                        </div>
 
-                        <button class="button-primary" type="submit">
+                        <button class="pd-button pd-button--dark"
+                                type="submit">
+
+                            <svg viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="1.7"
+                                 stroke-linecap="round"
+                                 stroke-linejoin="round"
+                                 aria-hidden="true">
+                                <path d="M3 3h2l2.2 11h10.6l2-8H6"></path>
+                                <path d="M8 14l-1 3h12"></path>
+                                <circle cx="9" cy="20" r="1"></circle>
+                                <circle cx="18" cy="20" r="1"></circle>
+                            </svg>
+
                             Thêm vào giỏ hàng
                         </button>
                     </form>
 
-                    <p th:if="${authenticated && !customer}">
+                    <a th:if="${available && !authenticated}"
+                       class="pd-button pd-button--dark pd-button--wide"
+                       th:href="@{/login}">
+                        Đăng nhập để mua hàng
+                        <span aria-hidden="true">↗</span>
+                    </a>
+
+                    <p th:if="${available && authenticated && !customer}"
+                       class="pd-account-notice">
                         Mua hàng dành cho tài khoản khách hàng.
                     </p>
+
+                    <button th:unless="${available}"
+                            class="pd-button pd-button--dark pd-button--wide"
+                            type="button"
+                            disabled>
+                        Tạm hết hàng
+                    </button>
+
+                    <a class="pd-cart-link"
+                       th:if="${customer}"
+                       th:href="@{/cart}">
+                        Xem giỏ hàng
+                        <span aria-hidden="true">→</span>
+                    </a>
                 </div>
 
-                <button th:if="${product.stock <= 0}"
-                        class="button-primary"
-                        type="button"
-                        disabled>
-                    Hết hàng
-                </button>
+                <div class="pd-summary-links">
+                    <a href="#productDescription">
+                        Mô tả sản phẩm
+                        <span aria-hidden="true">↓</span>
+                    </a>
+
+                    <a href="#productInformation">
+                        Thông tin sản phẩm
+                        <span aria-hidden="true">↓</span>
+                    </a>
+                </div>
             </div>
+        </section>
+
+        <div class="pd-content-grid">
+
+            <section id="productDescription"
+                     class="pd-panel pd-description"
+                     aria-labelledby="descriptionTitle">
+
+                <p class="pd-kicker">KHÁM PHÁ SẢN PHẨM</p>
+
+                <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
+
+                <p class="pd-description-text"
+                   th:text="${#strings.isEmpty(description)
+                           ? 'Thông tin sản phẩm đang được cập nhật.'
+                           : description}">
+                </p>
+            </section>
+
+            <section id="productInformation"
+                     class="pd-panel pd-information"
+                     aria-labelledby="informationTitle">
+
+                <p class="pd-kicker">THÔNG TIN CHI TIẾT</p>
+
+                <h2 id="informationTitle">Thông tin sản phẩm</h2>
+
+                <dl class="pd-facts">
+                    <div>
+                        <dt>Mã sản phẩm</dt>
+
+                        <dd th:text="${'#' + product.id}"></dd>
+                    </div>
+
+                    <div>
+                        <dt>Loại sản phẩm</dt>
+
+                        <dd>
+                            <a th:href="@{/products(category=${product.category})}"
+                               th:text="${product.category}">
+                            </a>
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>Nền tảng</dt>
+
+                        <dd>
+                            <a th:href="@{/products(platform=${product.platform})}"
+                               th:text="${product.platform}">
+                            </a>
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>Tình trạng</dt>
+
+                        <dd th:text="${used ? 'Cũ' : 'Mới'}"></dd>
+                    </div>
+
+                    <div>
+                        <dt>Còn hàng</dt>
+
+                        <dd th:text="${available
+                                ? product.stock + ' sản phẩm'
+                                : 'Hết hàng'}">
+                        </dd>
+                    </div>
+                </dl>
+            </section>
         </div>
 
-        <section class="detail-description"
-                 aria-labelledby="descriptionTitle">
-            <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
-            <p th:text="${description}"></p>
+        <section class="pd-explore" aria-labelledby="exploreTitle">
+            <div>
+                <p class="pd-kicker">TIẾP TỤC KHÁM PHÁ</p>
+
+                <h2 id="exploreTitle">Tìm thêm lựa chọn của bạn.</h2>
+            </div>
+
+            <div class="pd-explore-links">
+                <a th:href="@{/products(category=${product.category})}">
+                    <span th:text="${product.category}"></span>
+                    <span aria-hidden="true">↗</span>
+                </a>
+
+                <a th:href="@{/products(platform=${product.platform})}">
+                    <span th:text="${product.platform}"></span>
+                    <span aria-hidden="true">↗</span>
+                </a>
+            </div>
         </section>
         <section class="related"
                  th:if="${!#lists.isEmpty(related)}"
@@ -397,5 +577,6 @@
 </main>
 <section th:replace="~{fragments/store-info :: info}"></section>
 <footer th:replace="~{fragments/store :: footer}"></footer>
+
 </body>
 </html>
