@@ -44,6 +44,16 @@
                 </select>
             </label>
 
+            <label class="ui-field">
+                <span>Từ ngày</span>
+                <input type="date" name="from" th:value="${from}">
+            </label>
+
+            <label class="ui-field">
+                <span>Đến ngày</span>
+                <input type="date" name="to" th:value="${to}">
+            </label>
+
             <button class="ui-btn ui-primary" type="submit">Tìm kiếm</button>
             <a class="ui-btn" th:href="@{/warranties}">Xóa bộ lọc</a>
         </form>
@@ -79,10 +89,10 @@
             <span th:text="${cases.totalElements + ' phiếu'}"></span>
             <div>
                 <a class="ui-btn" th:if="${cases.hasPrevious()}"
-                   th:href="@{/warranties(page=${cases.number - 1}, keyword=${keyword}, status=${status})}">← Trước</a>
+                   th:href="@{/warranties(page=${cases.number - 1}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}">← Trước</a>
                 <span th:text="${'Trang ' + (cases.number + 1) + ' / ' + (cases.totalPages == 0 ? 1 : cases.totalPages)}"></span>
                 <a class="ui-btn" th:if="${cases.hasNext()}"
-                   th:href="@{/warranties(page=${cases.number + 1}, keyword=${keyword}, status=${status})}">Sau →</a>
+                   th:href="@{/warranties(page=${cases.number + 1}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}">Sau →</a>
             </div>
         </div>
     </section>

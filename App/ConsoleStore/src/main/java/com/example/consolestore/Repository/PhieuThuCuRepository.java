@@ -80,11 +80,14 @@ public interface PhieuThuCuRepository
         FROM PhieuThuCu p
         JOIN KhachHang k ON k.maKH = p.maKH
         JOIN Kho w ON w.maKho = p.maKho
-        WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
-           OR k.hoTen LIKE :keyword ESCAPE '~'
-           OR (
-               N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)
-           ) LIKE :keyword ESCAPE '~'
+        WHERE (:fromDate IS NULL OR p.ngayThu >= :fromDate)
+          AND (:toExclusive IS NULL OR p.ngayThu < :toExclusive)
+          AND (
+               k.soDienThoai LIKE :keyword ESCAPE '~'
+            OR k.hoTen LIKE :keyword ESCAPE '~'
+            OR (N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)) LIKE :keyword ESCAPE '~'
+            OR CONVERT(NVARCHAR(30), p.maPTC) LIKE :keyword ESCAPE '~'
+          )
         ORDER BY p.ngayThu DESC, p.maPTC DESC
         """,
             countQuery = """
@@ -92,16 +95,21 @@ public interface PhieuThuCuRepository
         FROM PhieuThuCu p
         JOIN KhachHang k ON k.maKH = p.maKH
         JOIN Kho w ON w.maKho = p.maKho
-        WHERE k.soDienThoai LIKE :keyword ESCAPE '~'
-           OR k.hoTen LIKE :keyword ESCAPE '~'
-           OR (
-               N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)
-           ) LIKE :keyword ESCAPE '~'
+        WHERE (:fromDate IS NULL OR p.ngayThu >= :fromDate)
+          AND (:toExclusive IS NULL OR p.ngayThu < :toExclusive)
+          AND (
+               k.soDienThoai LIKE :keyword ESCAPE '~'
+            OR k.hoTen LIKE :keyword ESCAPE '~'
+            OR (N'PTC' + CONVERT(NVARCHAR(30), p.maPTC)) LIKE :keyword ESCAPE '~'
+            OR CONVERT(NVARCHAR(30), p.maPTC) LIKE :keyword ESCAPE '~'
+          )
         """,
             nativeQuery = true
     )
     org.springframework.data.domain.Page<ReceiptRow> searchReceipts(
             @Param("keyword") String keyword,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toExclusive") java.time.LocalDateTime toExclusive,
             org.springframework.data.domain.Pageable pageable
     );
 

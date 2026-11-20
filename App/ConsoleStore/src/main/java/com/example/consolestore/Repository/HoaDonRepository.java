@@ -729,6 +729,7 @@ public interface HoaDonRepository
               AND (:toExclusive IS NULL OR h.ngayLap < :toExclusive)
               AND (
                   CONCAT(N'HD', h.maHD) LIKE :keyword ESCAPE '~'
+                  OR CONVERT(NVARCHAR(30), h.maHD) LIKE :keyword ESCAPE '~'
                   OR COALESCE(
                       NULLIF(h.tenNguoiNhan, N''),
                       k.hoTen,
@@ -760,6 +761,7 @@ public interface HoaDonRepository
               AND (:toExclusive IS NULL OR h.ngayLap < :toExclusive)
               AND (
                   CONCAT(N'HD', h.maHD) LIKE :keyword ESCAPE '~'
+                  OR CONVERT(NVARCHAR(30), h.maHD) LIKE :keyword ESCAPE '~'
                   OR COALESCE(
                       NULLIF(h.tenNguoiNhan, N''),
                       k.hoTen,
