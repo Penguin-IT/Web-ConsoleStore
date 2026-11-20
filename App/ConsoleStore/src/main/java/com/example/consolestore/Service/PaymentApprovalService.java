@@ -20,7 +20,8 @@ public class PaymentApprovalService {
     private static final Set<String> METHODS = Set.of(
             "CHUYEN_KHOAN",
             "MOMO",
-            "ZALOPAY"
+            "ZALOPAY",
+            "TIEN_MAT"
     );
 
     private final ThanhToanRepository payments;

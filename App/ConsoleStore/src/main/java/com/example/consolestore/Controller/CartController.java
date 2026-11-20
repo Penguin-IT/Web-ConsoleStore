@@ -1,7 +1,9 @@
 package com.example.consolestore.Controller;
 
+import com.example.consolestore.Service.BundlePricing;
 import com.example.consolestore.Service.CartService;
 import com.example.consolestore.Service.CartSession;
+import com.example.consolestore.Service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.CacheControl;
@@ -21,12 +23,16 @@ public class CartController {
     private final CartService service;
     private final CartSession session;
 
+    private final MemberService members;
+
     public CartController(
             CartService service,
-            CartSession session
+            CartSession session,
+            MemberService members
     ) {
         this.service = service;
         this.session = session;
+        this.members = members;
     }
 
     @GetMapping({"/cart", "/pages/cart.html"})
@@ -39,11 +45,21 @@ public class CartController {
 
         return session.locked(principal.getName(), () -> {
             model.addAttribute("activeStoreMenu", "cart");
+            model.addAttribute("bundlePercent", BundlePricing.PERCENT);
+            model.addAttribute("bundleOffers", Map.of());
 
             try {
+                MemberService.Status member = members.status(principal.getName());
+                model.addAttribute("member", member);
+
                 model.addAttribute(
                         "cart",
-                        service.view(session.items())
+                        service.view(session.items(), member.tier().getPercent())
+                );
+
+                model.addAttribute(
+                        "bundleOffers",
+                        service.bundleOffersByConsole(session.items(), 3)
                 );
             } catch (DataAccessException exception) {
                 response.setStatus(503);
@@ -59,24 +75,7 @@ public class CartController {
         });
     }
 
-    @PostMapping("/cart/items")
-    public String add(
-            @RequestParam Long productId,
-            @RequestParam String quantity,
-            Principal principal,
-            RedirectAttributes redirect
-    ) {
-        return change(
-                principal,
-                redirect,
-                items -> service.add(
-                        items,
-                        productId,
-                        parse(quantity)
-                ),
-                "Đã thêm sản phẩm vào giỏ hàng."
-        );
-    }
+
 
     @PostMapping("/cart/items/{productId}/quantity")
     public String update(
@@ -110,7 +109,23 @@ public class CartController {
                 "Đã xóa sản phẩm khỏi giỏ hàng."
         );
     }
+    @PostMapping("/cart/items")
+    public String add(
+            @RequestParam Long productId,
+            @RequestParam String quantity,
+            @RequestParam(required = false) String next,
+            Principal principal,
+            RedirectAttributes redirect
+    ) {
+        String result = change(
+                principal,
+                redirect,
+                items -> service.add(items, productId, parse(quantity)),
+                "Đã thêm sản phẩm vào giỏ hàng."
+        );
 
+        return "checkout".equals(next) ? "redirect:/checkout" : result;
+    }
     @GetMapping("/cart/count")
     @ResponseBody
     public ResponseEntity<Map<String, Long>> count(

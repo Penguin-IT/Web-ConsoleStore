@@ -20,10 +20,12 @@ public class CheckoutService {
     private static final BigDecimal MAX_AMOUNT =
             new BigDecimal("999999999999999999");
 
+
     private static final Set<String> METHODS = Set.of(
             "CHUYEN_KHOAN",
             "MOMO",
-            "ZALOPAY"
+            "ZALOPAY",
+            "TIEN_MAT"
     );
 
     private final TaiKhoanRepository accounts;
@@ -194,43 +196,60 @@ public class CheckoutService {
                             + "Vui lòng kiểm tra giỏ hàng."
             );
         }
+        int memberPercent = MemberTier
+                .forSpent(invoices.completedSpend(customerId))
+                .getPercent();
+        Set<String> consolePlatforms = BundlePricing.consolePlatforms(
+                byId.values().stream()
+                        .map(CheckoutService::bundleItem)
+                        .toList()
+        );
 
+        Map<Long, BigDecimal> unitPrices = new TreeMap<>();
         BigDecimal total = BigDecimal.ZERO;
 
         for (var entry : quote.items().entrySet()) {
             if (entry.getKey() == null
                     || entry.getValue() == null
                     || entry.getValue() <= 0) {
-                throw rejected(
-                        "Số lượng sản phẩm không hợp lệ."
-                );
+                throw rejected("Số lượng sản phẩm không hợp lệ.");
             }
 
             SanPham product = byId.get(entry.getKey());
 
-            BigDecimal price = product.getGiaBan();
-            BigDecimal quotedPrice =
-                    quote.prices().get(entry.getKey());
+            BigDecimal listPrice = product.getGiaBan();
 
-            if (price == null
-                    || price.signum() <= 0
-                    || price.scale() > 0
-                    || quotedPrice == null
-                    || price.compareTo(quotedPrice) != 0) {
+            if (listPrice == null
+                    || listPrice.signum() <= 0
+                    || listPrice.scale() > 0) {
+                throw rejected("Giá sản phẩm không hợp lệ.");
+            }
+
+            // Giá thực tế = giá niêm yết, hoặc giá mua kèm nếu đủ điều kiện
+            boolean bundle = BundlePricing.eligible(bundleItem(product), consolePlatforms);
+
+            BigDecimal base = bundle
+                    ? BundlePricing.bundlePrice(listPrice)
+                    : listPrice;
+
+            BigDecimal price = BundlePricing.applyPercent(base, memberPercent);
+
+            BigDecimal quotedPrice = quote.prices().get(entry.getKey());
+
+            if (quotedPrice == null || price.compareTo(quotedPrice) != 0) {
                 throw rejected(
                         "Giá sản phẩm đã thay đổi. "
                                 + "Vui lòng xem lại trước khi đặt."
                 );
             }
 
+            unitPrices.put(entry.getKey(), price);
+
             total = total.add(
-                    price.multiply(
-                            BigDecimal.valueOf(
-                                    entry.getValue()
-                            )
-                    )
+                    price.multiply(BigDecimal.valueOf(entry.getValue()))
             );
         }
+
 
         if (total.signum() <= 0
                 || total.compareTo(MAX_AMOUNT) > 0) {
@@ -288,7 +307,7 @@ public class CheckoutService {
                         allocation.productId(),
                         allocation.warehouseId(),
                         quantity,
-                        product.getGiaBan()
+                        unitPrices.get(allocation.productId())
                 );
 
                 remaining -= quantity;
@@ -407,5 +426,15 @@ public class CheckoutService {
         }
 
         return false;
+    }
+    private static BundlePricing.Item bundleItem(SanPham product) {
+        String platform = product.getNenTang() == null
+                ? BundlePricing.NO_PLATFORM
+                : product.getNenTang().getName();
+
+        return new BundlePricing.Item(
+                platform,
+                product.getLoaiSanPham().getName()
+        );
     }
 }

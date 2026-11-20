@@ -181,12 +181,17 @@ public class OnlineOrderService {
                 );
             }
         } else {
+            boolean cod = payment != null
+                    && "TIEN_MAT".equals(payment.getMethod());
+
             if (payment == null
-                    || !"DA_THANH_TOAN".equals(payment.getStatus())
                     || payment.getAmount() == null
                     || payment.getAmount().compareTo(
                     order.getTotalAmount()
-            ) != 0) {
+            ) != 0
+                    || (!cod && !"DA_THANH_TOAN".equals(
+                    payment.getStatus()
+            ))) {
                 throw bad(
                         "Đơn chưa được xác nhận thanh toán đủ."
                 );
@@ -213,7 +218,9 @@ public class OnlineOrderService {
                 );
             }
         }
-
+        if ("complete".equals(action)) {
+            invoices.markCodPaid(id);
+        }
         invoices.changeOnlineStatus(
                 id,
                 expected,
@@ -224,6 +231,7 @@ public class OnlineOrderService {
         if (!target.equals(invoices.onlineStatus(id))) {
             throw bad("Không thể cập nhật trạng thái đơn.");
         }
+
     }
 
     @Transactional(timeout = 20)

@@ -134,7 +134,55 @@
             opacity: .55;
             cursor: not-allowed;
         }
+        .related {
+            margin-top: 55px;
+        }
 
+        .related h2 {
+            margin: 0 0 6px;
+            font-size: 22px;
+        }
+
+        .related-sub {
+            margin: 0 0 22px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .related .product-info h3 {
+            margin: 6px 0 10px;
+            font-size: 16px;
+            line-height: 1.35;
+        }
+
+        .related .product-info h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .related-add {
+            margin-top: 12px;
+        }
+
+        .related-add .button-primary {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 991px) {
+            .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 480px) {
+            .related-grid { grid-template-columns: 1fr; }
+        }
         @media (max-width: 767px) {
             .detail-main {
                 padding-block: 28px 50px;
@@ -289,9 +337,65 @@
             <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
             <p th:text="${description}"></p>
         </section>
+        <section class="related"
+                 th:if="${!#lists.isEmpty(related)}"
+                 aria-labelledby="relatedTitle">
+            <h2 id="relatedTitle">Sản phẩm liên quan</h2>
+            <p class="related-sub">Phụ kiện và game cùng nền tảng, mua kèm tiện hơn.</p>
+
+            <div class="related-grid">
+                <article class="product-card"
+                         th:each="item : ${related}"
+                         th:attr="data-product-id=${item.id}">
+
+                    <a class="product-image image-frame"
+                       th:href="@{/products/{id}(id=${item.id})}">
+                        <span class="product-category"
+                              th:text="${item.platform}"></span>
+
+                        <img th:src="@{${item.image}}"
+                             th:attr="data-product-image=${item.image}"
+                             th:alt="${item.name}"
+                             loading="lazy"
+                             width="600"
+                             height="600">
+                    </a>
+
+                    <div class="product-info">
+                        <p class="product-platform">
+                            <span th:text="${item.category}"></span> ·
+                            <span th:text="${item.condition == 'CU' ? 'Cũ' : 'Mới'}"></span>
+                        </p>
+
+                        <h3>
+                            <a th:href="@{/products/{id}(id=${item.id})}"
+                               th:text="${item.name}"></a>
+                        </h3>
+
+                        <div class="product-bottom">
+                            <strong class="product-price"
+                                    th:text="${#numbers.formatDecimal(
+                                        item.price, 0, 'POINT', 0, 'COMMA'
+                                    ) + ' đ'}"></strong>
+                        </div>
+
+                        <form th:if="${customer}"
+                              method="post"
+                              th:action="@{/cart/items}"
+                              class="related-add">
+                            <input type="hidden" name="productId" th:value="${item.id}">
+                            <input type="hidden" name="quantity" value="1">
+                            <button class="button-primary" type="submit">
+                                + Thêm vào giỏ
+                            </button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </section>
     </section>
 </main>
-
+<section th:replace="~{fragments/store-info :: info}"></section>
 <footer th:replace="~{fragments/store :: footer}"></footer>
 </body>
 </html>

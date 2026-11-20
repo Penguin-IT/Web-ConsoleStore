@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<section th:fragment="info" class="store-info" aria-label="Cửa hàng và tin công nghệ">
+    <div class="container store-container">
+        <div class="store-info-grid">
+
+            <div class="store-map">
+                <h2>Ghé cửa hàng</h2>
+
+                <address>
+                    <strong>Console Store</strong><br>
+                    140 Lê Trọng Tấn, Tân Phú, TP. Hồ Chí Minh
+                </address>
+
+                <iframe title="Bản đồ Console Store"
+                        src="https://www.google.com/maps?q=140+L%C3%AA+Tr%E1%BB%8Dng+T%E1%BA%A5n,+T%C3%A2n+Ph%C3%BA,+H%E1%BB%93+Ch%C3%AD+Minh&output=embed"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        allowfullscreen></iframe>
+
+                <a href="https://www.google.com/maps/search/?api=1&query=140+L%C3%AA+Tr%E1%BB%8Dng+T%E1%BA%A5n,+T%C3%A2n+Ph%C3%BA,+H%E1%BB%93+Ch%C3%AD+Minh"
+                   target="_blank" rel="noopener">
+                    Chỉ đường trên Google Maps ↗
+                </a>
+            </div>
+
+            <th:block th:with="news=${@newsService.latest(4)}">
+                <div class="store-news" th:if="${!news.isEmpty()}">
+                    <h2>Tin công nghệ</h2>
+
+                    <a class="store-news-item"
+                       th:each="item : ${news}"
+                       th:classappend="${!item.image.isEmpty()} ? 'has-thumb'"
+                       th:href="${item.link}"
+                       target="_blank" rel="noopener noreferrer">
+
+                        <img th:if="${!item.image.isEmpty()}"
+                             th:src="${item.image}"
+                             alt=""
+                             width="96" height="64"
+                             loading="lazy"
+                             referrerpolicy="no-referrer">
+
+                        <div>
+                            <span th:text="${item.title}"></span>
+                            <small th:text="${'VnExpress · ' + item.published}"></small>
+                        </div>
+                    </a>
+
+                    <p class="store-news-source">Nguồn: VnExpress Số hóa</p>
+                </div>
+            </th:block>
+
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

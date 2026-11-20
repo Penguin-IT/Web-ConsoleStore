@@ -16,6 +16,7 @@ public record PaymentPage(
             case "CHUYEN_KHOAN" -> "Chuyển khoản ngân hàng";
             case "MOMO" -> "Ví MoMo";
             case "ZALOPAY" -> "Ví ZaloPay";
+            case "TIEN_MAT" -> "Thanh toán khi nhận hàng (COD)";
             default -> "Không xác định";
         };
     }
