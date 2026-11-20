@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
@@ -50,6 +53,8 @@ public class TradeInService {
     public Page<PhieuThuCuRepository.ReceiptRow> list(
             String username,
             String keyword,
+            String from,
+            String to,
             int page
     ) {
         staff(username);
@@ -67,8 +72,20 @@ public class TradeInService {
                 .replace("[", "~[")
                 + "%";
 
+        LocalDate start = parseDate(from);
+        LocalDate end = parseDate(to);
+
+        if (start != null && end != null && start.isAfter(end)) {
+            throw bad("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+        }
+
+        LocalDateTime fromDate = start == null ? null : start.atStartOfDay();
+        LocalDateTime toExclusive = end == null ? null : end.plusDays(1).atStartOfDay();
+
         return receipts.searchReceipts(
                 query,
+                fromDate,
+                toExclusive,
                 PageRequest.of(Math.max(0, page), 10)
         );
     }
@@ -484,6 +501,22 @@ public class TradeInService {
             throw bad(
                     "Phiên lập phiếu không hợp lệ. Vui lòng tải lại."
             );
+        }
+    }
+
+    private LocalDate parseDate(String value) {
+        if (clean(value).isBlank()) {
+            return null;
+        }
+
+        try {
+            LocalDate date = LocalDate.parse(value.strip());
+            if (date.getYear() < 1753 || date.getYear() > 9998) {
+                throw bad("Ngày nằm ngoài phạm vi hỗ trợ.");
+            }
+            return date;
+        } catch (DateTimeParseException exception) {
+            throw bad("Ngày tìm kiếm không hợp lệ.");
         }
     }
 

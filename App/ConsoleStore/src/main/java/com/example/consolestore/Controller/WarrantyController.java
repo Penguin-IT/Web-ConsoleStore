@@ -1,29 +1,40 @@
 package com.example.consolestore.Controller;
 
-import com.example.consolestore.DTO.WarrantyRequest;
-import com.example.consolestore.Service.WarrantyService;
+import java.security.Principal;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
-import jakarta.servlet.http.*;
-
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.security.Principal;
-import java.util.*;
+import com.example.consolestore.DTO.WarrantyRequest;
+import com.example.consolestore.Service.WarrantyService;
+
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class WarrantyController {
 
     private static final String TOKEN = "warrantyToken";
 
-    private static final Logger log =
-            LoggerFactory.getLogger(WarrantyController.class);
+    private static final Logger log
+            = LoggerFactory.getLogger(WarrantyController.class);
 
     private final WarrantyService service;
 
@@ -57,12 +68,14 @@ public class WarrantyController {
     }
 
     @GetMapping({
-            "/warranties",
-            "/pages/warranties.html"
+        "/warranties",
+        "/pages/warranties.html"
     })
     public String list(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "") String status,
+            @RequestParam(defaultValue = "") String from,
+            @RequestParam(defaultValue = "") String to,
             @RequestParam(defaultValue = "0") int page,
             Principal principal,
             Model model,
@@ -76,12 +89,16 @@ public class WarrantyController {
                         principal.getName(),
                         keyword,
                         status,
+                        from,
+                        to,
                         page
                 )
         );
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("status", status);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
 
         return "warranties";
     }
@@ -158,9 +175,9 @@ public class WarrantyController {
         try {
             if (form.getToken() == null
                     || !Objects.equals(
-                    session.getAttribute(TOKEN),
-                    form.getToken()
-            )) {
+                            session.getAttribute(TOKEN),
+                            form.getToken()
+                    )) {
                 var existing = service.existing(
                         principal.getName(),
                         form.getToken()
@@ -224,7 +241,7 @@ public class WarrantyController {
             model.addAttribute(
                     "error",
                     "Chưa xác nhận được kết quả. "
-                            + "Giữ nguyên phiếu và thử lại."
+                    + "Giữ nguyên phiếu và thử lại."
             );
         }
 
@@ -254,6 +271,7 @@ public class WarrantyController {
 
         model.addAttribute("detail", detail);
         model.addAttribute("form", form);
+        model.addAttribute("canProcess", service.canProcess(principal.getName()));
 
         return "warranty-detail";
     }
@@ -285,6 +303,11 @@ public class WarrantyController {
             redirect.addFlashAttribute(
                     "success",
                     "Đã cập nhật phiếu bảo hành."
+            );
+        } catch (AccessDeniedException exception) {
+            redirect.addFlashAttribute(
+                    "error",
+                    exception.getMessage()
             );
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute(

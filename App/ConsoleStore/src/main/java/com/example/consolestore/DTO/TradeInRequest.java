@@ -21,7 +21,8 @@ public class TradeInRequest {
 
     @Valid
     @NotEmpty(message = "Danh sách items không được rỗng")
-    private List<Item> items = new ArrayList<>();
+    private List<Item> items =
+            new ArrayList<>(List.of(new Item()));
 
 
     public String getToken() {

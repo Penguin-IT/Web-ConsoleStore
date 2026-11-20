@@ -129,11 +129,13 @@ public interface PhieuBaoHanhRepository
                 JOIN SerialMay s ON s.maSerial = b.maSerial
                 JOIN SanPham p ON p.maSP = s.maSP
                 WHERE (:status = '' OR b.trangThai = :status)
+                  AND (:fromDate IS NULL OR b.ngayTiepNhan >= :fromDate)
+                  AND (:toExclusive IS NULL OR b.ngayTiepNhan < :toExclusive)
                   AND (
                       s.soSerial LIKE :keyword ESCAPE '~'
                       OR p.tenSP LIKE :keyword ESCAPE '~'
-                      OR CONVERT(NVARCHAR(30), b.maBH)
-                         LIKE :keyword ESCAPE '~'
+                      OR (N'BH' + CONVERT(NVARCHAR(30), b.maBH)) LIKE :keyword ESCAPE '~'
+                      OR CONVERT(NVARCHAR(30), b.maBH) LIKE :keyword ESCAPE '~'
                   )
                 ORDER BY b.ngayTiepNhan DESC, b.maBH DESC
                 """,
@@ -143,11 +145,13 @@ public interface PhieuBaoHanhRepository
                 JOIN SerialMay s ON s.maSerial = b.maSerial
                 JOIN SanPham p ON p.maSP = s.maSP
                 WHERE (:status = '' OR b.trangThai = :status)
+                  AND (:fromDate IS NULL OR b.ngayTiepNhan >= :fromDate)
+                  AND (:toExclusive IS NULL OR b.ngayTiepNhan < :toExclusive)
                   AND (
                       s.soSerial LIKE :keyword ESCAPE '~'
                       OR p.tenSP LIKE :keyword ESCAPE '~'
-                      OR CONVERT(NVARCHAR(30), b.maBH)
-                         LIKE :keyword ESCAPE '~'
+                      OR (N'BH' + CONVERT(NVARCHAR(30), b.maBH)) LIKE :keyword ESCAPE '~'
+                      OR CONVERT(NVARCHAR(30), b.maBH) LIKE :keyword ESCAPE '~'
                   )
                 """,
             nativeQuery = true
@@ -155,6 +159,8 @@ public interface PhieuBaoHanhRepository
     Page<Row> search(
             @Param("status") String status,
             @Param("keyword") String keyword,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toExclusive") java.time.LocalDateTime toExclusive,
             Pageable pageable
     );
 
