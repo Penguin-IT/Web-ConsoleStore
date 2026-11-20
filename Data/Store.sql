@@ -1043,12 +1043,20 @@ BEGIN
           AND i.trangThai IN (
               N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
           )
-          AND NOT EXISTS (
+                    AND NOT EXISTS (
               SELECT 1
               FROM ThanhToan t
               WHERE t.maHD = i.maHD
-                AND t.trangThai = N'DA_THANH_TOAN'
                 AND t.soTien = i.tongTien
+                AND (
+                    t.trangThai = N'DA_THANH_TOAN'
+                    OR (
+                        t.phuongThuc = N'TIEN_MAT'
+                        AND i.trangThai IN (
+                            N'DA_XAC_NHAN', N'DANG_GIAO'
+                        )
+                    )
+                )
           )
     )
     BEGIN
@@ -1138,26 +1146,12 @@ BEGIN
             1;
     END;
 
-    
     IF EXISTS (
         SELECT 1
         FROM inserted i
-        JOIN HoaDon h WITH (UPDLOCK, HOLDLOCK)
-            ON h.maHD = i.maHD
-        WHERE h.kenhBan = N'ONLINE'
+        JOIN HoaDon h ON h.maHD = i.maHD
+        WHERE h.kenhBan = N'QUAY'
           AND i.phuongThuc = N'TIEN_MAT'
-    )
-    BEGIN
-        ;THROW 56002,
-            N'Đơn online không hỗ trợ thanh toán tiền mặt.',
-            1;
-    END;
-
-  
-    IF EXISTS (
-        SELECT 1
-        FROM inserted i
-        WHERE i.phuongThuc = N'TIEN_MAT'
           AND i.trangThai <> N'DA_THANH_TOAN'
     )
     BEGIN
@@ -1165,6 +1159,7 @@ BEGIN
             N'Chỉ ghi nhận thanh toán tiền mặt sau khi đã nhận tiền.',
             1;
     END;
+    
 
     IF EXISTS (
         SELECT 1

@@ -39,7 +39,13 @@ public interface HoaDonRepository
             where h.id = :id
             """)
     BigDecimal readTotal(@Param("id") Long id);
-
+    @Query("""
+        select sum(h.totalAmount)
+        from HoaDon h
+        where h.customerId = :customerId
+          and h.status = 'HOAN_TAT'
+        """)
+    BigDecimal completedSpend(@Param("customerId") Long customerId);
     @Modifying
     @Query(
             value = """
@@ -635,8 +641,7 @@ public interface HoaDonRepository
               SELECT 1
               FROM ThanhToan t
               WHERE t.maHD = h.maHD
-                AND t.trangThai = N'DA_THANH_TOAN'
-          )
+AND (t.trangThai = N'DA_THANH_TOAN' OR t.phuongThuc = N'TIEN_MAT')          )
         ORDER BY h.ngayLap, h.maHD
         """, nativeQuery = true)
     List<Long> findExpiredOnlineOrderIds(
@@ -889,4 +894,51 @@ public interface HoaDonRepository
     List<InvoicePayment> staffInvoicePayments(
             @Param("id") Long id
     );
+    @Modifying
+    @Query(
+            value = """
+                UPDATE ThanhToan
+                SET trangThai = N'DA_THANH_TOAN',
+                    ngayThanhToan = GETDATE()
+                WHERE maHD = :id
+                  AND phuongThuc = N'TIEN_MAT'
+                  AND trangThai = N'CHUA_THANH_TOAN'
+                """,
+            nativeQuery = true
+    )
+    int markCodPaid(@Param("id") Long id);
+
+    // Cổng thanh toán: ghi nhận thanh toán online thành công
+    @Modifying
+    @Query(
+            value = """
+                UPDATE t
+                SET trangThai = N'DA_THANH_TOAN',
+                    ngayThanhToan = GETDATE()
+                FROM ThanhToan t
+                JOIN HoaDon h ON h.maHD = t.maHD
+                WHERE h.maHD = :id
+                  AND h.kenhBan = N'ONLINE'
+                  AND h.trangThai = N'CHO_XAC_NHAN'
+                  AND t.trangThai = N'CHUA_THANH_TOAN'
+                  AND t.phuongThuc IN (N'CHUYEN_KHOAN', N'MOMO', N'ZALOPAY')
+                  AND t.soTien = h.tongTien
+                  AND h.tongTien > 0
+                """,
+            nativeQuery = true
+    )
+    int markOnlinePaid(@Param("id") Long id);
+
+    @Modifying
+    @Query(
+            value = """
+                UPDATE HoaDon
+                SET trangThai = N'DA_XAC_NHAN'
+                WHERE maHD = :id
+                  AND kenhBan = N'ONLINE'
+                  AND trangThai = N'CHO_XAC_NHAN'
+                """,
+            nativeQuery = true
+    )
+    int autoConfirmOnline(@Param("id") Long id);
 }

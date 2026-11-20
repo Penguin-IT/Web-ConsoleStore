@@ -99,6 +99,7 @@ public class SecurityConfig {
     ) throws Exception {
 
         http.authenticationProvider(authenticationProvider);
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/sandbox/**"));
 
         http.authorizeHttpRequests(authorize -> authorize
 
@@ -124,7 +125,7 @@ public class SecurityConfig {
                         "/register",
                         "/pages/register.html"
                 ).permitAll()
-
+                .requestMatchers("/sandbox/**").permitAll()
                 // Trang công khai
                 .requestMatchers(
                         HttpMethod.GET,

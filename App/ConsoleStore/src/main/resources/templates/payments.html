@@ -45,53 +45,62 @@
             </div>
 
             <th:block th:if="${page.invoice.status != 'HUY'}">
-                <th:block th:if="${
-                    page.payment.status == 'CHUA_THANH_TOAN'
-                }">
-                    <span class="checkout-status">
-                        Chờ xác nhận thanh toán
-                    </span>
 
-                    <img class="checkout-qr"
-                         th:src="@{/images/ui/qr-demo.svg}"
-                         width="240"
-                         height="240"
-                         alt="QR minh họa, không dùng để chuyển tiền thật">
+                <!-- COD -->
+                <th:block th:if="${page.payment.method == 'TIEN_MAT'}">
+                    <div class="checkout-alert checkout-success"
+                         th:if="${page.payment.status == 'DA_THANH_TOAN'}">
+                        Đã thu tiền khi giao hàng. Cảm ơn bạn!
+                    </div>
 
+                    <th:block th:if="${page.payment.status != 'DA_THANH_TOAN'}">
+                        <span class="checkout-status">Thanh toán khi nhận hàng</span>
 
+                        <p>Đơn hàng đã được ghi nhận. Vui lòng chuẩn bị đúng số tiền
+                            bên dưới để thanh toán cho nhân viên giao hàng.</p>
 
-                    <dl class="checkout-payment-info">
-                        <dt>Số tiền</dt>
+                        <dl class="checkout-payment-info">
+                            <dt>Số tiền cần thanh toán</dt>
+                            <dd th:text="${
+                        #numbers.formatDecimal(
+                            page.payment.amount, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></dd>
 
-                        <dd th:text="${
-                            #numbers.formatDecimal(
-                                page.payment.amount,
-                                1, 'POINT', 0, 'COMMA'
-                            ) + ' ₫'
-                        }"></dd>
-
-                        <dt>Nội dung tham chiếu</dt>
-
-                        <dd th:text="${'HD' + page.invoice.id}"></dd>
-                    </dl>
+                            <dt>Mã đơn hàng</dt>
+                            <dd th:text="${'HD' + page.invoice.id}"></dd>
+                        </dl>
+                    </th:block>
                 </th:block>
 
-                <div class="checkout-alert checkout-success"
-                     th:if="${
-                         page.payment.status == 'DA_THANH_TOAN'
-                     }">
-                    Thanh toán đã được xác nhận.
-                </div>
+                <!-- Online (đã chuyển hướng qua cổng thanh toán) -->
+                <th:block th:if="${page.payment.method != 'TIEN_MAT'}">
+                    <div class="checkout-alert checkout-success"
+                         th:if="${page.payment.status == 'DA_THANH_TOAN'}">
+                        Thanh toán thành công. Đơn hàng của bạn đã được xác nhận!
+                    </div>
+
+                    <th:block th:if="${page.payment.status == 'CHUA_THANH_TOAN'}">
+                        <div class="checkout-alert"
+                             th:if="${result == 'cancel'}">
+                            Bạn đã hủy giao dịch. Đơn hàng vẫn được giữ cho đến khi hết hạn thanh toán.
+                        </div>
+                        <div class="checkout-alert"
+                             th:if="${result == 'expired'}">
+                            Giao dịch đã hết hạn.
+                        </div>
+
+                        <span class="checkout-status">Chưa thanh toán</span>
+
+                        <a class="button-primary"
+                           th:href="@{${payUrl}}">
+                            Thanh toán lại
+                        </a>
+                    </th:block>
+                </th:block>
             </th:block>
 
-            <a class="button-primary"
-               th:href="@{
-                   /checkout/orders/{id}/payment(
-                       id=${page.invoice.id}
-                   )
-               }">
-                Tải lại trạng thái
-            </a>
+            <a th:href="@{/orders}">Xem đơn hàng của tôi</a>
         </section>
 
         <aside class="checkout-panel">

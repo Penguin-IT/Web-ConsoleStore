@@ -132,6 +132,7 @@ public class CatalogController {
 
             model.addAttribute("product", detail.product());
             model.addAttribute("description", detail.description());
+            model.addAttribute("related", catalog.related(id, 4));
 
             // CN04 sẽ cung cấp tài khoản và quyền từ phía server.
             model.addAttribute(

@@ -9,12 +9,18 @@ public record CartView(
         BigDecimal totalAmount,
         boolean readyToCheckout
 ) {
-
+    public BigDecimal getSaved() {
+        return lines.stream()
+                .map(Line::getSaved)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
     public record Line(
             Long productId,
             String name,
             String image,
-            BigDecimal price,
+            BigDecimal price,       // giá thực tế (đã gồm mua kèm và hạng)
+            BigDecimal listPrice,   // giá niêm yết
+            boolean bundle,         // có được giá mua kèm không
             int quantity,
             long stock,
             boolean available,
@@ -22,9 +28,12 @@ public record CartView(
     ) {
 
         public BigDecimal getSubtotal() {
-            return price.multiply(
-                    BigDecimal.valueOf(quantity)
-            );
+            return price.multiply(BigDecimal.valueOf(quantity));
+        }
+
+        public BigDecimal getSaved() {
+            return listPrice.subtract(price)
+                    .multiply(BigDecimal.valueOf(quantity));
         }
     }
 }

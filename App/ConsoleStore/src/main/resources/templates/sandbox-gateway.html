@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PayLab Sandbox | Cổng thanh toán thử nghiệm</title>
+    <style>
+        :root { --brand:#0b5cab; --ink:#1b1f2a; --mute:#6b7280; --line:#e5e7eb; --bg:#f3f4f8; }
+        * { box-sizing:border-box; }
+        body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 "Segoe UI",system-ui,sans-serif; }
+        .ribbon { background:#fff7d6; color:#7a5b00; text-align:center; font-size:13px; padding:6px 12px; border-bottom:1px solid #f1e3a0; }
+        .top { background:var(--brand); color:#fff; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; }
+        .top b { font-size:18px; letter-spacing:.3px; }
+        .wrap { max-width:880px; margin:24px auto; padding:0 16px; display:grid; grid-template-columns:1fr 1.2fr; gap:20px; }
+        .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px; }
+        h2 { margin:0 0 14px; font-size:16px; }
+        dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:8px 16px; }
+        dt { color:var(--mute); }
+        dd { margin:0; text-align:right; font-weight:600; }
+        .amount { font-size:26px; font-weight:700; color:var(--brand); margin:6px 0 14px; }
+        .timer { background:#fff1f0; color:#b42318; border-radius:8px; padding:8px 12px; margin-top:14px; font-weight:600; text-align:center; }
+        #qr { display:grid; place-items:center; padding:12px; border:1px dashed var(--line); border-radius:12px; min-height:224px; margin-top:10px; }
+        label { display:block; font-weight:600; margin:12px 0 6px; }
+        input { width:100%; padding:11px 12px; border:1px solid #cfd4dc; border-radius:10px; font:inherit; }
+        input[readonly] { background:#f7f8fa; color:var(--mute); }
+        .otp { letter-spacing:6px; font-size:20px; text-align:center; }
+        .btn { width:100%; margin-top:16px; padding:13px; border:0; border-radius:10px; background:var(--brand); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+        .btn:disabled { opacity:.5; cursor:not-allowed; }
+        .btn.ghost { background:#fff; color:var(--mute); border:1px solid var(--line); margin-top:10px; font-weight:600; }
+        .err { background:#fef3f2; color:#b42318; border-radius:8px; padding:10px 12px; margin-top:12px; }
+        .hint { margin-top:16px; font-size:13px; color:var(--mute); background:#f7f8fa; border-radius:10px; padding:10px 12px; }
+        .done { grid-column:1 / -1; text-align:center; padding:40px 20px; }
+        .tick { width:72px; height:72px; margin:0 auto 14px; border-radius:50%; background:#12b76a; color:#fff; display:grid; place-items:center; font-size:38px; }
+        @media (max-width:720px) { .wrap { grid-template-columns:1fr; } }
+    </style>
+</head>
+
+<body th:with="brand=${v.method == 'MOMO' ? '#a50064' : (v.method == 'ZALOPAY' ? '#0068ff' : '#0b5cab')},
+               methodName=${v.method == 'MOMO' ? 'Ví MoMo' : (v.method == 'ZALOPAY' ? 'Ví ZaloPay' : 'Thẻ / tài khoản ngân hàng')},
+               money=${#numbers.formatDecimal(v.amount, 1, 'POINT', 0, 'COMMA') + ' ₫'},
+               txnRef=${'SBX' + (v.invoiceId + 100000000)}"
+      th:style="|--brand:${brand}|">
+
+<div class="ribbon">⚠ MÔI TRƯỜNG THỬ NGHIỆM: không phát sinh giao dịch tiền thật</div>
+
+<div class="top">
+    <b>PayLab</b>
+    <span th:text="${methodName}">Ví</span>
+</div>
+
+<main class="wrap">
+
+    <!-- Đã thanh toán -->
+    <section class="card done" th:if="${v.paid}">
+        <div class="tick">✓</div>
+        <h2>Thanh toán thành công</h2>
+        <p>Đã thanh toán <strong th:text="${money}"></strong>
+            cho đơn <strong th:text="${'HD' + v.invoiceId}"></strong>.</p>
+        <p style="color:#6b7280">Mã giao dịch: <span th:text="${txnRef}"></span></p>
+        <p>Đang chuyển về cửa hàng...</p>
+        <a th:href="@{/checkout/orders/{id}/payment(id=${v.invoiceId},result='success')}">
+            Quay lại cửa hàng ngay
+        </a>
+    </section>
+
+    <!-- Hết hạn / đã hủy -->
+    <section class="card done" th:if="${!v.paid and v.closed}">
+        <h2>Giao dịch đã hết hạn</h2>
+        <p>Đơn hàng đã bị hủy do quá thời gian thanh toán.</p>
+        <a th:href="@{/checkout/orders/{id}/payment(id=${v.invoiceId},result='expired')}">
+            Quay lại cửa hàng
+        </a>
+    </section>
+
+    <!-- Đang chờ thanh toán -->
+    <th:block th:if="${!v.paid and !v.closed}">
+        <section class="card">
+            <h2>Thông tin đơn hàng</h2>
+            <div class="amount" th:text="${money}"></div>
+
+            <dl>
+                <dt>Đơn vị bán</dt><dd>Console Store</dd>
+                <dt>Mã đơn hàng</dt><dd th:text="${'HD' + v.invoiceId}"></dd>
+                <dt>Mã giao dịch</dt><dd th:text="${txnRef}"></dd>
+                <dt>Phương thức</dt><dd th:text="${methodName}"></dd>
+            </dl>
+
+            <div class="timer">Giao dịch hết hạn sau <span id="clock">--:--</span></div>
+
+            <div id="qr"></div>
+            <p class="hint">Quét QR bằng điện thoại để thanh toán trên thiết bị khác.
+                Trang này sẽ tự cập nhật khi giao dịch hoàn tất.</p>
+        </section>
+
+        <section class="card">
+            <h2 th:text="${'Xác thực thanh toán qua ' + methodName}"></h2>
+
+            <label th:text="${v.method == 'CHUYEN_KHOAN' ? 'Số thẻ' : 'Số điện thoại ví'}"></label>
+            <input readonly
+                   th:value="${v.method == 'CHUYEN_KHOAN' ? '9704 0000 0000 0018' : '0900 000 000'}">
+
+            <form method="post"
+                  th:action="@{/sandbox/pay/{id}/confirm(id=${v.invoiceId})}"
+                  autocomplete="off">
+                <input type="hidden" name="t" th:value="${token}">
+
+                <label for="otp">Mã OTP (6 số)</label>
+                <input id="otp" class="otp" name="otp" maxlength="6"
+                       inputmode="numeric" required autofocus>
+
+                <div class="err" th:if="${error == 'otp'}">Mã OTP không đúng. Vui lòng thử lại.</div>
+                <div class="err" th:if="${error == 'funds'}">Số dư không đủ để thực hiện giao dịch.</div>
+                <div class="err" th:if="${error == 'expired'}">Giao dịch đã hết hạn hoặc không còn hợp lệ.</div>
+
+                <button class="btn" type="submit" id="payBtn">
+                    Thanh toán <span th:text="${money}"></span>
+                </button>
+            </form>
+
+            <form method="post"
+                  th:action="@{/sandbox/pay/{id}/cancel(id=${v.invoiceId})}">
+                <input type="hidden" name="t" th:value="${token}">
+                <button class="btn ghost" type="submit">Hủy giao dịch</button>
+            </form>
+
+            <div class="hint">
+                <b>Dữ liệu test (sandbox):</b><br>
+                OTP <b>123456</b>: thanh toán thành công<br>
+                OTP <b>111111</b>: không đủ số dư<br>
+                OTP khác: sai OTP
+            </div>
+        </section>
+    </th:block>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script th:inline="javascript">
+    (function () {
+        var id = /*[[${v.invoiceId}]]*/ 0;
+        var token = /*[[${token}]]*/ '';
+        var left = /*[[${secondsLeft}]]*/ 0;
+        var paid = /*[[${v.paid}]]*/ false;
+        var closed = /*[[${v.closed}]]*/ false;
+
+        if (paid) {
+            setTimeout(function () {
+                location.href = '/checkout/orders/' + id + '/payment?result=success';
+            }, 3000);
+            return;
+        }
+
+        if (closed) { return; }
+
+        var qr = document.getElementById('qr');
+        if (window.QRCode && qr) {
+            new QRCode(qr, {
+                text: location.origin + location.pathname + '?t=' + token,
+                width: 200,
+                height: 200
+            });
+        }
+
+        var clock = document.getElementById('clock');
+        function tick() {
+            if (left <= 0) {
+                clock.textContent = '00:00';
+                document.getElementById('payBtn').disabled = true;
+                return;
+            }
+            var m = Math.floor(left / 60), s = left % 60;
+            clock.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+            left--;
+        }
+        tick();
+        setInterval(tick, 1000);
+
+        // Tự cập nhật khi thanh toán xong ở thiết bị khác
+        setInterval(function () {
+            fetch('/sandbox/pay/' + id + '/status?t=' + encodeURIComponent(token),
+                { cache: 'no-store' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.paid || d.closed) { location.reload(); } })
+                .catch(function () {});
+        }, 2000);
+    })();
+</script>
+</body>
+</html>

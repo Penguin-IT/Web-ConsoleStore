@@ -17,6 +17,193 @@
     <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
+
+    <style>
+        .detail-main {
+            min-height: 65vh;
+            padding-block: 45px 80px;
+        }
+
+        .detail-breadcrumb {
+            margin-bottom: 30px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 55px;
+            align-items: start;
+        }
+
+        .detail-photo {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: #fff;
+        }
+
+        .detail-photo img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            object-fit: contain;
+            object-position: center;
+        }
+
+        .detail-copy h1 {
+            margin: 15px 0;
+            font-size: clamp(28px, 3vw, 42px);
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .detail-price {
+            margin: 24px 0;
+            font-size: 30px;
+            font-weight: 750;
+        }
+
+        .detail-stock {
+            color: #655078;
+            font-size: 14px;
+        }
+
+        .detail-stock.is-empty {
+            color: #a33148;
+        }
+
+        .detail-facts {
+            margin: 25px 0;
+        }
+
+        .detail-facts > div {
+            display: grid;
+            grid-template-columns: 110px minmax(0, 1fr);
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-facts dt {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .detail-facts dd {
+            margin: 0;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .detail-description {
+            margin-top: 45px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .detail-description h2 {
+            margin: 0 0 18px;
+            font-size: 22px;
+        }
+
+        .detail-description p {
+            margin: 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.9;
+        }
+
+        .detail-empty {
+            padding-block: 60px;
+            text-align: center;
+        }
+
+        .detail-empty p {
+            margin: 20px 0 30px;
+            color: var(--muted);
+        }
+
+        .detail-copy button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+        .related {
+            margin-top: 55px;
+        }
+
+        .related h2 {
+            margin: 0 0 6px;
+            font-size: 22px;
+        }
+
+        .related-sub {
+            margin: 0 0 22px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .related .product-info h3 {
+            margin: 6px 0 10px;
+            font-size: 16px;
+            line-height: 1.35;
+        }
+
+        .related .product-info h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .related-add {
+            margin-top: 12px;
+        }
+
+        .related-add .button-primary {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 991px) {
+            .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 480px) {
+            .related-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 767px) {
+            .detail-main {
+                padding-block: 28px 50px;
+            }
+
+            .detail-layout {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .detail-photo {
+                padding: 22px;
+            }
+
+            .detail-description {
+                padding: 22px;
+            }
+        }
+    </style>
 </head>
 
 <body class="customer-page product-detail-page">
@@ -330,10 +517,65 @@
                 </a>
             </div>
         </section>
+        <section class="related"
+                 th:if="${!#lists.isEmpty(related)}"
+                 aria-labelledby="relatedTitle">
+            <h2 id="relatedTitle">Sản phẩm liên quan</h2>
+            <p class="related-sub">Phụ kiện và game cùng nền tảng, mua kèm tiện hơn.</p>
 
-    </div>
+            <div class="related-grid">
+                <article class="product-card"
+                         th:each="item : ${related}"
+                         th:attr="data-product-id=${item.id}">
+
+                    <a class="product-image image-frame"
+                       th:href="@{/products/{id}(id=${item.id})}">
+                        <span class="product-category"
+                              th:text="${item.platform}"></span>
+
+                        <img th:src="@{${item.image}}"
+                             th:attr="data-product-image=${item.image}"
+                             th:alt="${item.name}"
+                             loading="lazy"
+                             width="600"
+                             height="600">
+                    </a>
+
+                    <div class="product-info">
+                        <p class="product-platform">
+                            <span th:text="${item.category}"></span> ·
+                            <span th:text="${item.condition == 'CU' ? 'Cũ' : 'Mới'}"></span>
+                        </p>
+
+                        <h3>
+                            <a th:href="@{/products/{id}(id=${item.id})}"
+                               th:text="${item.name}"></a>
+                        </h3>
+
+                        <div class="product-bottom">
+                            <strong class="product-price"
+                                    th:text="${#numbers.formatDecimal(
+                                        item.price, 0, 'POINT', 0, 'COMMA'
+                                    ) + ' đ'}"></strong>
+                        </div>
+
+                        <form th:if="${customer}"
+                              method="post"
+                              th:action="@{/cart/items}"
+                              class="related-add">
+                            <input type="hidden" name="productId" th:value="${item.id}">
+                            <input type="hidden" name="quantity" value="1">
+                            <button class="button-primary" type="submit">
+                                + Thêm vào giỏ
+                            </button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </section>
 </main>
-
+<section th:replace="~{fragments/store-info :: info}"></section>
 <footer th:replace="~{fragments/store :: footer}"></footer>
 
 </body>

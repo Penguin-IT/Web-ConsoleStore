@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<section th:fragment="promos" id="uu-dai" class="cs-home-section promos">
+    <div class="container store-container">
+        <p class="cs-home-kicker">MEMBER REWARDS</p>
+        <h2>Chương trình ưu đãi</h2>
+
+        <div class="promo-cards">
+            <article class="promo-card">
+                <h3 th:text="${'Mua kèm giảm ' + @memberService.bundlePercent() + '%'}"></h3>
+                <p>Thêm game hoặc phụ kiện cùng nền tảng với máy console trong giỏ, giá giảm tự động.</p>
+            </article>
+
+            <article class="promo-card">
+                <h3 th:text="${'Hạng thành viên: giảm tới ' + @memberService.maxPercent() + '%'}"></h3>
+                <p>Mua càng nhiều, hạng càng cao. Ưu đãi áp dụng cho mọi sản phẩm trong đơn.</p>
+            </article>
+
+            <article class="promo-card">
+                <h3>Thu cũ đổi mới</h3>
+                <p>Đổi thiết bị cũ lấy thiết bị mới ngay tại cửa hàng.</p>
+                <a th:href="@{/} + '#trade-in'">Tìm hiểu thêm ↗</a>
+            </article>
+        </div>
+
+        <h3 class="promo-sub">Các hạng thành viên</h3>
+
+        <div class="tier-grid">
+            <div class="tier-card" th:each="tier : ${@memberService.tiers()}">
+                <strong th:text="${tier.label}"></strong>
+                <span th:text="${tier.threshold.signum() == 0
+                        ? 'Khi đăng ký'
+                        : 'Từ ' + #numbers.formatDecimal(tier.threshold, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                <em th:text="${tier.percent > 0 ? 'Giảm ' + tier.percent + '%' : 'Giá niêm yết'}"></em>
+            </div>
+        </div>
+
+        <p class="promo-note">
+            Hạng được tính theo tổng giá trị các đơn đã hoàn tất. Ưu đãi hạng cộng dồn với giá mua kèm.
+        </p>
+    </div>
+</section>
+
+</body>
+</html>

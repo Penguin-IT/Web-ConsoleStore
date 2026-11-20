@@ -90,6 +90,103 @@ public class CatalogService {
         if(value.matches("[^/\\\\:]+\\.(?i:jpg|jpeg|png|webp|avif|gif)"))return "/images/products/"+value;
         return "/images/ui/product-placeholder.svg";
     }
+    public List<ProductCard> related(Long productId, int limit) {
+        SanPham base = products.findByMaSPAndDeletedFalse(productId)
+                .orElse(null);
+
+        if (base == null) {
+            return List.of();
+        }
+
+        CatalogSearch filter = new CatalogSearch();
+
+        if (base.getNenTang() != null) {
+            filter.setPlatformId(base.getNenTang().getId());
+        }
+
+        List<SanPham> pool = products.findAll(
+                        SanPhamSpecifications.search(filter),
+                        PageRequest.of(0, 80, Sort.by("maSP"))
+                ).getContent().stream()
+                .filter(p -> !sameFamily(base, p))
+                .toList();
+
+        if (pool.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Long> totals = stocks.sumByProductIds(
+                        pool.stream().map(SanPham::getMaSP).toList()
+                ).stream()
+                .collect(Collectors.toMap(
+                        TonKhoRepository.StockTotal::getProductId,
+                        TonKhoRepository.StockTotal::getQuantity
+                ));
+
+        Long baseCategory = base.getLoaiSanPham().getId();
+
+        // Gom theo loại, hàng mới trước, giá thấp trước
+        Map<Long, List<SanPham>> byCategory = pool.stream()
+                .filter(p -> totals.getOrDefault(p.getMaSP(), 0L) > 0)
+                .sorted(Comparator
+                        .comparingInt((SanPham p) ->
+                                "MOI".equals(p.getTinhTrang()) ? 0 : 1)
+                        .thenComparing(SanPham::getGiaBan))
+                .collect(Collectors.groupingBy(
+                        p -> p.getLoaiSanPham().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        // Loại khác với món đang xem được ưu tiên trước
+        List<List<SanPham>> lanes = byCategory.entrySet().stream()
+                .sorted(Comparator.comparingInt(
+                        (Map.Entry<Long, List<SanPham>> e) ->
+                                e.getKey().equals(baseCategory) ? 1 : 0))
+                .map(Map.Entry::getValue)
+                .toList();
+
+        // Lấy xen kẽ giữa các loại cho đa dạng
+        List<SanPham> picked = new ArrayList<>();
+
+        for (int row = 0; picked.size() < limit; row++) {
+            boolean added = false;
+
+            for (List<SanPham> lane : lanes) {
+                if (row < lane.size() && picked.size() < limit) {
+                    picked.add(lane.get(row));
+                    added = true;
+                }
+            }
+
+            if (!added) {
+                break;
+            }
+        }
+
+        return picked.stream()
+                .map(p -> new ProductCard(
+                        p.getMaSP(),
+                        displayName(p),
+                        p.getNenTang() == null
+                                ? "Khác"
+                                : p.getNenTang().getName(),
+                        p.getLoaiSanPham().getName(),
+                        p.getGiaBan(),
+                        imagePath(p.getHinhAnh()),
+                        p.getTinhTrang(),
+                        totals.getOrDefault(p.getMaSP(), 0L)
+                ))
+                .toList();
+    }
+
+    // Bản mới và bản cũ của cùng một món thì không tính là "liên quan"
+    private static boolean sameFamily(SanPham a, SanPham b) {
+        Long rootA = a.getMaSPGoc() != null ? a.getMaSPGoc() : a.getMaSP();
+        Long rootB = b.getMaSPGoc() != null ? b.getMaSPGoc() : b.getMaSP();
+
+        return rootA.equals(rootB);
+    }
     public Optional<ProductDetail> detail(Long id) {
         if (id == null || id <= 0) {
             return Optional.empty();

@@ -85,14 +85,11 @@
       <div th:if="${payment != null}">
         <dt>Phương thức</dt>
 
-        <dd th:text="${payment.method == 'CHUYEN_KHOAN'
-                    ? 'Ngân hàng'
-                    : (payment.method == 'MOMO'
-                        ? 'MoMo'
-                        : (payment.method == 'ZALOPAY'
-                            ? 'ZaloPay'
-                            : payment.method))}">
-        </dd>
+        <dd th:text="${payment.method == 'CHUYEN_KHOAN' ? 'Ngân hàng'
+            : (payment.method == 'MOMO' ? 'MoMo'
+            : (payment.method == 'ZALOPAY' ? 'ZaloPay'
+            : (payment.method == 'TIEN_MAT' ? 'COD (thu tiền khi giao)'
+            : payment.method)))}"></dd>
       </div>
     </dl>
   </section>
@@ -196,9 +193,9 @@
 
       <button th:if="${order.status == 'CHO_XAC_NHAN'}"
               th:disabled="${payment == null
-                        or payment.status != 'DA_THANH_TOAN'
-                        or payment.amount.compareTo(order.totalAmount) != 0}"
-              class="ui-btn ui-primary"
+          or payment.amount.compareTo(order.totalAmount) != 0
+          or (payment.status != 'DA_THANH_TOAN'
+              and payment.method != 'TIEN_MAT')}"
               name="action"
               value="confirm"
               type="submit">

@@ -2339,3 +2339,104 @@ body.customer-page .ui-auth-form {
         transform: none;
     }
 }
+.store-info {
+    padding: 48px 0 8px;
+    background: #0d0c11;
+    color: #d2cbdc;
+    border-top: 1px solid #ffffff12;
+}
+
+.store-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 40px;
+}
+
+.store-info h2 {
+    margin: 0 0 14px;
+    color: #f5eefb;
+    font-size: 16px;
+    font-weight: 650;
+}
+
+.store-map address {
+    margin-bottom: 14px;
+    font-style: normal;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #a99eb8;
+}
+
+.store-map iframe {
+    display: block;
+    width: 100%;
+    height: 280px;
+    border: 0;
+    border-radius: 14px;
+    background: #1a1822;
+}
+
+.store-map > a {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #a99eb8;
+}
+
+.store-map > a:hover { color: #fff; }
+
+.store-news-item {
+    display: block;
+    padding: 14px 0;
+    border-bottom: 1px solid #ffffff12;
+    color: #e6deef;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.store-news-item:hover span { color: #fff; text-decoration: underline; }
+
+.store-news-item small {
+    display: block;
+    margin-top: 4px;
+    color: #8d8299;
+    font-size: 12px;
+}
+
+.store-news-source {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: #8d8299;
+}
+.store-news-item.has-thumb {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 14px;
+    align-items: center;
+}
+
+.store-news-item img {
+    width: 96px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #1a1822;
+}
+.member-box { margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; background: #f4f0ff; font-size: 14px; }
+.member-box p { margin: 0; }
+.member-next { margin: 6px 0 0; font-size: 13px; color: #6b6280; }
+
+.member-bar { height: 8px; margin: 12px 0 6px; border-radius: 99px; background: #e7e2f2; overflow: hidden; }
+.member-bar span { display: block; height: 100%; background: #7c5cff; }
+
+.promos h2 { margin: 6px 0 20px; }
+.promo-cards, .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.promo-card, .tier-card { padding: 20px; border: 1px solid #ffffff1f; border-radius: 16px; background: #ffffff0a; }
+.promo-card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.promo-card p { margin: 0; font-size: 14px; opacity: .8; }
+.promo-card a { display: inline-block; margin-top: 10px; }
+.promo-sub { margin: 32px 0 14px; }
+.tier-card { display: grid; gap: 6px; }
+.tier-card strong { font-size: 1.1rem; }
+.tier-card em { font-style: normal; color: #4ade80; font-weight: 600; }
+.promo-note { margin-top: 14px; font-size: 13px; opacity: .7; }
