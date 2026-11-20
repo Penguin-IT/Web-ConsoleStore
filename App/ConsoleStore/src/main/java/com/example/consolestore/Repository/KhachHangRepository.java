@@ -1,17 +1,20 @@
 package com.example.consolestore.Repository;
 
-import com.example.consolestore.Entity.KhachHang;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import com.example.consolestore.Entity.KhachHang;
 
-public interface KhachHangRepository extends JpaRepository<KhachHang,Long> {
+public interface KhachHangRepository extends JpaRepository<KhachHang, Long> {
+
     boolean existsByPhone(String phone);
-    boolean existsByPhoneAndIdNot(String phone,Long id);
+
+    boolean existsByPhoneAndIdNot(String phone, Long id);
 
     @Query(
             value = """
@@ -22,6 +25,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Long> {
             nativeQuery = true
     )
     Optional<KhachHang> lockById(@Param("id") Long id);
+
     Optional<KhachHang> findByPhone(String phone);
 
     @Query(
@@ -33,6 +37,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Long> {
             nativeQuery = true
     )
     Optional<KhachHang> lockByPhone(@Param("phone") String phone);
+
     @Query(
             value = """
             SELECT k.*
@@ -61,8 +66,11 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Long> {
     );
 
     interface CustomerLinks {
+
         Long getInvoiceCount();
+
         Long getTradeInCount();
+
         Long getAccountCount();
     }
 

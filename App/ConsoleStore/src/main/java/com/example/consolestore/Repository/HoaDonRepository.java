@@ -149,6 +149,79 @@ public interface HoaDonRepository
         String getPaymentStatus();
     }
 
+    // ── Chi tiết đơn hàng khách hàng ──────────────────────────────────────────
+
+    interface CustomerOrderHeader {
+        Long getId();
+        java.time.LocalDateTime getCreatedAt();
+        String getChannel();
+        String getStatus();
+        BigDecimal getTotalAmount();
+        String getPaymentStatus();
+        String getPaymentMethod();
+        String getRecipientName();
+        String getRecipientPhone();
+        String getAddress();
+        String getNote();
+    }
+
+    @Query(
+            value = """
+                SELECT
+                    h.maHD            AS id,
+                    h.ngayLap         AS createdAt,
+                    h.kenhBan         AS channel,
+                    h.trangThai       AS status,
+                    h.tongTien        AS totalAmount,
+                    t.trangThai       AS paymentStatus,
+                    t.phuongThuc      AS paymentMethod,
+                    h.tenNguoiNhan    AS recipientName,
+                    h.soDienThoaiNhan AS recipientPhone,
+                    h.diaChi          AS address,
+                    h.ghiChu          AS note
+                FROM HoaDon h
+                LEFT JOIN ThanhToan t ON t.maHD = h.maHD
+                WHERE h.maHD = :id
+                  AND h.maKH = :customerId
+                """,
+            nativeQuery = true
+    )
+    Optional<CustomerOrderHeader> findCustomerOrderHeader(
+            @Param("id") Long id,
+            @Param("customerId") Long customerId
+    );
+
+    interface CustomerOrderLine {
+        String getName();
+        Integer getQuantity();
+        BigDecimal getPrice();
+        BigDecimal getSubtotal();
+        String getSerialNumber();
+    }
+
+    @Query(
+            value = """
+                SELECT
+                    p.tenSP              AS name,
+                    c.soLuong            AS quantity,
+                    c.donGia             AS price,
+                    c.soLuong * c.donGia AS subtotal,
+                    s.soSerial           AS serialNumber
+                FROM ChiTietHoaDon c
+                JOIN HoaDon h  ON h.maHD  = c.maHD
+                JOIN SanPham p ON p.maSP  = c.maSP
+                LEFT JOIN SerialMay s ON s.maSerial = c.maSerial
+                WHERE c.maHD = :id
+                  AND h.maKH = :customerId
+                ORDER BY c.maCTHD
+                """,
+            nativeQuery = true
+    )
+    List<CustomerOrderLine> findCustomerOrderLines(
+            @Param("id") Long id,
+            @Param("customerId") Long customerId
+    );
+
     @Query(
             value = """
                 SELECT

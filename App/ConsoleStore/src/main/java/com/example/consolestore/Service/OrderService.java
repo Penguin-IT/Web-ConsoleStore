@@ -1,5 +1,6 @@
 package com.example.consolestore.Service;
 
+import com.example.consolestore.DTO.OrderDetail;
 import com.example.consolestore.DTO.OrderSummary;
 import com.example.consolestore.Entity.TaiKhoan;
 import com.example.consolestore.Repository.HoaDonRepository;
@@ -44,6 +45,23 @@ public class OrderService {
                 row.getTotalAmount(),
                 row.getPaymentStatus()
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetail detail(
+            String username,
+            Long id
+    ) {
+        Long customerId = customerId(username);
+
+        HoaDonRepository.CustomerOrderHeader header =
+                invoices.findCustomerOrderHeader(id, customerId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+
+        var lines = invoices.findCustomerOrderLines(id, customerId);
+
+        return new OrderDetail(header, lines);
     }
 
     @Transactional(timeout = 20)

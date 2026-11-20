@@ -78,6 +78,31 @@ public class OrderController {
         return "orders";
     }
 
+    @GetMapping("/orders/{id}")
+    public String detail(
+            @PathVariable Long id,
+            Principal principal,
+            Model model,
+            HttpServletResponse response
+    ) {
+        response.setHeader("Cache-Control", "no-store");
+
+        model.addAttribute("activeStoreMenu", "account");
+
+        try {
+            var detail = service.detail(principal.getName(), id);
+            model.addAttribute("detail", detail);
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (DataAccessException | TransactionException exception) {
+            response.setStatus(503);
+            log.error("Cannot load order detail {}", id, exception);
+            model.addAttribute("orderError", "Chưa tải được đơn hàng. Vui lòng tải lại trang.");
+        }
+
+        return "order-detail";
+    }
+
     @PostMapping("/orders/{id}/cancel")
     public String cancel(
             @PathVariable Long id,
