@@ -1769,6 +1769,9 @@ GO
 -- 16. PROCEDURE HÓA ĐƠN VÀ THANH TOÁN
 -- =========================================================
 
+IF OBJECT_ID(N'dbo.sp_TaoHoaDon', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_TaoHoaDon] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_TaoHoaDon
     @p_maKH BIGINT,
     @p_maNV BIGINT,
@@ -1799,6 +1802,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_ThemChiTietHoaDon', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_ThemChiTietHoaDon] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_ThemChiTietHoaDon
     @p_maHD BIGINT,
     @p_maSP BIGINT,
@@ -1831,6 +1837,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_TaoThanhToan', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_TaoThanhToan] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_TaoThanhToan
     @p_maHD BIGINT,
     @p_phuongThuc NVARCHAR(20),
@@ -2046,6 +2055,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_CapNhatTrangThaiHoaDon', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_CapNhatTrangThaiHoaDon] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_CapNhatTrangThaiHoaDon
     @p_maHD BIGINT,
     @p_trangThai NVARCHAR(20)
@@ -2132,7 +2144,9 @@ GO
 -- =========================================================
 -- 17. PROCEDURE TRA CỨU VÀ BÁO CÁO
 -- =========================================================
-
+IF OBJECT_ID(N'dbo.sp_TiepNhanBaoHanh', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_TiepNhanBaoHanh] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_TiepNhanBaoHanh
     @p_soSerial NVARCHAR(100),
     @p_maNV BIGINT,
@@ -2164,6 +2178,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_TraCuuBaoHanh', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_TraCuuBaoHanh] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_TraCuuBaoHanh
     @p_soSerial NVARCHAR(100)
 AS
@@ -2194,6 +2211,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_TonKhoTheoKho', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_TonKhoTheoKho] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_TonKhoTheoKho
     @p_maKho BIGINT
 AS
@@ -2213,6 +2233,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_BaoCaoDoanhThuTheoThang', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_BaoCaoDoanhThuTheoThang] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_BaoCaoDoanhThuTheoThang
     @p_nam INT
 AS
@@ -2231,6 +2254,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_BaoCaoChiPhiNhapTheoNCC', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_BaoCaoChiPhiNhapTheoNCC] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_BaoCaoChiPhiNhapTheoNCC
     @p_tuNgay DATETIME,
     @p_denNgay DATETIME
@@ -2252,6 +2278,9 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.sp_BaoCaoChiPhiNhapTheoThang', N'P') IS NULL
+    EXEC(N'CREATE PROCEDURE [dbo].[sp_BaoCaoChiPhiNhapTheoThang] AS BEGIN SET NOCOUNT ON; END');
+GO
 CREATE OR ALTER PROCEDURE sp_BaoCaoChiPhiNhapTheoThang
 AS
 BEGIN
