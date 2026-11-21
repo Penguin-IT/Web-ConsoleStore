@@ -2441,41 +2441,44 @@ body.customer-page .ui-auth-form {
 .tier-card em { font-style: normal; color: #4ade80; font-weight: 600; }
 .promo-note { margin-top: 14px; font-size: 13px; opacity: .7; }
 /* ===== Khuyến mãi (theo brand: tím / xanh / hồng) ===== */
-.promos h2 { margin: 6px 0 24px; }
+/* ===== Khuyến mãi ===== */
+.promos h2 { margin: 6px 0 28px; }
 
-.promo-bar { background: var(--dark); color: #fff; font-size: 13px; font-weight: 600; text-align: center; padding: 9px 12px; border-bottom: 2px solid; border-image: var(--brand-gradient) 1; }
-.promo-bar b { letter-spacing: .05em; padding: 2px 10px; border-radius: 999px; color: #19171e; background: var(--brand-gradient); }
-.promo-bar a { color: var(--brand-blue); text-decoration: underline; }
+/* Thanh thông báo trên cùng */
+.promo-bar { padding: 9px 12px; background: var(--dark); color: #cfc9da; font-size: 13px; text-align: center; border-bottom: 1px solid #ffffff1a; }
+.promo-bar b { color: #fff; font-weight: 600; }
+.promo-bar .promo-bar-code { margin: 0 2px; padding: 1px 8px; border: 1px dashed #ffffff55; border-radius: 4px; font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; letter-spacing: .06em; }
+.promo-bar a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.promo-bar a:hover { color: var(--brand-blue); }
 
-.promo-hero { display: flex; align-items: center; min-height: 150px; padding: 28px 32px; margin-bottom: 18px; border-radius: 20px; overflow: hidden; color: #fff;
-    background: linear-gradient(95deg, rgba(12,12,16,.92) 28%, rgba(12,12,16,.3)), url("../images/banners/bannerconsole.jpg") center/cover; }
-.promo-hero-tag { display: inline-block; margin-bottom: 10px; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #19171e; background: var(--brand-gradient); }
-.promo-hero h3 { margin: 0 0 6px; font-size: 1.6rem; }
-.promo-hero p { margin: 0; max-width: 520px; font-size: 14px; opacity: .85; }
+/* Khối Freeship: bỏ ảnh nền + nhãn gradient */
+.promo-hero { display: block; min-height: 0; margin-bottom: 28px; padding: 22px 0 24px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--border); border-radius: 0; background: none; color: var(--ink); }
+.promo-hero-tag { display: block; margin-bottom: 10px; padding: 0; border-radius: 0; background: none; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
+.promo-hero h3 { margin: 0 0 6px; font-size: 1.75rem; letter-spacing: -.01em; }
+.promo-hero p { margin: 0; max-width: none; font-size: 15px; color: var(--muted); opacity: 1; }
 
-.coupon-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 18px; }
-.coupon-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 128px; padding: 20px 22px; border-radius: 18px; overflow: hidden; color: #fff;
-    background: linear-gradient(100deg, rgba(12,12,16,.94) 40%, rgba(12,12,16,.5)), var(--coupon-img) center/cover; box-shadow: 0 10px 28px rgba(25,23,30,.14); }
-.coupon-card--0 { --coupon-img: url("../images/banners/banner15.jpg"); }
-.coupon-card--1 { --coupon-img: url("../images/banners/bannerconsole.jpg"); }
-.coupon-card--2 { --coupon-img: url("../images/banners/banner10.jpg"); }
+/* Thẻ mã giảm giá: kiểu voucher phẳng */
+.coupon-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.coupon-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 0; padding: 18px 20px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: var(--ink); box-shadow: none; }
 .coupon-main { display: grid; gap: 4px; min-width: 0; }
-.coupon-title { font-size: 1.15rem; }
-.coupon-desc { font-size: 13px; opacity: .85; }
-.coupon-expiry { font-size: 12px; opacity: .65; }
-.coupon-code { flex: none; display: grid; gap: 2px; padding: 10px 16px; border: 0; border-radius: 12px; background: var(--brand-gradient); color: #19171e; font-weight: 800; letter-spacing: .08em; text-align: center; cursor: pointer; transition: transform .15s, filter .15s; }
-.coupon-code:hover { transform: translateY(-2px); filter: brightness(1.05); }
-.coupon-code em { font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: 0; }
-.coupon-code.is-copied { background: #fff; }
+.coupon-title { font-size: 1.05rem; color: var(--ink); }
+.coupon-desc { font-size: 13px; color: var(--muted); opacity: 1; }
+.coupon-expiry { font-size: 12px; color: var(--muted); opacity: .8; }
+.coupon-code { flex: none; display: grid; gap: 2px; padding: 9px 14px; border: 1.5px dashed var(--accent); border-radius: 8px; background: #fff; color: var(--accent); text-align: center; cursor: pointer; transition: background .15s, color .15s; }
+.coupon-code span { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 14px; font-weight: 700; letter-spacing: .08em; }
+.coupon-code em { font-style: normal; font-size: 11px; font-weight: 500; color: var(--muted); }
+.coupon-code:hover { background: #f4f0ff; }
+.coupon-code.is-copied { border-style: solid; background: var(--accent); color: #fff; }
+.coupon-code.is-copied em { color: #fff; }
 
+/* 3 thẻ thông tin: bỏ viền tím phía trên */
 .promo-cards, .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-.promo-card { padding: 22px; border: 1px solid var(--border); border-top: 3px solid var(--brand-violet); border-radius: 16px; background: #faf9fc; }
+.promo-card { padding: 20px 22px; border: 1px solid var(--border); border-radius: 12px; background: var(--paper); }
 .promo-card h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--ink); }
 .promo-card p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
-.promo-card a { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; }
+.promo-card a { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .promo-sub { margin: 36px 0 14px; }
 .promo-note { margin-top: 14px; font-size: 13px; color: var(--muted); }
-
 .tier-card { display: grid; align-content: end; gap: 6px; min-height: 150px; padding: 20px; border-radius: 18px; overflow: hidden; color: #fff;
     background: linear-gradient(160deg, var(--tier-tint) 0%, rgba(12,12,16,.88) 100%), var(--tier-img) center/cover; }
 .tier-card strong { font-size: 1.15rem; color: var(--tier-color); }
@@ -2513,3 +2516,25 @@ body.customer-page .ui-auth-form {
 .cart-sum-discount { color: var(--accent); font-weight: 600; }
 .co-saved { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: #f4f0ff; color: var(--accent); font-size: 13px; font-weight: 600; text-align: center; }
 .co-saved b { font-size: 15px; }
+/* ===== Footer chi tiết (đặt cuối file home.css) ===== */
+.home-footer-grid { grid-template-columns: 1.3fr .8fr .9fr 1.4fr; gap: 40px; }
+
+.footer-social { display: flex; gap: 10px; margin-top: 22px; }
+.footer-social a { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #ffffff26; border-radius: 50%; color: #cfc6dc; transition: color .15s, border-color .15s, background .15s; }
+.footer-social a:hover { color: #fff; border-color: #ffffff66; background: #ffffff0f; }
+.footer-social svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.footer-contact { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.6; color: #d2cbdc; }
+.footer-contact span { display: block; margin-bottom: 2px; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #81769a; }
+.footer-contact a { color: #d2cbdc; }
+.footer-contact a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+.home-footer-grid > div > a.footer-cta { display: inline-block; margin: 22px 0 0; padding: 10px 18px; border: 1px solid #ffffff40; border-radius: 999px; color: #fff; font-size: 13px; font-weight: 600; transition: background .15s, border-color .15s; }
+.home-footer-grid > div > a.footer-cta:hover { background: #ffffff14; border-color: #ffffff80; }
+
+@media (max-width: 1100px) {
+    .home-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 600px) {
+    .home-footer-grid { grid-template-columns: 1fr; gap: 28px; }
+}

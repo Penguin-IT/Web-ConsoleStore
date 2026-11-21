@@ -66,11 +66,11 @@
 </section>
 
 <div th:fragment="promoBar" class="promo-bar">
-    🚚 Freeship đơn từ
+    Freeship đơn từ
     <b th:text="${#numbers.formatDecimal(@pricingService.freeShipFrom(), 1, 'POINT', 0, 'COMMA') + ' ₫'}"></b>
     <th:block th:with="top=${@pricingService.featuredCoupons()}">
         <th:block th:if="${!top.isEmpty()}">
-            · Nhập mã <b th:text="${top[0].code}"></b> —
+            · Nhập mã <b class="promo-bar-code" th:text="${top[0].code}"></b> —
             <span th:text="${@pricingService.headline(top[0])}"></span>
         </th:block>
     </th:block>
