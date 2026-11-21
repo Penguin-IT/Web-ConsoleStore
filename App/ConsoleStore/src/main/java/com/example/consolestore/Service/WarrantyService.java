@@ -1,18 +1,28 @@
 package com.example.consolestore.Service;
 
-import com.example.consolestore.DTO.*;
-import com.example.consolestore.Entity.PhieuBaoHanh;
-import com.example.consolestore.Repository.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.*;
+import com.example.consolestore.DTO.WarrantyDetail;
+import com.example.consolestore.DTO.WarrantyRequest;
+import com.example.consolestore.Entity.PhieuBaoHanh;
+import com.example.consolestore.Repository.PhieuBaoHanhRepository;
+import com.example.consolestore.Repository.SerialMayRepository;
+import com.example.consolestore.Repository.TaiKhoanRepository;
 
 @Service
 public class WarrantyService {
@@ -42,6 +52,8 @@ public class WarrantyService {
             String username,
             String keyword,
             String status,
+            String from,
+            String to,
             int page
     ) {
         staff(username);
@@ -58,14 +70,26 @@ public class WarrantyService {
 
         query = "%"
                 + query.replace("~", "~~")
-                .replace("%", "~%")
-                .replace("_", "~_")
-                .replace("[", "~[")
+                        .replace("%", "~%")
+                        .replace("_", "~_")
+                        .replace("[", "~[")
                 + "%";
+
+        LocalDate start = parseDate(from);
+        LocalDate end = parseDate(to);
+
+        if (start != null && end != null && start.isAfter(end)) {
+            throw bad("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+        }
+
+        LocalDateTime fromDate = start == null ? null : start.atStartOfDay();
+        LocalDateTime toExclusive = end == null ? null : end.plusDays(1).atStartOfDay();
 
         return cases.search(
                 status,
                 query,
+                fromDate,
+                toExclusive,
                 PageRequest.of(Math.max(0, page), 10)
         );
     }
@@ -166,8 +190,8 @@ public class WarrantyService {
 
         var serial = serials.lockByNumber(number)
                 .orElseThrow(() -> bad(
-                        "Không tìm thấy serial."
-                ));
+                "Không tìm thấy serial."
+        ));
 
         var lookup = cases.lookup(serial.getNumber())
                 .orElseThrow(WarrantyService::notFound);
@@ -185,8 +209,8 @@ public class WarrantyService {
 
         if (form.getDueAt() == null
                 || form.getDueAt().isBefore(
-                lookup.getServerNow()
-        )) {
+                        lookup.getServerNow()
+                )) {
             throw bad(
                     "Ngày hẹn trả phải từ thời điểm hiện tại trở đi."
             );
@@ -214,8 +238,8 @@ public class WarrantyService {
 
         if (!created.isCovered()
                 || !(requestTag + "|").equals(
-                created.getNotes()
-        )) {
+                        created.getNotes()
+                )) {
             throw bad(
                     "Không thể xác nhận hạn bảo hành hoặc phiên tiếp nhận."
             );
@@ -230,7 +254,7 @@ public class WarrantyService {
             Long id,
             WarrantyRequest form
     ) {
-        staff(username);
+        technician(username);
 
         var receipt = cases.lockById(id)
                 .orElseThrow(WarrantyService::notFound);
@@ -249,7 +273,8 @@ public class WarrantyService {
         }
 
         String target = switch (clean(form.getAction())) {
-            case "save" -> receipt.getStatus();
+            case "save" ->
+                receipt.getStatus();
 
             case "start" -> {
                 if (!"TIEP_NHAN".equals(receipt.getStatus())) {
@@ -271,7 +296,8 @@ public class WarrantyService {
                 yield "HOAN_TAT";
             }
 
-            default -> throw bad("Thao tác không hợp lệ.");
+            default ->
+                throw bad("Thao tác không hợp lệ.");
         };
 
         String notes = clean(form.getNotes());
@@ -288,7 +314,12 @@ public class WarrantyService {
                     "Chi phí phải là số nguyên không âm."
             );
         }
-
+        BigDecimal cost;
+        try {
+            cost = new BigDecimal(costText).setScale(0, java.math.RoundingMode.UNNECESSARY);
+        } catch (NumberFormatException | ArithmeticException e) {
+            throw bad("Chi phí không hợp lệ.");
+        }
         var serial = serials.findById(receipt.getSerialId())
                 .orElseThrow(WarrantyService::notFound);
 
@@ -301,27 +332,61 @@ public class WarrantyService {
 
         if (!form.getDueAt().equals(receipt.getDueAt())
                 && form.getDueAt().isBefore(
-                lookup.getServerNow()
-        )) {
+                        lookup.getServerNow()
+                )) {
             throw bad(
                     "Ngày hẹn trả mới không được ở quá khứ."
             );
         }
 
         String prefix = tagPrefix(receipt.getNotes());
-
+        if (prefix.isEmpty()) {
+            throw bad("Dữ liệu phiếu bị lỗi. Liên hệ quản trị.");
+        }
         cases.updateCase(
                 id,
                 receipt.getStatus(),
                 target,
                 prefix + notes,
-                new BigDecimal(costText),
+                cost,
                 form.getDueAt()
         );
 
         if (!target.equals(cases.status(id))) {
             throw bad("Chưa cập nhật được phiếu.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canProcess(String username) {
+        if (username == null || username.isBlank()) {
+            return false;
+        }
+
+        return accounts.loginState(username)
+                .map(state -> state.isUsable()
+                && "BAOHANH".equals(state.getRole())
+                && state.getEmployeeId() != null)
+                .orElse(false);
+    }
+
+    private Long technician(String username) {
+        if (username == null || username.isBlank()) {
+            throw new AccessDeniedException("Chưa đăng nhập.");
+        }
+
+        TaiKhoanRepository.LoginState state = accounts.loginState(username)
+                .orElseThrow(() -> new AccessDeniedException(
+                "Không tìm thấy tài khoản."
+        ));
+
+        if (!state.isUsable()
+                || !"BAOHANH".equals(state.getRole())
+                || state.getEmployeeId() == null) {
+            throw new AccessDeniedException("Chỉ nhân viên có vai trò BAOHANH mới có quyền xử lý bảo hành.");
+        }
+
+        return state.getEmployeeId();
     }
 
     private Long staff(String username) {
@@ -331,12 +396,12 @@ public class WarrantyService {
 
         TaiKhoanRepository.LoginState state = accounts.loginState(username)
                 .orElseThrow(() -> new AccessDeniedException(
-                        "Warranty staff access required"
-                ));
+                "Warranty staff access required"
+        ));
 
         if (!state.isUsable()
                 || !Set.of("ADMIN", "NHANVIEN", "BAOHANH")
-                .contains(state.getRole())
+                        .contains(state.getRole())
                 || state.getEmployeeId() == null) {
             throw new AccessDeniedException("Warranty staff access required");
         }
@@ -348,8 +413,8 @@ public class WarrantyService {
         try {
             if (value == null
                     || !UUID.fromString(value)
-                    .toString()
-                    .equals(value)) {
+                            .toString()
+                            .equals(value)) {
                 throw new IllegalArgumentException();
             }
 
@@ -363,8 +428,8 @@ public class WarrantyService {
         if (value != null
                 && value.length() >= 42
                 && value.substring(0, 42).matches(
-                "^CN12:[0-9a-f-]{36}\\|$"
-        )) {
+                        "^CN12:[0-9a-f-]{36}\\|$"
+                )) {
             return value.substring(0, 42);
         }
 
@@ -377,6 +442,22 @@ public class WarrantyService {
         return text.substring(
                 tagPrefix(text).length()
         );
+    }
+
+    private LocalDate parseDate(String value) {
+        if (clean(value).isBlank()) {
+            return null;
+        }
+
+        try {
+            LocalDate date = LocalDate.parse(value.strip());
+            if (date.getYear() < 1753 || date.getYear() > 9998) {
+                throw bad("Ngày nằm ngoài phạm vi hỗ trợ.");
+            }
+            return date;
+        } catch (DateTimeParseException exception) {
+            throw bad("Ngày tìm kiếm không hợp lệ.");
+        }
     }
 
     private static String clean(String value) {
@@ -392,4 +473,5 @@ public class WarrantyService {
                 HttpStatus.NOT_FOUND
         );
     }
+
 }

@@ -9,7 +9,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-
+import com.example.consolestore.Service.*;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.*;
@@ -20,12 +20,14 @@ public class CheckoutService {
     private static final BigDecimal MAX_AMOUNT =
             new BigDecimal("999999999999999999");
 
+
     private static final Set<String> METHODS = Set.of(
             "CHUYEN_KHOAN",
             "MOMO",
-            "ZALOPAY"
+            "ZALOPAY",
+            "TIEN_MAT"
     );
-
+    private final PricingService pricing;
     private final TaiKhoanRepository accounts;
     private final SanPhamRepository products;
     private final TonKhoRepository stocks;
@@ -37,12 +39,14 @@ public class CheckoutService {
             SanPhamRepository products,
             TonKhoRepository stocks,
             HoaDonRepository invoices,
+            PricingService pricing,
             PlatformTransactionManager manager
     ) {
         this.accounts = accounts;
         this.products = products;
         this.stocks = stocks;
         this.invoices = invoices;
+        this.pricing = pricing;
 
         transaction = new TransactionTemplate(manager);
 
@@ -63,6 +67,12 @@ public class CheckoutService {
         form.setAddress(customer.getAddress());
 
         return form;
+    }
+
+    @Transactional(readOnly = true)
+    public PricingService.Quote preview(String username, BigDecimal goods,
+                                        String province, String coupon) {
+        return pricing.preview(goods, province, coupon, customer(username).getId());
     }
 
     @Transactional(readOnly = true)
@@ -194,49 +204,75 @@ public class CheckoutService {
                             + "Vui lòng kiểm tra giỏ hàng."
             );
         }
+        int memberPercent = MemberTier
+                .forSpent(invoices.completedSpend(customerId))
+                .getPercent();
+        Set<String> consolePlatforms = BundlePricing.consolePlatforms(
+                byId.values().stream()
+                        .map(CheckoutService::bundleItem)
+                        .toList()
+        );
 
+        Map<Long, BigDecimal> unitPrices = new TreeMap<>();
         BigDecimal total = BigDecimal.ZERO;
 
         for (var entry : quote.items().entrySet()) {
             if (entry.getKey() == null
                     || entry.getValue() == null
                     || entry.getValue() <= 0) {
-                throw rejected(
-                        "Số lượng sản phẩm không hợp lệ."
-                );
+                throw rejected("Số lượng sản phẩm không hợp lệ.");
             }
 
             SanPham product = byId.get(entry.getKey());
 
-            BigDecimal price = product.getGiaBan();
-            BigDecimal quotedPrice =
-                    quote.prices().get(entry.getKey());
+            BigDecimal listPrice = product.getGiaBan();
 
-            if (price == null
-                    || price.signum() <= 0
-                    || price.scale() > 0
-                    || quotedPrice == null
-                    || price.compareTo(quotedPrice) != 0) {
+            if (listPrice == null
+                    || listPrice.signum() <= 0
+                    || listPrice.scale() > 0) {
+                throw rejected("Giá sản phẩm không hợp lệ.");
+            }
+
+            // Giá thực tế = giá niêm yết, hoặc giá mua kèm nếu đủ điều kiện
+            boolean bundle = BundlePricing.eligible(bundleItem(product), consolePlatforms);
+
+            BigDecimal base = bundle
+                    ? BundlePricing.bundlePrice(listPrice)
+                    : listPrice;
+
+            BigDecimal price = BundlePricing.applyPercent(base, memberPercent);
+
+            BigDecimal quotedPrice = quote.prices().get(entry.getKey());
+
+            if (quotedPrice == null || price.compareTo(quotedPrice) != 0) {
                 throw rejected(
                         "Giá sản phẩm đã thay đổi. "
                                 + "Vui lòng xem lại trước khi đặt."
                 );
             }
 
+            unitPrices.put(entry.getKey(), price);
+
             total = total.add(
-                    price.multiply(
-                            BigDecimal.valueOf(
-                                    entry.getValue()
-                            )
-                    )
+                    price.multiply(BigDecimal.valueOf(entry.getValue()))
             );
         }
+
 
         if (total.signum() <= 0
                 || total.compareTo(MAX_AMOUNT) > 0) {
             throw rejected("Tổng tiền không hợp lệ.");
         }
+        PricingService.Quote priced = pricing.quoteForOrder(
+                total, form.getProvince(), form.getCouponCode(), customerId);
 
+        if (priced.shippingPending()) {
+            throw rejected("Vui lòng chọn Tỉnh/Thành phố để tính phí vận chuyển.");
+        }
+        if (!clean(form.getCouponCode()).isEmpty() && !priced.couponValid()) {
+            throw rejected(priced.message());   // không âm thầm bỏ mã
+        }
+        BigDecimal payable = priced.getPayable();
         List<StockAllocator.Allocation> allocations;
 
         try {
@@ -288,7 +324,7 @@ public class CheckoutService {
                         allocation.productId(),
                         allocation.warehouseId(),
                         quantity,
-                        product.getGiaBan()
+                        unitPrices.get(allocation.productId())
                 );
 
                 remaining -= quantity;
@@ -306,12 +342,13 @@ public class CheckoutService {
             );
         }
 
-        invoices.insertPayment(
+        invoices.applyAdjustments(
                 invoice.getId(),
-                method,
-                total
+                priced.shipping(),
+                priced.discount(),
+                priced.couponCode() == null ? "" : priced.couponCode()
         );
-
+        invoices.insertPayment(invoice.getId(), method, payable);
         return invoice.getId();
     }
 
@@ -407,5 +444,15 @@ public class CheckoutService {
         }
 
         return false;
+    }
+    private static BundlePricing.Item bundleItem(SanPham product) {
+        String platform = product.getNenTang() == null
+                ? BundlePricing.NO_PLATFORM
+                : product.getNenTang().getName();
+
+        return new BundlePricing.Item(
+                platform,
+                product.getLoaiSanPham().getName()
+        );
     }
 }

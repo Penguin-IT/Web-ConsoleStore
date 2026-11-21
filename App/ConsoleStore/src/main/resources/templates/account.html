@@ -95,7 +95,29 @@
        th:if="${accountError}"
        th:text="${accountError}">
     </p>
+    <section class="ui-panel member-panel"
+             th:if="${account != null}"
+             th:with="m=${@memberService.status(account.username)}">
 
+        <h2>Hạng thành viên: <span th:text="${m.tier.label}"></span></h2>
+
+        <p>
+            Tổng giá trị đơn đã hoàn tất:
+            <strong th:text="${#numbers.formatDecimal(m.spent, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+            <span th:if="${m.percent > 0}"
+                  th:text="${' · giảm ' + m.percent + '% mọi đơn'}"></span>
+        </p>
+
+        <div class="member-bar" th:if="${m.next != null}"
+             role="progressbar" aria-valuemin="0" aria-valuemax="100"
+             th:attr="aria-valuenow=${m.progress}">
+            <span th:style="${'width:' + m.progress + '%'}"></span>
+        </div>
+
+        <p class="member-next" th:if="${m.next != null}"
+           th:text="${'Còn ' + #numbers.formatDecimal(m.remaining, 1, 'POINT', 0, 'COMMA') + ' ₫ để lên hạng ' + m.next.label}"></p>
+        <p class="member-next" th:if="${m.next == null}">Bạn đang ở hạng cao nhất. Cảm ơn bạn đã đồng hành!</p>
+    </section>
     <div class="ui-two-columns"
          th:if="${account != null}">
 

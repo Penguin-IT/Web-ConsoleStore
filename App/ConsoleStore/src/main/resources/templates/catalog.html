@@ -45,7 +45,7 @@
               method="get"
               th:object="${filter}">
             <h2>Lọc sản phẩm</h2>
-            <div class="ui-field"><label for="q">Từ khóa</label><input class="form-control"
+            <div class="ui-field"><label th:for="q">Từ khóa</label><input class="form-control"
                                                                        type="search"
                                                                        th:field="*{q}"
                                                                        maxlength="100"
@@ -53,26 +53,26 @@
                                                                        th:errorclass="is-invalid">
                 <p class="catalog-field-error" th:if="${#fields.hasErrors('q')}" th:text="${filterErrors.get('q')}"></p>
             </div>
-            <div class="ui-field"><label for="categoryId">Loại sản phẩm</label><select class="form-select"
+            <div class="ui-field"><label th:for="categoryId">Loại sản phẩm</label><select class="form-select"
                                                                                        th:field="*{categoryId}">
                 <option value="">Tất cả</option>
                 <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
             </select>
                 <p class="catalog-field-error" th:text="${filterErrors.get('categoryId')}"></p></div>
-            <div class="ui-field"><label for="platformId">Nền tảng</label><select class="form-select"
+            <div class="ui-field"><label th:for="platformId">Nền tảng</label><select class="form-select"
                                                                                   th:field="*{platformId}">
                 <option value="">Tất cả</option>
                 <option th:each="p : ${platforms}" th:value="${p.id}" th:text="${p.name}"></option>
             </select>
                 <p class="catalog-field-error" th:text="${filterErrors.get('platformId')}"></p></div>
-            <div class="ui-field"><label for="condition">Tình trạng</label><select class="form-select"
+            <div class="ui-field"><label th:for="condition">Tình trạng</label><select class="form-select"
                                                                                    th:field="*{condition}">
                 <option value="">Tất cả</option>
                 <option value="MOI">Mới</option>
                 <option value="CU">Cũ</option>
             </select>
                 <p class="catalog-field-error" th:text="${filterErrors.get('condition')}"></p></div>
-            <div class="ui-field"><label for="minPrice">Giá từ (đ)</label><input class="form-control"
+            <div class="ui-field"><label th:for="minPrice">Giá từ (đ)</label><input class="form-control"
                                                                                  type="number"
                                                                                  th:field="*{minPrice}"
                                                                                  min="0"
@@ -80,7 +80,7 @@
                                                                                  inputmode="numeric"
                                                                                  th:errorclass="is-invalid">
                 <p class="catalog-field-error" th:text="${filterErrors.get('minPrice')}"></p></div>
-            <div class="ui-field"><label for="maxPrice">Giá đến (đ)</label><input class="form-control"
+            <div class="ui-field"><label th:for="maxPrice">Giá đến (đ)</label><input class="form-control"
                                                                                   type="number"
                                                                                   th:field="*{maxPrice}"
                                                                                   min="0"
@@ -176,6 +176,7 @@
         </section>
     </div>
 </main>
+<section th:replace="~{fragments/store-info :: info}"></section>
 <footer th:replace="~{fragments/store :: footer}"></footer>
 </body>
 </html>

@@ -45,6 +45,16 @@
                th:value="${keyword}">
       </div>
 
+      <div class="ui-field">
+        <label for="from">Từ ngày</label>
+        <input id="from" type="date" name="from" th:value="${from}">
+      </div>
+
+      <div class="ui-field">
+        <label for="to">Đến ngày</label>
+        <input id="to" type="date" name="to" th:value="${to}">
+      </div>
+
       <button class="ui-btn" type="submit">
         Tìm kiếm
       </button>
@@ -123,7 +133,9 @@
            th:if="${receipts.hasPrevious()}"
            th:href="@{/trade-ins(
                        page=${receipts.number - 1},
-                       keyword=${keyword}
+                       keyword=${keyword},
+                       from=${from},
+                       to=${to}
                    )}">
           ← Trước
         </a>
@@ -139,7 +151,9 @@
            th:if="${receipts.hasNext()}"
            th:href="@{/trade-ins(
                        page=${receipts.number + 1},
-                       keyword=${keyword}
+                       keyword=${keyword},
+                       from=${from},
+                       to=${to}
                    )}">
           Sau →
         </a>

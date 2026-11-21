@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Đơn hàng online | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="ui-page-heading">
+        <h1>Đơn hàng online</h1>
+    </div>
+
+    <section class="ui-panel">
+        <form method="get"
+              th:action="@{/online-orders}"
+              class="ui-toolbar">
+
+            <div class="ui-field">
+                <label for="keyword">Tìm kiếm</label>
+
+                <input id="keyword"
+                       name="keyword"
+                       maxlength="100"
+                       placeholder="Mã đơn, tên hoặc số điện thoại"
+                       th:value="${keyword}">
+            </div>
+
+            <div class="ui-field">
+                <label for="status">Trạng thái đơn</label>
+
+                <select id="status" name="status">
+                    <option value="">Tất cả</option>
+
+                    <option th:each="item : ${statusLabels}"
+                            th:if="${item.key != 'DA_THANH_TOAN'
+                                and item.key != 'CHUA_THANH_TOAN'}"
+                            th:value="${item.key}"
+                            th:text="${item.value}"
+                            th:selected="${item.key == status}">
+                    </option>
+                </select>
+            </div>
+
+            <button class="ui-btn ui-primary" type="submit">
+                Tìm kiếm
+            </button>
+
+            <a class="ui-btn" th:href="@{/online-orders}">
+                Xóa bộ lọc
+            </a>
+        </form>
+
+        <div class="ui-table-wrap">
+            <table class="ui-table">
+                <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Ngày đặt</th>
+                    <th>Khách hàng</th>
+                    <th>Tổng tiền</th>
+                    <th>Thanh toán</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="order : ${orders.content}">
+                    <td th:text="${'HD' + order.id}"></td>
+
+                    <td th:text="${#temporals.format(
+                        order.createdAt,
+                        'dd/MM/yyyy HH:mm'
+                    )}"></td>
+
+                    <td>
+                        <strong th:text="${order.recipientName}"></strong>
+                        <br>
+                        <span th:text="${order.recipientPhone}"></span>
+                    </td>
+
+                    <td th:text="${#numbers.formatDecimal(
+                        order.totalAmount,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+                    <td th:text="${order.paymentStatus == null
+                        ? 'Chưa có thanh toán'
+                        : statusLabels[order.paymentStatus]}"></td>
+
+                    <td>
+                        <span class="ui-status"
+                              th:text="${statusLabels[order.status]}">
+                        </span>
+                    </td>
+
+                    <td>
+                        <a class="ui-btn"
+                           th:href="@{/online-orders/{id}(
+                               id=${order.id}
+                           )}">
+                            Chi tiết
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${orders.empty}">
+                    <td colspan="7">
+                        Không tìm thấy đơn hàng.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ui-pagination">
+            <span th:text="${orders.totalElements + ' đơn hàng'}">
+            </span>
+
+            <div>
+                <a class="ui-btn"
+                   th:if="${orders.hasPrevious()}"
+                   th:href="@{/online-orders(
+                       page=${orders.number - 1},
+                       status=${status},
+                       keyword=${keyword}
+                   )}">
+                    ← Trước
+                </a>
+
+                <span th:text="${'Trang '
+                    + (orders.number + 1)
+                    + ' / '
+                    + (orders.totalPages == 0 ? 1 : orders.totalPages)}">
+                </span>
+
+                <a class="ui-btn"
+                   th:if="${orders.hasNext()}"
+                   th:href="@{/online-orders(
+                       page=${orders.number + 1},
+                       status=${status},
+                       keyword=${keyword}
+                   )}">
+                    Sau →
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

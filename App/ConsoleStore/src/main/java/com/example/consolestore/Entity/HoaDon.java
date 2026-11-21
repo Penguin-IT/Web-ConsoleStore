@@ -15,6 +15,21 @@ public class HoaDon {
     @Column(name = "maHD")
     private Long id;
 
+    @Column(name = "phiVanChuyen", precision = 18, scale = 0, insertable = false, updatable = false)
+    private BigDecimal shippingFee;
+
+    @Column(name = "giamGia", precision = 18, scale = 0, insertable = false, updatable = false)
+    private BigDecimal discount;
+
+    @Column(name = "maGiamGia", length = 30, insertable = false, updatable = false)
+    private String couponCode;
+
+    public BigDecimal getShippingFee() { return shippingFee == null ? BigDecimal.ZERO : shippingFee; }
+    public BigDecimal getDiscount()    { return discount == null ? BigDecimal.ZERO : discount; }
+    public String getCouponCode()      { return couponCode; }
+    /** Tiền hàng trước ship và giảm giá. */
+    public BigDecimal getGoodsAmount() { return totalAmount.subtract(getShippingFee()).add(getDiscount()); }
+
     @Column(name = "maKH", updatable = false)
     private Long customerId;
 

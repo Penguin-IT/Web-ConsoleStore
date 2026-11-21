@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Bán hàng tại quầy | Console Store</title>
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page">
+
+    <div class="pos-heading">
+        <div>
+            <span class="pos-heading-label">CONSOLE STORE</span>
+            <h1>Bán hàng tại quầy</h1>
+        </div>
+
+        <form id="warehouse-form"
+              class="pos-warehouse"
+              method="get"
+              th:action="@{/pos}">
+
+            <label for="warehouse">Kho bán hàng</label>
+
+            <div>
+                <select id="warehouse"
+                        name="warehouseId"
+                        th:attr="data-current=${options.warehouseId}">
+
+                    <option th:each="warehouse : ${options.warehouses}"
+                            th:value="${warehouse.id}"
+                            th:text="${warehouse.name}"
+                            th:selected="${warehouse.id == options.warehouseId}">
+                    </option>
+                </select>
+
+                <button class="ui-btn" type="submit">
+                    Đổi kho
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <p class="ui-alert"
+       role="alert"
+       th:if="${posError}"
+       th:text="${posError}">
+    </p>
+
+    <form method="post"
+          th:action="@{/pos/preview}"
+          class="pos-builder">
+
+        <input type="hidden"
+               name="warehouseId"
+               th:value="${options.warehouseId}">
+
+        <section class="ui-panel pos-products">
+            <div class="pos-section-heading">
+                <h2>Sản phẩm</h2>
+                <span>
+                    <strong id="line-count">1</strong> dòng
+                </span>
+            </div>
+
+            <div id="pos-lines">
+                <article class="pos-line"
+                         th:each="line, row : ${form.lines}">
+
+                    <div class="pos-line-heading">
+                        <strong>
+                            Sản phẩm
+                            <span data-number
+                                  th:text="${row.count}">
+                            </span>
+                        </strong>
+
+                        <button type="button"
+                                class="pos-remove"
+                                data-remove>
+                            Xóa
+                        </button>
+                    </div>
+
+                    <label class="pos-field">
+                        <span>Tên sản phẩm</span>
+
+                        <select data-key="productId"
+                                th:name="${'lines[' + row.index + '].productId'}"
+                                required>
+
+                            <option value="">Chọn sản phẩm</option>
+
+                            <option th:each="product : ${options.products}"
+                                    th:value="${product.id}"
+                                    th:attr="data-console=${product.console}"
+                                    th:selected="${product.id == line.productId}"
+                                    th:text="${product.name + ' · Còn ' + product.stock}">
+                            </option>
+                        </select>
+                    </label>
+
+                    <div class="pos-line-details">
+                        <label class="pos-field pos-quantity">
+                            <span>Số lượng</span>
+
+                            <input data-key="quantity"
+                                   th:name="${'lines[' + row.index + '].quantity'}"
+                                   th:value="${line.quantity}"
+                                   type="number"
+                                   min="1"
+                                   max="2147483647"
+                                   required>
+                        </label>
+
+                        <label class="pos-field"
+                               data-serial-field>
+                            <span>Serial máy</span>
+
+                            <select data-key="serialId"
+                                    th:name="${'lines[' + row.index + '].serialId'}">
+
+                                <option value="">Chọn serial</option>
+
+                                <option th:each="serial : ${options.serials}"
+                                        th:value="${serial.id}"
+                                        th:attr="data-product=${serial.productId}"
+                                        th:selected="${serial.id == line.serialId}"
+                                        th:text="${serial.number}">
+                                </option>
+                            </select>
+                        </label>
+                    </div>
+                </article>
+            </div>
+
+            <button type="button"
+                    class="ui-btn pos-add"
+                    id="add-line">
+                ＋ Thêm sản phẩm
+            </button>
+        </section>
+
+        <aside class="pos-customer">
+            <section class="ui-panel">
+                <div class="pos-section-heading">
+                    <h2>Khách hàng</h2>
+                </div>
+
+                <label class="pos-field">
+                    <span>Số điện thoại</span>
+
+                    <input id="phone"
+                           name="phone"
+                           type="tel"
+                           inputmode="numeric"
+                           pattern="0[0-9]{9}"
+                           maxlength="10"
+                           autocomplete="tel"
+                           th:value="${form.phone}">
+                </label>
+
+                <label class="pos-check">
+                    <input id="newCustomer"
+                           type="checkbox"
+                           name="newCustomer"
+                           value="true"
+                           th:checked="${form.newCustomer}">
+
+                    <span>Thêm khách hàng mới</span>
+                </label>
+
+                <div id="new-customer-fields"
+                     class="pos-customer-fields">
+
+                    <label class="pos-field">
+                        <span>Họ và tên</span>
+
+                        <input id="fullName"
+                               name="fullName"
+                               maxlength="100"
+                               autocomplete="name"
+                               th:value="${form.fullName}">
+                    </label>
+
+                    <label class="pos-field">
+                        <span>Địa chỉ</span>
+
+                        <input name="address"
+                               maxlength="255"
+                               autocomplete="street-address"
+                               th:value="${form.address}">
+                    </label>
+                </div>
+
+                <details class="pos-extra"
+                         th:attr="open=${form.tradeInId != null ? 'open' : null}">
+
+                    <summary>Liên kết phiếu thu cũ</summary>
+
+                    <label class="pos-field">
+                        <span>Mã phiếu thu</span>
+
+                        <input name="tradeInId"
+                               type="number"
+                               min="1"
+                               th:value="${form.tradeInId}">
+                    </label>
+                </details>
+
+                <label class="pos-field">
+                    <span>Ghi chú</span>
+
+                    <textarea name="note"
+                              rows="3"
+                              maxlength="150"
+                              th:text="${form.note}"></textarea>
+                </label>
+
+                <button type="submit"
+                        class="ui-btn ui-primary pos-submit">
+                    Tiếp tục thanh toán →
+                </button>
+            </section>
+        </aside>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+
+<script>
+    (() => {
+        const list = document.getElementById('pos-lines');
+        const add = document.getElementById('add-line');
+        const customer = document.getElementById('newCustomer');
+        const fields = document.getElementById('new-customer-fields');
+        const phone = document.getElementById('phone');
+        const name = document.getElementById('fullName');
+
+        function updateCustomer() {
+            fields.hidden = !customer.checked;
+
+            fields.querySelectorAll('input').forEach(input => {
+                input.disabled = !customer.checked;
+            });
+
+            phone.required = customer.checked;
+            name.required = customer.checked;
+        }
+
+        customer.addEventListener('change', updateCustomer);
+        updateCustomer();
+
+        function reindex() {
+            const rows = [...list.children];
+
+            rows.forEach((row, index) => {
+                row.querySelector('[data-number]').textContent =
+                    String(index + 1);
+
+                row.querySelectorAll('[data-key]').forEach(input => {
+                    input.name =
+                        'lines[' + index + '].' + input.dataset.key;
+                });
+
+                row.querySelector('[data-remove]').disabled =
+                    rows.length === 1;
+            });
+
+            add.disabled = rows.length >= 30;
+
+            document.getElementById('line-count').textContent =
+                String(rows.length);
+        }
+
+        function prepare(row) {
+            const product = row.querySelector('[data-key="productId"]');
+            const serial = row.querySelector('[data-key="serialId"]');
+            const quantity = row.querySelector('[data-key="quantity"]');
+            const serialField = row.querySelector('[data-serial-field]');
+
+            function updateProduct() {
+                const machine =
+                    product.selectedOptions[0]?.dataset.console === 'true';
+
+                quantity.readOnly = machine;
+
+                if (machine) {
+                    quantity.value = '1';
+                }
+
+                serialField.hidden = !machine;
+                serial.disabled = !machine;
+                serial.required = machine;
+
+                for (const option of serial.options) {
+                    if (!option.value) continue;
+
+                    option.disabled =
+                        option.dataset.product !== product.value;
+
+                    option.hidden = option.disabled;
+                }
+
+                if (!machine || serial.selectedOptions[0]?.disabled) {
+                    serial.value = '';
+                }
+            }
+
+            product.addEventListener('change', updateProduct);
+
+            row.querySelector('[data-remove]')
+                .addEventListener('click', () => {
+                    if (list.children.length <= 1) return;
+
+                    row.remove();
+                    reindex();
+                });
+
+            updateProduct();
+        }
+
+        add.addEventListener('click', () => {
+            if (list.children.length >= 30) return;
+
+            const row = list.firstElementChild.cloneNode(true);
+
+            row.querySelectorAll('select').forEach(select => {
+                select.value = '';
+            });
+
+            row.querySelector('[data-key="quantity"]').value = '1';
+
+            list.append(row);
+            prepare(row);
+            reindex();
+
+            row.querySelector('[data-key="productId"]').focus();
+        });
+
+        [...list.children].forEach(prepare);
+        reindex();
+
+        document.getElementById('warehouse-form')
+            .addEventListener('submit', event => {
+                const select = document.getElementById('warehouse');
+
+                const changed =
+                    select.value !== select.dataset.current;
+
+                const hasProducts = [
+                    ...list.querySelectorAll('[data-key="productId"]')
+                ].some(product => product.value);
+
+                if (
+                    changed
+                    && hasProducts
+                    && !window.confirm(
+                        'Đổi kho sẽ xóa các sản phẩm đang chọn. Tiếp tục?'
+                    )
+                ) {
+                    event.preventDefault();
+                }
+            });
+    })();
+</script>
+</body>
+</html>

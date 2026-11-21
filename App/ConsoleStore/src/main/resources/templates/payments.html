@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Thông tin thanh toán | Console Store</title>
+
+    <link rel="icon"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/checkout.css}">
+
+    <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body class="customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container checkout-page">
+
+    <div class="checkout-heading">
+        <div>
+            <p class="eyebrow">YOUR NEXT WORLD IS WAITING</p>
+
+            <h1 th:text="${'Đơn hàng HD' + page.invoice.id}"></h1>
+
+            <p>Đơn hàng đã được ghi nhận.</p>
+        </div>
+
+        <a th:href="@{/products}">Tiếp tục mua sắm ↗</a>
+    </div>
+
+    <div class="checkout-layout">
+        <section class="checkout-panel checkout-payment">
+            <h2 th:text="${page.methodLabel}"></h2>
+
+            <div class="checkout-alert"
+                 th:if="${page.invoice.status == 'HUY'}">
+                Đơn hàng đã hủy. Không thực hiện thanh toán cho đơn này.
+            </div>
+
+            <th:block th:if="${page.invoice.status != 'HUY'}">
+
+                <!-- COD -->
+                <th:block th:if="${page.payment.method == 'TIEN_MAT'}">
+                    <div class="checkout-alert checkout-success"
+                         th:if="${page.payment.status == 'DA_THANH_TOAN'}">
+                        Đã thu tiền khi giao hàng. Cảm ơn bạn!
+                    </div>
+
+                    <th:block th:if="${page.payment.status != 'DA_THANH_TOAN'}">
+                        <span class="checkout-status">Thanh toán khi nhận hàng</span>
+
+                        <p>Đơn hàng đã được ghi nhận. Vui lòng chuẩn bị đúng số tiền
+                            bên dưới để thanh toán cho nhân viên giao hàng.</p>
+
+                        <dl class="checkout-payment-info">
+                            <dt>Số tiền cần thanh toán</dt>
+                            <dd th:text="${
+                        #numbers.formatDecimal(
+                            page.payment.amount, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></dd>
+
+                            <dt>Mã đơn hàng</dt>
+                            <dd th:text="${'HD' + page.invoice.id}"></dd>
+                        </dl>
+                    </th:block>
+                </th:block>
+
+                <!-- Online (đã chuyển hướng qua cổng thanh toán) -->
+                <th:block th:if="${page.payment.method != 'TIEN_MAT'}">
+                    <div class="checkout-alert checkout-success"
+                         th:if="${page.payment.status == 'DA_THANH_TOAN'}">
+                        Thanh toán thành công. Đơn hàng của bạn đã được xác nhận!
+                    </div>
+
+                    <th:block th:if="${page.payment.status == 'CHUA_THANH_TOAN'}">
+                        <div class="checkout-alert"
+                             th:if="${result == 'cancel'}">
+                            Bạn đã hủy giao dịch. Đơn hàng vẫn được giữ cho đến khi hết hạn thanh toán.
+                        </div>
+                        <div class="checkout-alert"
+                             th:if="${result == 'expired'}">
+                            Giao dịch đã hết hạn.
+                        </div>
+
+                        <span class="checkout-status">Chưa thanh toán</span>
+
+                        <a class="button-primary"
+                           th:href="@{${payUrl}}">
+                            Thanh toán lại
+                        </a>
+                    </th:block>
+                </th:block>
+            </th:block>
+
+            <a th:href="@{/orders}">Xem đơn hàng của tôi</a>
+        </section>
+
+        <aside class="checkout-panel">
+            <h2>Thông tin đơn hàng</h2>
+
+            <div class="checkout-recipient">
+                <strong th:text="${page.invoice.recipientName}"></strong>
+                <p th:text="${page.invoice.recipientPhone}"></p>
+                <p th:text="${page.invoice.address}"></p>
+
+                <p th:if="${!#strings.isEmpty(page.invoice.note)}"
+                   th:text="${page.invoice.note}"></p>
+            </div>
+
+            <div class="checkout-item checkout-item--text"
+                 th:each="line : ${page.lines}">
+                <div>
+                    <strong th:text="${line.name}"></strong>
+                    <p th:text="${'Số lượng: ' + line.quantity}"></p>
+                </div>
+
+                <strong th:text="${
+                    #numbers.formatDecimal(
+                        line.subtotal, 1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'
+                }"></strong>
+            </div>
+
+            <div class="co-sum-row">
+                <span>Tiền hàng</span>
+                <span th:text="${#numbers.formatDecimal(page.invoice.goodsAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="co-sum-row">
+                <span>Phí vận chuyển</span>
+                <span th:text="${page.invoice.shippingFee.signum() == 0 ? 'Miễn phí'
+              : #numbers.formatDecimal(page.invoice.shippingFee, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="co-sum-row" th:if="${page.invoice.discount.signum() > 0}">
+                <span th:text="${'Mã giảm giá ' + page.invoice.couponCode}"></span>
+                <span th:text="${'-' + #numbers.formatDecimal(page.invoice.discount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="checkout-total">
+                <span>Tổng cộng</span>
+                <strong th:text="${#numbers.formatDecimal(page.invoice.totalAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Đặt hàng | Console Store</title>
+
+    <link rel="icon"
+          th:href="@{/images/banners/logo.png}">
+
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/checkout.css}">
+    <link rel="stylesheet" th:href="@{/css/cart-checkout.css}">
+    <script th:src="@{/js/coupon.js}" defer></script>
+    <script th:src="@{/js/store.js}" defer></script>
+    <script th:src="@{/js/checkout.js}" defer></script>
+</head>
+
+<body class="customer-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container checkout-page">
+
+    <nav th:replace="~{fragments/checkout-steps :: steps(2)}"></nav>
+
+    <div class="checkout-heading"
+         th:if="${page != null}"
+         th:with="cod=${page.payment.method == 'TIEN_MAT'},
+                  paid=${page.payment.status == 'DA_THANH_TOAN'}">
+        <div>
+            <p class="eyebrow">YOUR NEXT WORLD IS WAITING</p>
+
+            <h1 th:text="${'Đơn hàng HD' + page.invoice.id}"></h1>
+
+            <p th:if="${page.invoice.status == 'HUY'}">
+                Đơn hàng đã hủy.
+            </p>
+
+            <p th:if="${page.invoice.status != 'HUY' and cod}">
+                ✓ Đặt hàng thành công! Cửa hàng sẽ xác nhận và giao đến bạn.
+                Bạn thanh toán tiền mặt khi nhận hàng.
+            </p>
+
+            <p th:if="${page.invoice.status != 'HUY' and !cod and paid}">
+                ✓ Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.
+            </p>
+
+            <p th:if="${page.invoice.status != 'HUY' and !cod and !paid}">
+                Đơn hàng đang chờ thanh toán. Hoàn tất thanh toán để đặt hàng thành công.
+            </p>
+        </div>
+
+        <a th:href="@{/products}">Tiếp tục mua sắm ↗</a>
+    </div>
+    <div class="checkout-heading" th:unless="${page != null}">
+        <div>
+            <p class="eyebrow">YOUR NEXT WORLD IS WAITING</p>
+            <h1>Đặt hàng</h1>
+            <p>Điền thông tin nhận hàng và chọn phương thức thanh toán.</p>
+        </div>
+        <a th:href="@{/products}">Tiếp tục mua sắm ↗</a>
+    </div>
+    <ol class="order-track"
+        th:if="${page != null and page.invoice.status != 'HUY'}"
+        th:with="cod=${page.payment.method == 'TIEN_MAT'},
+                 paid=${page.payment.status == 'DA_THANH_TOAN'},
+                 st=${page.invoice.status}">
+        <li class="is-done">Đặt hàng</li>
+
+        <li th:text="${cod ? 'Xác nhận' : 'Thanh toán'}"
+            th:classappend="${cod
+                ? (st == 'DA_XAC_NHAN' or st == 'DANG_GIAO' or st == 'HOAN_TAT')
+                : paid} ? 'is-done'"></li>
+
+        <li th:classappend="${st == 'DANG_GIAO' or st == 'HOAN_TAT'} ? 'is-done'">
+            Đang giao
+        </li>
+
+        <li th:classappend="${st == 'HOAN_TAT'} ? 'is-done'">
+            Hoàn tất
+        </li>
+    </ol>
+
+    <div class="checkout-alert"
+         role="alert"
+         data-form-alert
+         th:if="${checkoutError}"
+         th:text="${checkoutError}">
+    </div>
+
+    <div class="checkout-alert"
+         role="alert"
+         data-form-alert
+         hidden
+         th:unless="${checkoutError}">
+    </div>
+    <p class="checkout-note" th:if="${cartSuccess}" th:text="${cartSuccess}"></p>
+    <div class="checkout-alert" role="alert"
+         th:if="${cartError}" th:text="${cartError}"></div>
+    <div class="checkout-layout">
+
+        <form th:action="@{/checkout}"
+              th:object="${form}"
+              method="post"
+              novalidate
+              class="co-form"
+              id="checkout-form"
+              data-checkout-form>
+
+            <input type="hidden"
+                   name="requestId"
+                   th:value="${requestId}">
+
+            <!-- 1. Thông tin liên hệ -->
+            <section class="checkout-panel co-section">
+                <h2><span class="co-num">1</span> Thông tin liên hệ</h2>
+
+                <div class="co-grid">
+                    <div class="co-field"
+                         data-field="fullName"
+                         th:classappend="${checkoutErrors.containsKey('fullName')} ? 'has-error'">
+
+                        <label th:for="fullName">
+                            Họ và tên <span class="co-req">*</span>
+                        </label>
+
+                        <input type="text"
+                               th:field="*{fullName}"
+                               maxlength="100"
+                               autocomplete="name"
+                               placeholder="Nguyễn Văn A"
+                               aria-describedby="fullName-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('fullName')}"
+                               required>
+
+                        <p class="co-error"
+                           id="fullName-error"
+                           th:text="${checkoutErrors.get('fullName')}"></p>
+                    </div>
+
+                    <div class="co-field"
+                         data-field="phone"
+                         th:classappend="${checkoutErrors.containsKey('phone')} ? 'has-error'">
+
+                        <label th:for="phone">
+                            Số điện thoại <span class="co-req">*</span>
+                        </label>
+
+                        <input type="tel"
+                               th:field="*{phone}"
+                               maxlength="16"
+                               inputmode="tel"
+                               autocomplete="tel"
+                               placeholder="0912345678"
+                               aria-describedby="phone-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('phone')}"
+                               required>
+
+                        <p class="co-error"
+                           id="phone-error"
+                           th:text="${checkoutErrors.get('phone')}"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Địa chỉ nhận hàng -->
+            <section class="checkout-panel co-section">
+                <h2><span class="co-num">2</span> Địa chỉ nhận hàng</h2>
+
+                <div class="co-grid co-grid--3" data-address>
+
+                    <div class="co-field"
+                         data-field="province"
+                         th:classappend="${checkoutErrors.containsKey('province')} ? 'has-error'">
+
+                        <label th:for="province">
+                            Tỉnh / Thành phố <span class="co-req">*</span>
+                        </label>
+
+                        <input type="text"
+                               th:field="*{province}"
+                               maxlength="40"
+                               autocomplete="address-level1"
+                               placeholder="Nhập tỉnh / thành phố"
+                               aria-describedby="province-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('province')}"
+                               required>
+
+                        <p class="co-error"
+                           id="province-error"
+                           th:text="${checkoutErrors.get('province')}"></p>
+                    </div>
+
+                    <div class="co-field"
+                         data-field="district"
+                         th:classappend="${checkoutErrors.containsKey('district')} ? 'has-error'">
+
+                        <label th:for="district">
+                            Quận / Huyện <span class="co-req">*</span>
+                        </label>
+
+                        <input type="text"
+                               th:field="*{district}"
+                               maxlength="50"
+                               autocomplete="address-level2"
+                               placeholder="Nhập quận / huyện"
+                               aria-describedby="district-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('district')}"
+                               required>
+
+                        <p class="co-error"
+                           id="district-error"
+                           th:text="${checkoutErrors.get('district')}"></p>
+                    </div>
+
+                    <div class="co-field"
+                         data-field="ward"
+                         th:classappend="${checkoutErrors.containsKey('ward')} ? 'has-error'">
+
+                        <label th:for="ward">
+                            Phường / Xã <span class="co-req">*</span>
+                        </label>
+
+                        <input type="text"
+                               th:field="*{ward}"
+                               maxlength="50"
+                               autocomplete="address-level3"
+                               placeholder="Nhập phường / xã"
+                               aria-describedby="ward-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('ward')}"
+                               required>
+
+                        <p class="co-error"
+                           id="ward-error"
+                           th:text="${checkoutErrors.get('ward')}"></p>
+                    </div>
+
+                    <p class="co-hint co-wide" data-address-hint hidden></p>
+                </div>
+
+                <div class="co-grid">
+                    <div class="co-field co-wide"
+                         data-field="street"
+                         th:classappend="${checkoutErrors.containsKey('street')} ? 'has-error'">
+
+                        <label th:for="street">
+                            Số nhà, tên đường <span class="co-req">*</span>
+                        </label>
+
+                        <input type="text"
+                               th:field="*{street}"
+                               maxlength="100"
+                               autocomplete="address-line1"
+                               placeholder="Ví dụ: 12 Nguyễn Huệ"
+                               aria-describedby="street-error"
+                               th:attr="aria-invalid=${checkoutErrors.containsKey('street')}"
+                               required>
+
+                        <p class="co-error"
+                           id="street-error"
+                           th:text="${checkoutErrors.get('street')}"></p>
+                    </div>
+
+                    <div class="co-field co-wide"
+                         data-field="note"
+                         th:classappend="${checkoutErrors.containsKey('note')} ? 'has-error'">
+
+                        <label th:for="note">
+                            Ghi chú cho đơn hàng
+                            <span class="co-optional">(không bắt buộc)</span>
+                        </label>
+
+                        <textarea th:field="*{note}"
+                                  maxlength="255"
+                                  rows="3"
+                                  placeholder="Ví dụ: giao giờ hành chính, gọi trước khi giao"
+                                  aria-describedby="note-error"
+                                  th:attr="aria-invalid=${checkoutErrors.containsKey('note')}"></textarea>
+
+                        <div class="co-field-foot">
+                            <p class="co-error"
+                               id="note-error"
+                               th:text="${checkoutErrors.get('note')}"></p>
+
+                            <span class="co-counter" data-note-count>0/255</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Phương thức thanh toán -->
+            <section class="checkout-panel co-section"
+                     data-field="paymentMethod">
+
+                <h2><span class="co-num">3</span> Phương thức thanh toán</h2>
+
+                <fieldset class="checkout-methods co-methods"
+                          aria-describedby="paymentMethod-error">
+                    <legend class="visually-hidden">Phương thức thanh toán</legend>
+
+                    <label class="checkout-method">
+                        <input type="radio"
+                               th:field="*{paymentMethod}"
+                               value="CHUYEN_KHOAN"
+                               required>
+
+                        <span class="co-method-icon">NH</span>
+
+                        <span>
+                            <strong>Chuyển khoản ngân hàng</strong>
+                            <small>Quét mã QR (giao diện mô phỏng)</small>
+                        </span>
+                    </label>
+
+                    <label class="checkout-method">
+                        <input type="radio"
+                               th:field="*{paymentMethod}"
+                               value="MOMO">
+
+                        <span class="co-method-icon co-method-icon--momo">Mo</span>
+
+                        <span>
+                            <strong>Ví MoMo</strong>
+                            <small>Giao diện thanh toán mô phỏng</small>
+                        </span>
+                    </label>
+
+                    <label class="checkout-method">
+                        <input type="radio"
+                               th:field="*{paymentMethod}"
+                               value="ZALOPAY">
+
+                        <span class="co-method-icon co-method-icon--zalo">Za</span>
+
+                        <span>
+                            <strong>Ví ZaloPay</strong>
+                            <small>Giao diện thanh toán mô phỏng</small>
+                        </span>
+                    </label>
+                    <label class="checkout-method">
+                        <input type="radio"
+                               th:field="*{paymentMethod}"
+                               value="TIEN_MAT">
+
+                        <span class="co-method-icon co-method-icon--cod">COD</span>
+
+                        <span>
+        <strong>Thanh toán khi nhận hàng (COD)</strong>
+        <small>Trả tiền mặt cho nhân viên giao hàng</small>
+    </span>
+                    </label>
+                </fieldset>
+
+                <p class="co-error"
+                   id="paymentMethod-error"
+                   th:text="${checkoutErrors.get('paymentMethod')}"></p>
+
+                <p class="checkout-note">
+                    Đơn hàng được tạo ở trạng thái chờ xác nhận.
+                    Chọn phương thức thanh toán chưa đồng nghĩa đã thanh toán.
+                </p>
+            </section>
+
+            <button class="button-primary checkout-submit co-submit"
+                    type="submit"
+                    data-submit
+                    th:disabled="${#strings.isEmpty(requestId)}"
+                    th:text="${pending
+                        ? 'Kiểm tra và gửi lại yêu cầu'
+                        : 'Đặt hàng'}">
+                Đặt hàng
+            </button>
+        </form>
+
+        <!-- Tóm tắt đơn hàng -->
+        <aside class="checkout-panel checkout-summary co-summary"
+               aria-label="Đơn hàng của bạn">
+
+            <h2>Đơn hàng của bạn</h2>
+            <div class="member-box" th:if="${member != null}">
+                <p>
+                    Hạng <strong th:text="${member.tier.label}"></strong>
+                    <span th:if="${member.percent > 0}"
+                          th:text="${' · giảm thêm ' + member.percent + '% mọi sản phẩm'}"></span>
+                </p>
+                <p class="member-next" th:if="${member.next != null}"
+                   th:text="${'Tích lũy thêm ' + #numbers.formatDecimal(member.remaining, 1, 'POINT', 0, 'COMMA') + ' ₫ để lên hạng ' + member.next.label}"></p>
+            </div>
+            <th:block th:if="${cart != null and pricing != null}">
+                <div class="checkout-item"
+                     th:each="line : ${cart.lines}">
+
+                    <div class="co-thumb">
+                        <img th:src="${line.image}"
+                             th:alt="${line.name}"
+                             width="72"
+                             height="72">
+
+                        <span class="co-thumb-qty"
+                              th:text="${line.quantity}"></span>
+                    </div>
+
+                    <div>
+                        <strong th:text="${line.name}"></strong>
+                        <small class="co-bundle-tag"
+                               th:if="${line.bundle}"
+                               th:text="${'Giá mua kèm -' + bundlePercent + '%'}"></small>
+                        <small class="checkout-warning"
+                               th:if="${!line.available}"
+                               th:text="${line.warning}">
+                        </small>
+                    </div>
+
+                    <strong th:text="${
+                        #numbers.formatDecimal(
+                            line.subtotal, 1, 'POINT', 0, 'COMMA'
+                        ) + ' ₫'
+                    }"></strong>
+                </div>
+
+
+                <div class="coupon-box" th:attr="data-url=@{/checkout/pricing}">
+                    <label for="couponCode">Mã giảm giá</label>
+                    <div class="coupon-input">
+                        <input type="text" id="couponCode" name="couponCode" form="checkout-form"
+                               maxlength="30" autocomplete="off" placeholder="Nhập mã"
+                               th:value="${form.couponCode}" data-coupon-input>
+                        <button type="button" data-coupon-apply>Áp dụng</button>
+                    </div>
+                    <p class="coupon-msg" data-coupon-msg
+                       th:text="${pricing.message}"
+                       th:classappend="${pricing.couponValid} ? 'ok' : (${#strings.isEmpty(pricing.message)} ? '' : 'err')"></p>
+                    <div class="coupon-chips">
+                        <button type="button" th:each="c : ${@pricingService.featuredCoupons()}"
+                                data-coupon-pick th:attr="data-code=${c.code}"
+                                th:text="${c.code}"></button>
+                    </div>
+                </div>
+
+                <div class="co-sum-row">
+                    <span>Tạm tính (giá niêm yết)</span>
+                    <span th:text="${#numbers.formatDecimal(cart.listTotal, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" th:if="${cart.bundleSaved.signum() > 0}">
+                    <span th:text="${'Mua kèm (-' + bundlePercent + '%)'}"></span>
+                    <span th:text="${'-' + #numbers.formatDecimal(cart.bundleSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" th:if="${member != null and cart.memberSaved.signum() > 0}">
+                    <span th:text="${'Hạng ' + member.tier.label + ' (-' + member.percent + '%)'}"></span>
+                    <span th:text="${'-' + #numbers.formatDecimal(cart.memberSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" data-sum-discount-row
+                     th:classappend="${pricing.discount.signum() == 0} ? 'is-hidden'">
+                    <span>Mã giảm giá <b data-sum="code" th:text="${pricing.couponCode != null ? '(' + pricing.couponCode + ')' : ''}"></b></span>
+                    <span data-sum="discount"
+                          th:text="${'-' + #numbers.formatDecimal(pricing.discount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row">
+                    <span>Phí vận chuyển</span>
+                    <span data-sum="shipping"
+                          th:text="${pricing.shippingPending ? 'Chọn tỉnh/thành để tính'
+        : (pricing.shipping.signum() == 0 ? 'Miễn phí'
+        : #numbers.formatDecimal(pricing.shipping, 1, 'POINT', 0, 'COMMA') + ' ₫')}"></span>
+                </div>
+                <div class="checkout-total">
+                    <span>Còn phải trả</span>
+                    <strong data-sum="payable"
+                            th:text="${#numbers.formatDecimal(pricing.payable, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+                </div>
+                <div class="co-saved" data-sum-saved-row
+                     th:classappend="${cart.saved.add(pricing.discount).signum() == 0} ? 'is-hidden'">
+                    Bạn đã tiết kiệm
+                    <b data-sum="saved"
+                       th:text="${#numbers.formatDecimal(cart.saved.add(pricing.discount), 1, 'POINT', 0, 'COMMA') + ' ₫'}"></b>
+                </div>
+
+                <p class="checkout-note">
+                    Tồn kho và giá bán được kiểm tra lại khi đặt hàng.
+                </p>
+
+                <a class="co-edit-cart" th:href="@{/cart}">
+                    Chỉnh sửa giỏ hàng
+                </a>
+            </th:block>
+
+            <p th:if="${cart == null}">
+                Chưa tải được giỏ hàng. Vui lòng tải lại trang.
+            </p>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

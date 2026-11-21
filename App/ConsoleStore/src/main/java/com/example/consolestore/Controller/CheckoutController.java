@@ -1,6 +1,8 @@
 package com.example.consolestore.Controller;
-
-import com.example.consolestore.DTO.*;
+import java.util.List;
+import com.example.consolestore.DTO.CartView;
+import com.example.consolestore.DTO.CheckoutQuote;
+import com.example.consolestore.DTO.CheckoutRequest;
 import com.example.consolestore.Service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -9,31 +11,38 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.consolestore.DTO.PaymentPage;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-
+import com.example.consolestore.Service.PricingService;
+import com.example.consolestore.Service.MemberService;
+import com.example.consolestore.Service.BundlePricing;
+import com.example.consolestore.Service.CartStore;
 @Controller
 public class CheckoutController {
 
     private static final Logger log =
             LoggerFactory.getLogger(CheckoutController.class);
-
+    private final CartStore cartStore;
     private final CheckoutService checkout;
     private final CartService carts;
     private final CartSession session;
-
+    private final MemberService members;
     public CheckoutController(
+            MemberService members,
             CheckoutService checkout,
             CartService carts,
-            CartSession session
+            CartSession session,
+            CartStore cartStore            // thêm
     ) {
+        this.members = members;
         this.checkout = checkout;
         this.carts = carts;
         this.session = session;
+        this.cartStore = cartStore;        // thêm
     }
 
     @GetMapping({
@@ -47,7 +56,10 @@ public class CheckoutController {
     ) {
         noCache(response);
 
-        return session.locked(principal.getName(), () -> {
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {
             CheckoutQuote quote = session.currentQuote();
 
             if (quote != null && quote.submitted()) {
@@ -102,8 +114,10 @@ public class CheckoutController {
     ) {
         noCache(response);
 
-        return session.locked(principal.getName(), () -> {
-            Long completed = session.completed(requestId);
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {            Long completed = session.completed(requestId);
 
             if (completed != null) {
                 return redirect(completed);
@@ -129,6 +143,30 @@ public class CheckoutController {
                         "checkoutError",
                         "Phiên thanh toán đã thay đổi. "
                                 + "Kiểm tra giỏ hàng và gửi lại."
+                );
+
+                return render(
+                        principal.getName(),
+                        form,
+                        model,
+                        response
+                );
+            }
+
+            // Kiểm tra dữ liệu nhập trước khi khóa yêu cầu đặt hàng.
+            // Nếu sai, trả lại form kèm lỗi theo từng trường.
+            Map<String, String> errors =
+                    CheckoutValidator.validate(form);
+
+            if (!errors.isEmpty()) {
+                response.setStatus(422);
+
+                model.addAttribute("checkoutErrors", errors);
+
+                model.addAttribute(
+                        "checkoutError",
+                        "Vui lòng kiểm tra lại các thông tin "
+                                + "được đánh dấu bên dưới."
                 );
 
                 return render(
@@ -215,26 +253,62 @@ public class CheckoutController {
             );
         });
     }
+    @PostMapping("/checkout/pricing")
+    @ResponseBody
+    public Map<String, Object> pricing(
+            @RequestParam(defaultValue = "") String province,
+            @RequestParam(defaultValue = "") String couponCode,
+            Principal principal
+    ) {
+        return session.locked(
+                cartStore.customerOwner(principal.getName()),
+                cartStore,
+                () -> {
+                    MemberService.Status member = members.status(principal.getName());
+                    CartView cart = carts.view(session.items(), member.tier().getPercent());
+                    PricingService.Quote quote = checkout.preview(
+                            principal.getName(), cart.totalAmount(), province, couponCode);
 
+                    Map<String, Object> view = quote.view();
+                    BigDecimal saved = cart.getSaved().add(quote.discount());
+                    view.put("hasSaved", saved.signum() > 0);
+                    view.put("totalSaved", PricingService.money(saved));
+                    return view;
+                });
+    }
     @GetMapping("/checkout/orders/{id}/payment")
     public String payment(
             @PathVariable Long id,
+            @RequestParam(required = false) String result,
             Principal principal,
             Model model,
             HttpServletResponse response
     ) {
         noCache(response);
 
-        model.addAttribute("activeStoreMenu", "cart");
-
-        model.addAttribute(
-                "page",
-                checkout.payment(
-                        principal.getName(),
-                        id
-                )
+        PaymentPage page = checkout.payment(
+                principal.getName(),
+                id
         );
 
+        String payUrl = PaymentGatewayService.payUrl(
+                id,
+                page.invoice().getTotalAmount()
+        );
+
+        boolean online = !"TIEN_MAT".equals(page.payment().getMethod());
+        boolean unpaid = "CHUA_THANH_TOAN".equals(page.payment().getStatus());
+        boolean open = "CHO_XAC_NHAN".equals(page.invoice().getStatus());
+
+        if (online && unpaid && open && result == null) {
+            return "redirect:" + payUrl;
+        }
+
+        model.addAttribute("activeStoreMenu", "cart");
+        model.addAttribute("page", page);
+        model.addAttribute("payUrl", payUrl);
+        model.addAttribute("result", result);
+        model.addAttribute("bundlePercent", BundlePricing.PERCENT);
         return "payments";
     }
 
@@ -249,6 +323,10 @@ public class CheckoutController {
         model.addAttribute("cart", null);
         model.addAttribute("pending", false);
 
+        if (!model.containsAttribute("checkoutErrors")) {
+            model.addAttribute("checkoutErrors", Map.of());
+        }
+
         model.addAttribute(
                 "form",
                 form == null ? new CheckoutRequest() : form
@@ -262,8 +340,14 @@ public class CheckoutController {
                 );
             }
 
-            CartView cart = carts.view(session.items());
+            MemberService.Status member = members.status(username);
+            model.addAttribute("member", member);
+
+            CartView cart = carts.view(session.items(), member.tier().getPercent());
             model.addAttribute("cart", cart);
+            CheckoutRequest current = (CheckoutRequest) model.getAttribute("form");
+            model.addAttribute("pricing", checkout.preview(
+                    username, cart.totalAmount(), current.getProvince(), current.getCouponCode()));
 
             if (cart.readyToCheckout()) {
                 Map<Long, BigDecimal> prices =
@@ -283,7 +367,6 @@ public class CheckoutController {
                         "requestId",
                         quote.requestId()
                 );
-
                 model.addAttribute(
                         "pending",
                         quote.submitted()

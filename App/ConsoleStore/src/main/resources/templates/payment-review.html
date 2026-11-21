@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1">
+
+  <title>Kiểm tra thanh toán | Console Store</title>
+
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <link rel="stylesheet" th:href="@{/css/pos.css}">
+
+  <script th:src="@{/js/store.js}" defer></script>
+</head>
+
+<body>
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content"
+      class="container store-container pos-page"
+      th:with="payment=${detail.payment}, invoice=${detail.invoice}">
+
+  <div class="ui-page-heading">
+    <h1 th:text="${'Thanh toán TT' + payment.id}"></h1>
+
+    <div class="pos-actions">
+      <a class="ui-btn" th:href="@{/payments}">
+        ← Chờ duyệt
+      </a>
+
+      <a class="ui-btn"
+         th:href="@{/online-orders/{id}(
+                   id=${invoice.id}
+               )}">
+        Xử lý đơn hàng
+      </a>
+    </div>
+  </div>
+
+  <p class="ui-alert"
+     role="alert"
+     th:if="${error}"
+     th:text="${error}">
+  </p>
+
+  <p role="status"
+     th:if="${success}"
+     th:text="${success}">
+  </p>
+
+  <section class="ui-panel">
+    <dl class="ui-details">
+      <div>
+        <dt>Đơn hàng / Tham chiếu</dt>
+        <dd th:text="${'HD' + invoice.id}"></dd>
+      </div>
+
+      <div>
+        <dt>Khách hàng</dt>
+        <dd th:text="${invoice.recipientName}"></dd>
+      </div>
+
+      <div>
+        <dt>Điện thoại</dt>
+        <dd th:text="${invoice.recipientPhone}"></dd>
+      </div>
+
+      <div>
+        <dt>Địa chỉ nhận</dt>
+        <dd th:text="${invoice.address}"></dd>
+      </div>
+
+      <div>
+        <dt>Phương thức</dt>
+        <dd th:text="${methodLabels[payment.method]
+                    ?: payment.method}">
+        </dd>
+      </div>
+
+      <div>
+        <dt>Trạng thái đơn</dt>
+        <dd th:text="${orderLabels[invoice.status]}"></dd>
+      </div>
+
+      <div>
+        <dt>Thanh toán</dt>
+        <dd th:text="${payment.status == 'DA_THANH_TOAN'
+                    ? 'Đã thanh toán'
+                    : 'Chưa thanh toán'}">
+        </dd>
+      </div>
+
+      <div>
+        <dt>Thời điểm nhận tiền</dt>
+        <dd th:text="${payment.paidAt == null
+                    ? '—'
+                    : #temporals.format(
+                        payment.paidAt,
+                        'dd/MM/yyyy HH:mm:ss'
+                    )}">
+        </dd>
+      </div>
+
+      <div>
+        <dt>Số tiền thanh toán</dt>
+        <dd th:text="${#numbers.formatDecimal(
+                    payment.amount,
+                    1, 'POINT', 0, 'COMMA'
+                ) + ' ₫'}"></dd>
+      </div>
+
+      <div>
+        <dt>Tổng hóa đơn</dt>
+        <dd th:text="${#numbers.formatDecimal(
+                    invoice.totalAmount,
+                    1, 'POINT', 0, 'COMMA'
+                ) + ' ₫'}"></dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="ui-panel">
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>SL</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="line : ${detail.lines}">
+          <td th:text="${line.name}"></td>
+          <td th:text="${line.quantity}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.price,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+
+          <td th:text="${#numbers.formatDecimal(
+                        line.subtotal,
+                        1, 'POINT', 0, 'COMMA'
+                    ) + ' ₫'}"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <form class="ui-panel"
+        method="post"
+        th:if="${invoice.status == 'CHO_XAC_NHAN'}"
+        th:action="@{/payments/{id}/review(
+              id=${payment.id}
+          )}">
+
+    <input type="hidden"
+           name="expectedMethod"
+           th:value="${payment.method}">
+
+    <input type="hidden"
+           name="expectedAmount"
+           th:value="${payment.amount.toPlainString()}">
+
+    <div class="ui-form">
+      <label class="ui-field">
+        <span>Số tiền thực nhận (đ)</span>
+
+        <input name="receivedAmount"
+               inputmode="numeric"
+               maxlength="18"
+               pattern="[0-9]{1,18}"
+               required>
+      </label>
+      <label class="ui-field">
+        <span>Mã giao dịch ngân hàng</span>
+
+        <input name="transactionCode"
+               maxlength="30"
+               pattern="[A-Za-z0-9]{6,30}"
+               autocomplete="off"
+               required>
+      </label>
+      <div class="ui-full">
+        <label class="pos-check">
+          <input name="received"
+                 type="checkbox"
+                 value="true"
+                 required>
+
+          <span>
+                        Đã kiểm tra giao dịch và nhận đủ tiền
+                    </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="pos-actions" style="margin-top:20px">
+      <button class="ui-btn ui-primary"
+              name="action"
+              value="approve"
+              type="submit">
+        Xác nhận nhận tiền
+      </button>
+
+      <button class="ui-btn"
+              name="action"
+              value="reject"
+              type="submit"
+              formnovalidate
+              th:if="${payment.status == 'CHUA_THANH_TOAN'}"
+              onclick="return confirm('Từ chối thanh toán, hủy đơn và hoàn kho?')">
+        Từ chối / Hủy đơn
+      </button>
+    </div>
+  </form>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav th:fragment="steps(current)"
+     class="co-steps"
+     aria-label="Các bước đặt hàng">
+
+    <ol>
+        <li th:classappend="${current == 1 ? 'is-current' : (current > 1 ? 'is-done' : '')}"
+            th:aria-current="${current == 1} ? 'step'">
+            <span class="co-step-dot">1</span>
+            <span class="co-step-text">Giỏ hàng</span>
+        </li>
+
+        <li th:classappend="${current == 2 ? 'is-current' : (current > 2 ? 'is-done' : '')}"
+            th:aria-current="${current == 2} ? 'step'">
+            <span class="co-step-dot">2</span>
+            <span class="co-step-text">Thông tin &amp; thanh toán</span>
+        </li>
+
+        <li th:classappend="${current == 3 ? 'is-current' : ''}"
+            th:aria-current="${current == 3} ? 'step'">
+            <span class="co-step-dot">3</span>
+            <span class="co-step-text">Hoàn tất</span>
+        </li>
+    </ol>
+</nav>
+
+</body>
+</html>
