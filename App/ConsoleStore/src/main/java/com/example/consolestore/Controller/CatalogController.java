@@ -15,13 +15,17 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.example.consolestore.Service.ReviewService;
 
 @Controller
 public class CatalogController {
     private static final Logger log=LoggerFactory.getLogger(CatalogController.class);
     private final CatalogService catalog;
-    public CatalogController(CatalogService catalog){this.catalog=catalog;}
+    private final ReviewService reviews;
+    public CatalogController(CatalogService catalog, ReviewService reviews){
+        this.catalog=catalog;
+        this.reviews=reviews;
+    }
     public record NavigationItem(String label,String url,boolean active) {}
     @GetMapping({"/products","/catalog.html"})
     public String list(@ModelAttribute("filter") CatalogSearch filter, BindingResult errors, Model model, HttpServletResponse response) {
@@ -144,6 +148,18 @@ public class CatalogController {
                     "customer",
                     request.getUserPrincipal() != null
                             && request.isUserInRole("KHACHHANG")
+            );
+            model.addAttribute("reviews", reviews.list(id));
+            model.addAttribute("reviewSummary", reviews.summary(id));
+            model.addAttribute(
+                    "reviewState",
+                    reviews.stateFor(
+                            request.getUserPrincipal() == null
+                                    ? null
+                                    : request.getUserPrincipal().getName(),
+                            request.isUserInRole("KHACHHANG"),
+                            id
+                    ).name()
             );
 
 

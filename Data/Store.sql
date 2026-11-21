@@ -1922,13 +1922,6 @@ BEGIN
 
         IF @channel = N'ONLINE'
         BEGIN
-            IF @p_phuongThuc = N'TIEN_MAT'
-            BEGIN
-                ;THROW 56002,
-                    N'Đơn online không hỗ trợ thanh toán tiền mặt.',
-                    1;
-            END;
-
             IF ISNULL(@p_xacNhanDaNhanTien, 0) <> 0
                OR @p_tienKhachDua IS NOT NULL
             BEGIN
@@ -3206,4 +3199,76 @@ INSERT INTO MaGiamGia (maCode, moTa, loai, giaTri, giamToiDa, donToiThieu, soLuo
 ('WELCOME5', N'Giảm 5% cho đơn từ 1 triệu',          'PHAN_TRAM', 5,      500000, 1000000, NULL, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
 ('GAME200K', N'Giảm 200.000₫ cho đơn từ 3 triệu',     'SO_TIEN',   200000, NULL,   3000000, 100,  1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
 ('FREESHIP', N'Miễn phí vận chuyển cho đơn từ 500k',  'FREESHIP',  0,      NULL,   500000,  NULL, 3, GETDATE(), DATEADD(MONTH, 3, GETDATE()));
+GO
+
+IF COL_LENGTH('ThanhToan', 'maGiaoDich') IS NULL
+    ALTER TABLE ThanhToan ADD maGiaoDich NVARCHAR(50) NULL;
+
+IF COL_LENGTH('ThanhToan', 'maNVDuyet') IS NULL
+    ALTER TABLE ThanhToan ADD maNVDuyet BIGINT NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ThanhToan_NVDuyet')
+    ALTER TABLE ThanhToan ADD CONSTRAINT FK_ThanhToan_NVDuyet
+        FOREIGN KEY (maNVDuyet) REFERENCES NhanVien(maNV);
+
+-- Một mã giao dịch ngân hàng chỉ dùng được cho một khoản thanh toán
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE name = 'UX_ThanhToan_maGiaoDich'
+                 AND object_id = OBJECT_ID('ThanhToan'))
+    CREATE UNIQUE INDEX UX_ThanhToan_maGiaoDich
+        ON ThanhToan(maGiaoDich) WHERE maGiaoDich IS NOT NULL;
+GO
+IF OBJECT_ID(N'LichSuTrangThaiHoaDon', N'U') IS NULL
+CREATE TABLE LichSuTrangThaiHoaDon (
+    maLS         BIGINT IDENTITY(1,1) PRIMARY KEY,
+    maHD         BIGINT NOT NULL,
+    trangThaiCu  NVARCHAR(20) NULL,
+    trangThaiMoi NVARCHAR(20) NOT NULL,
+    maNV         BIGINT NULL,
+    thoiGian     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT FK_LSTT_HoaDon  FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
+    CONSTRAINT FK_LSTT_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV)
+);
+GO
+
+CREATE OR ALTER TRIGGER TRIGGER_HoaDon_LichSuTrangThai
+ON HoaDon
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO LichSuTrangThaiHoaDon (maHD, trangThaiCu, trangThaiMoi, maNV)
+    SELECT i.maHD,
+           d.trangThai,
+           i.trangThai,
+           CASE WHEN UPDATE(maNV) THEN i.maNV END
+    FROM inserted i
+    LEFT JOIN deleted d ON d.maHD = i.maHD
+    WHERE d.maHD IS NULL
+       OR d.trangThai <> i.trangThai;
+END;
+GO
+IF OBJECT_ID(N'DanhGia', N'U') IS NULL
+BEGIN
+    CREATE TABLE DanhGia (
+        maDG    BIGINT IDENTITY(1,1) NOT NULL,
+        maSP    BIGINT NOT NULL,
+        maKH    BIGINT NOT NULL,
+        soSao   INT NOT NULL,
+        noiDung NVARCHAR(1000) NOT NULL,
+        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT PK_DanhGia PRIMARY KEY (maDG),
+        CONSTRAINT FK_DanhGia_SanPham
+            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_DanhGia_KhachHang
+            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT CK_DanhGia_soSao CHECK (soSao BETWEEN 1 AND 5),
+        CONSTRAINT CK_DanhGia_noiDung
+            CHECK (LEN(LTRIM(RTRIM(noiDung))) >= 10),
+        CONSTRAINT UQ_DanhGia_SP_KH UNIQUE (maSP, maKH)
+    );
+END;
 GO

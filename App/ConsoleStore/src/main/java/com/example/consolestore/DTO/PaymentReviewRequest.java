@@ -7,7 +7,15 @@ public class PaymentReviewRequest {
     private String expectedAmount;
     private String receivedAmount;
     private boolean received;
+    private String transactionCode;
 
+    public String getTransactionCode() {
+        return transactionCode;
+    }
+
+    public void setTransactionCode(String transactionCode) {
+        this.transactionCode = transactionCode;
+    }
     public String getAction() {
         return action;
     }

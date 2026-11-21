@@ -119,6 +119,31 @@
             overflow-wrap: anywhere;
             line-height: 1.9;
         }
+        .reviews {
+            margin-top: 30px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .reviews h2 { margin: 0 0 14px; font-size: 22px; }
+        .reviews-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .reviews-summary strong { font-size: 28px; }
+        .review-stars { color: #f5a623; letter-spacing: 2px; }
+        .review-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; }
+        .review-ok { border: 1px solid #2e9d5b; }
+        .review-err { border: 1px solid #d64545; }
+        .review-form { display: grid; gap: 12px; margin-bottom: 22px; }
+        .review-form label { display: grid; gap: 6px; }
+        .review-form select, .review-form textarea { padding: 10px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
+        .review-item { padding-block: 16px; border-top: 1px solid var(--border); }
+        .review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .review-head time, .review-badge, .review-empty, .review-hint { color: var(--muted); font-size: 13px; }
+        .review-item p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+
+        @media (max-width: 700px) {
+            .reviews { padding: 22px; }
+        }
 
         .detail-empty {
             padding-block: 60px;
@@ -336,6 +361,77 @@
                  aria-labelledby="descriptionTitle">
             <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
             <p th:text="${description}"></p>
+        </section>
+        <section class="reviews"
+                 id="reviews"
+                 aria-labelledby="reviewsTitle">
+            <h2 id="reviewsTitle">Đánh giá sản phẩm</h2>
+
+            <div class="reviews-summary"
+                 th:if="${reviewSummary.total > 0}">
+                <strong th:text="${#numbers.formatDecimal(reviewSummary.average, 1, 1)}">4.5</strong>
+                <span class="review-stars" th:text="${reviewSummary.starText}">★★★★★</span>
+                <span class="review-hint"
+                      th:text="${'(' + reviewSummary.total + ' đánh giá)'}"></span>
+            </div>
+
+            <div class="review-msg review-ok"
+                 th:if="${reviewSuccess != null}"
+                 th:text="${reviewSuccess}"></div>
+            <div class="review-msg review-err"
+                 th:if="${reviewError != null}"
+                 th:text="${reviewError}"></div>
+
+            <form class="review-form"
+                  method="post"
+                  th:if="${reviewState == 'CAN_REVIEW'}"
+                  th:action="@{/products/{id}/reviews(id=${product.id})}">
+                <label>
+                    <span>Số sao</span>
+                    <select name="stars" required>
+                        <option value="">Chọn số sao</option>
+                        <option value="5">★★★★★ – Rất tốt</option>
+                        <option value="4">★★★★☆ – Tốt</option>
+                        <option value="3">★★★☆☆ – Bình thường</option>
+                        <option value="2">★★☆☆☆ – Chưa tốt</option>
+                        <option value="1">★☆☆☆☆ – Tệ</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Nhận xét</span>
+                    <textarea name="content"
+                              rows="4"
+                              minlength="10"
+                              maxlength="1000"
+                              required
+                              th:text="${reviewDraft}"></textarea>
+                </label>
+                <button class="button-primary" type="submit">Gửi đánh giá</button>
+            </form>
+
+            <p class="review-hint" th:if="${reviewState == 'GUEST'}">
+                <a th:href="@{/login}">Đăng nhập</a> bằng tài khoản khách hàng để đánh giá sản phẩm đã mua.
+            </p>
+            <p class="review-hint" th:if="${reviewState == 'NOT_PURCHASED'}">
+                Chỉ khách đã mua và nhận sản phẩm này mới có thể đánh giá.
+            </p>
+            <p class="review-hint" th:if="${reviewState == 'ALREADY_REVIEWED'}">
+                Bạn đã đánh giá sản phẩm này.
+            </p>
+
+            <p class="review-empty" th:if="${#lists.isEmpty(reviews)}">
+                Chưa có đánh giá nào.
+            </p>
+
+            <article class="review-item" th:each="r : ${reviews}">
+                <div class="review-head">
+                    <strong th:text="${r.reviewer}">Nguyễn *** An</strong>
+                    <span class="review-stars" th:text="${r.starText}">★★★★★</span>
+                    <span class="review-badge">Đã mua hàng</span>
+                    <time th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy')}">01/01/2026</time>
+                </div>
+                <p th:text="${r.content}"></p>
+            </article>
         </section>
         <section class="related"
                  th:if="${!#lists.isEmpty(related)}"

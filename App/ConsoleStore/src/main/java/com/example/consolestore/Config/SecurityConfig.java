@@ -142,6 +142,8 @@ public class SecurityConfig {
                         "/pages/product-detail.html",
                         "/auth/session"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/products/*/reviews")
+                .hasRole("KHACHHANG")
                 // Giỏ hàng: khách vãng lai cũng dùng được
                 .requestMatchers("/cart", "/cart/**", "/pages/cart.html").permitAll()
                 // Trang HTML của nhân viên bán hàng

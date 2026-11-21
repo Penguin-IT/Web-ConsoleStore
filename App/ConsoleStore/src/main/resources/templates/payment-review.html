@@ -177,7 +177,15 @@
                pattern="[0-9]{1,18}"
                required>
       </label>
+      <label class="ui-field">
+        <span>Mã giao dịch ngân hàng</span>
 
+        <input name="transactionCode"
+               maxlength="30"
+               pattern="[A-Za-z0-9]{6,30}"
+               autocomplete="off"
+               required>
+      </label>
       <div class="ui-full">
         <label class="pos-check">
           <input name="received"
