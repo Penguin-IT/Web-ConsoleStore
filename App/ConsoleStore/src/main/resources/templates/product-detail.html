@@ -13,227 +13,18 @@
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
 
-    <style>
-        .detail-main {
-            min-height: 65vh;
-            padding-block: 45px 80px;
-        }
 
-        .detail-breadcrumb {
-            margin-bottom: 30px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .detail-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 55px;
-            align-items: start;
-        }
-
-        .detail-photo {
-            display: grid;
-            place-items: center;
-            aspect-ratio: 1;
-            padding: 0;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            background: #fff;
-        }
-
-        .detail-photo img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            min-height: 0;
-            object-fit: contain;
-            object-position: center;
-        }
-
-        .detail-copy h1 {
-            margin: 15px 0;
-            font-size: clamp(28px, 3vw, 42px);
-            line-height: 1.2;
-            letter-spacing: -1px;
-        }
-
-        .detail-price {
-            margin: 24px 0;
-            font-size: 30px;
-            font-weight: 750;
-        }
-
-        .detail-stock {
-            color: #655078;
-            font-size: 14px;
-        }
-
-        .detail-stock.is-empty {
-            color: #a33148;
-        }
-
-        .detail-facts {
-            margin: 25px 0;
-        }
-
-        .detail-facts > div {
-            display: grid;
-            grid-template-columns: 110px minmax(0, 1fr);
-            gap: 15px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .detail-facts dt {
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 400;
-        }
-
-        .detail-facts dd {
-            margin: 0;
-            font-size: 14px;
-            overflow-wrap: anywhere;
-        }
-
-        .detail-description {
-            margin-top: 45px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-        }
-
-        .detail-description h2 {
-            margin: 0 0 18px;
-            font-size: 22px;
-        }
-
-        .detail-description p {
-            margin: 0;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            line-height: 1.9;
-        }
-        .reviews {
-            margin-top: 30px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-        }
-
-        .reviews h2 { margin: 0 0 14px; font-size: 22px; }
-        .reviews-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-        .reviews-summary strong { font-size: 28px; }
-        .review-stars { color: #f5a623; letter-spacing: 2px; }
-        .review-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; }
-        .review-ok { border: 1px solid #2e9d5b; }
-        .review-err { border: 1px solid #d64545; }
-        .review-form { display: grid; gap: 12px; margin-bottom: 22px; }
-        .review-form label { display: grid; gap: 6px; }
-        .review-form select, .review-form textarea { padding: 10px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
-        .review-item { padding-block: 16px; border-top: 1px solid var(--border); }
-        .review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .review-head time, .review-badge, .review-empty, .review-hint { color: var(--muted); font-size: 13px; }
-        .review-item p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
-
-        @media (max-width: 700px) {
-            .reviews { padding: 22px; }
-        }
-
-        .detail-empty {
-            padding-block: 60px;
-            text-align: center;
-        }
-
-        .detail-empty p {
-            margin: 20px 0 30px;
-            color: var(--muted);
-        }
-
-        .detail-copy button:disabled {
-            opacity: .55;
-            cursor: not-allowed;
-        }
-        .related {
-            margin-top: 55px;
-        }
-
-        .related h2 {
-            margin: 0 0 6px;
-            font-size: 22px;
-        }
-
-        .related-sub {
-            margin: 0 0 22px;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .related-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 20px;
-        }
-
-        .related .product-info h3 {
-            margin: 6px 0 10px;
-            font-size: 16px;
-            line-height: 1.35;
-        }
-
-        .related .product-info h3 a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .related-add {
-            margin-top: 12px;
-        }
-
-        .related-add .button-primary {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-        }
-
-        @media (max-width: 991px) {
-            .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-
-        @media (max-width: 480px) {
-            .related-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 767px) {
-            .detail-main {
-                padding-block: 28px 50px;
-            }
-
-            .detail-layout {
-                grid-template-columns: 1fr;
-                gap: 28px;
-            }
-
-            .detail-photo {
-                padding: 22px;
-            }
-
-            .detail-description {
-                padding: 22px;
-            }
-        }
-    </style>
 </head>
 
-<body class="customer-page">
+<body class="customer-page product-detail-page">
 <header th:replace="~{fragments/store :: header}"></header>
 
 <main id="main-content"
-      class="container store-container detail-main"
+      class="container store-container pd-main"
       tabindex="-1">
 
     <section class="detail-empty" th:if="${product == null}">
@@ -251,118 +42,155 @@
     </section>
 
     <section th:if="${product != null}">
-        <nav class="detail-breadcrumb" aria-label="Đường dẫn">
-            <a th:href="@{/}">Trang chủ</a>
-            <span aria-hidden="true"> / </span>
-            <a th:href="@{/products}">Sản phẩm</a>
-            <span aria-hidden="true"> / </span>
-            <span th:text="${product.name}"></span>
+        <nav class="pd-breadcrumb" aria-label="Đường dẫn">
+            <ol>
+                <li><a th:href="@{/}">Trang chủ</a></li>
+                <li><a th:href="@{/products}">Sản phẩm</a></li>
+                <li><span aria-current="page" th:text="${product.name}"></span></li>
+            </ol>
         </nav>
 
-        <div class="detail-layout">
-            <div class="detail-photo">
-                <img th:src="@{${product.image}}"
-                     th:attr="data-product-image=${product.image}"
-                     th:alt="${product.name}"
-                     width="600"
-                     height="600"
-                     fetchpriority="high">
+        <section class="pd-hero"
+                 aria-labelledby="productTitle"
+                 th:with="used=${product.condition == 'CU'},
+                  available=${product.stock > 0},
+                  canAddToCart=${!authenticated or customer}">
+
+            <div class="pd-gallery">
+                <div class="pd-gallery-top">
+            <span class="pd-condition"
+                  th:classappend="${used ? 'pd-condition--used' : ''}"
+                  th:text="${used ? 'Hàng cũ' : 'Hàng mới'}">
+            </span>
+                </div>
+
+                <div class="pd-visual">
+                    <img th:src="@{${product.image}}"
+                         th:attr="data-product-image=${product.image}"
+                         th:alt="${product.name}"
+                         width="780"
+                         height="780"
+                         fetchpriority="high"
+                         decoding="async">
+                </div>
+
+                <div class="pd-gallery-bottom">
+                    <span th:text="${product.platform}"></span>
+                    <span th:text="${'Mã #' + product.id}"></span>
+                </div>
             </div>
 
-            <div class="detail-copy">
-                <p class="eyebrow" th:text="${product.platform}"></p>
+            <div class="pd-summary">
+                <a class="pd-category"
+                   th:href="@{/products(category=${product.category})}"
+                   th:text="${product.category}">
+                </a>
 
-                <h1 th:text="${product.name}"></h1>
+                <h1 id="productTitle" class="pd-title" th:text="${product.name}"></h1>
 
-                <p class="detail-price"
-                   th:text="${#numbers.formatDecimal(
-                       product.price, 0, 'POINT', 0, 'COMMA'
-                   ) + ' đ'}">
-                </p>
+                <div class="pd-price-card">
+                    <span class="pd-price-label">Giá bán</span>
 
-                <p class="detail-stock"
-                   th:classappend="${product.stock <= 0} ? 'is-empty'"
-                   th:text="${product.stock > 0
-                       ? 'Còn ' + product.stock + ' sản phẩm'
-                       : 'Hết hàng'}">
-                </p>
+                    <p class="pd-price">
+                <span th:text="${#numbers.formatDecimal(
+                        product.price, 0, 'POINT', 0, 'COMMA'
+                )}"></span>
+                        <span class="pd-currency">₫</span>
+                    </p>
 
-                <dl class="detail-facts">
-                    <div>
-                        <dt>Mã sản phẩm</dt>
-                        <dd th:text="${product.id}"></dd>
+                    <div class="pd-stock"
+                         th:classappend="${available ? '' : 'pd-stock--empty'}">
+                        <span class="pd-stock-dot" aria-hidden="true"></span>
+                        <span th:text="${available
+                        ? 'Còn ' + product.stock + ' sản phẩm'
+                        : 'Tạm hết hàng'}"></span>
                     </div>
+                </div>
 
-                    <div>
-                        <dt>Loại</dt>
-                        <dd th:text="${product.category}"></dd>
-                    </div>
-
-                    <div>
-                        <dt>Nền tảng</dt>
-                        <dd th:text="${product.platform}"></dd>
-                    </div>
-
-                    <div>
-                        <dt>Tình trạng</dt>
-                        <dd th:text="${product.condition == 'CU'
-                            ? 'Cũ' : 'Mới'}">
-                        </dd>
-                    </div>
-                </dl>
-
-                <div th:if="${product.stock > 0}">
-                    <a th:if="${!authenticated}"
-                       class="button-primary"
-                       th:href="@{/login}">
-                        Đăng nhập để mua hàng
-                    </a>
-
-                    <form th:if="${customer}"
+                <div class="pd-purchase">
+                    <form class="pd-cart-form"
+                          th:if="${available and canAddToCart}"
                           method="post"
-                          th:action="@{/cart/items}"
-                          class="detail-cart-form">
+                          th:action="@{/cart/items}">
 
-                        <input type="hidden"
-                               name="productId"
-                               th:value="${product.id}">
+                        <input type="hidden" name="productId" th:value="${product.id}">
 
-                        <label for="cartQuantity">Số lượng</label>
+                        <div class="pd-quantity-field">
+                            <label for="cartQuantity">Số lượng</label>
+                            <input id="cartQuantity"
+                                   name="quantity"
+                                   type="number"
+                                   value="1"
+                                   min="1"
+                                   step="1"
+                                   th:max="${product.stock}"
+                                   required>
+                        </div>
 
-                        <input type="number"
-                               id="cartQuantity"
-                               name="quantity"
-                               value="1"
-                               min="1"
-                               th:max="${product.stock}"
-                               step="1"
-                               required>
-
-                        <button class="button-primary" type="submit">
+                        <button class="pd-button pd-button--dark" type="submit">
                             Thêm vào giỏ hàng
                         </button>
                     </form>
 
-                    <p th:if="${authenticated && !customer}">
-                        Mua hàng dành cho tài khoản khách hàng.
+                    <p class="pd-account-notice"
+                       th:if="${available and !canAddToCart}">
+                        Vui lòng dùng tài khoản khách hàng để mua hàng.
                     </p>
+
+                    <a class="pd-cart-link"
+                       th:if="${canAddToCart}"
+                       th:href="@{/cart}">
+                        Xem giỏ hàng <span aria-hidden="true">→</span>
+                    </a>
                 </div>
 
-                <button th:if="${product.stock <= 0}"
-                        class="button-primary"
-                        type="button"
-                        disabled>
-                    Hết hàng
-                </button>
+                <nav class="pd-summary-links" aria-label="Nội dung trang">
+                    <a href="#productDescription">Mô tả</a>
+                    <a href="#productInformation">Thông tin sản phẩm</a>
+                    <a href="#reviews"
+                       th:text="${reviewSummary.total > 0
+                       ? 'Đánh giá (' + reviewSummary.total + ')'
+                       : 'Đánh giá'}">
+                        Đánh giá
+                    </a>
+                </nav>
             </div>
-        </div>
-
-        <section class="detail-description"
-                 aria-labelledby="descriptionTitle">
-            <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
-            <p th:text="${description}"></p>
         </section>
-        <section class="reviews"
+
+        <div class="pd-content-grid">
+            <section class="pd-panel"
+                     id="productDescription"
+                     aria-labelledby="descriptionTitle">
+                <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
+                <p class="pd-description-text" th:text="${description}"></p>
+            </section>
+
+            <section class="pd-panel"
+                     id="productInformation"
+                     aria-labelledby="informationTitle">
+                <h2 id="informationTitle">Thông tin sản phẩm</h2>
+
+                <dl class="pd-facts">
+                    <div>
+                        <dt>Mã sản phẩm</dt>
+                        <dd th:text="${product.id}"></dd>
+                    </div>
+                    <div>
+                        <dt>Loại sản phẩm</dt>
+                        <dd th:text="${product.category}"></dd>
+                    </div>
+                    <div>
+                        <dt>Nền tảng</dt>
+                        <dd th:text="${product.platform}"></dd>
+                    </div>
+                    <div>
+                        <dt>Tình trạng</dt>
+                        <dd th:text="${product.condition == 'CU' ? 'Cũ' : 'Mới'}"></dd>
+                    </div>
+                </dl>
+            </section>
+        </div>
+        <section class="reviews pd-panel"
                  id="reviews"
                  aria-labelledby="reviewsTitle">
             <h2 id="reviewsTitle">Đánh giá sản phẩm</h2>
@@ -475,7 +303,7 @@
                                     ) + ' đ'}"></strong>
                         </div>
 
-                        <form th:if="${customer}"
+                        <form th:if="${(!authenticated or customer) and item.stock > 0}"
                               method="post"
                               th:action="@{/cart/items}"
                               class="related-add">

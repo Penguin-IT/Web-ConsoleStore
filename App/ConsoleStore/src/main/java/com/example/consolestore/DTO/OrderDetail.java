@@ -39,7 +39,9 @@ public record OrderDetail(
         String m = header == null ? null : header.getPaymentMethod();
         if (m == null) return "—";
         return switch (m) {
-            case "TIEN_MAT"      -> "Tiền mặt";
+            case "TIEN_MAT" -> "ONLINE".equals(header.getChannel())
+                    ? "Thanh toán khi nhận hàng (COD)"
+                    : "Tiền mặt";
             case "CHUYEN_KHOAN"  -> "Chuyển khoản ngân hàng";
             case "MOMO"          -> "MoMo";
             case "ZALOPAY"       -> "ZaloPay";
@@ -56,9 +58,16 @@ public record OrderDetail(
     }
 
     public boolean isPayable() {
-        if (header == null) return false;
+        if (header == null) {
+            return false;
+        }
+
+        String method = header.getPaymentMethod();
+
         return "ONLINE".equals(header.getChannel())
                 && "CHO_XAC_NHAN".equals(header.getStatus())
-                && "CHUA_THANH_TOAN".equals(header.getPaymentStatus());
+                && "CHUA_THANH_TOAN".equals(header.getPaymentStatus())
+                && method != null
+                && !"TIEN_MAT".equals(method);
     }
 }

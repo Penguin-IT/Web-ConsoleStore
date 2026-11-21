@@ -176,6 +176,7 @@ public interface HoaDonRepository
         BigDecimal getTotalAmount();
 
         String getPaymentStatus();
+        String getPaymentMethod();
     }
 
     // ── Chi tiết đơn hàng khách hàng ──────────────────────────────────────────
@@ -259,7 +260,8 @@ public interface HoaDonRepository
                     h.kenhBan AS channel,
                     h.trangThai AS status,
                     h.tongTien AS totalAmount,
-                    t.trangThai AS paymentStatus
+                    t.trangThai AS paymentStatus,
+                    t.phuongThuc AS paymentMethod
                 FROM HoaDon h
                 LEFT JOIN ThanhToan t ON t.maHD = h.maHD
                 WHERE h.maKH = :customerId
@@ -276,6 +278,7 @@ public interface HoaDonRepository
     findCustomerOrders(
             @Param("customerId") Long customerId,
             org.springframework.data.domain.Pageable pageable
+
     );
 
     interface OrderState {

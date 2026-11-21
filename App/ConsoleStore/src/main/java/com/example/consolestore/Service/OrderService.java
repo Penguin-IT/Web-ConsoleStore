@@ -43,7 +43,8 @@ public class OrderService {
                 row.getChannel(),
                 row.getStatus(),
                 row.getTotalAmount(),
-                row.getPaymentStatus()
+                row.getPaymentStatus(),
+                row.getPaymentMethod()
         ));
     }
 
