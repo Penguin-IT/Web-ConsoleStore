@@ -231,11 +231,12 @@
 <footer th:fragment="footer" class="site-footer">
     <div class="container store-container">
         <div class="home-footer-grid">
+
+            <!-- Cột 1: thương hiệu + mạng xã hội -->
             <div>
                 <a class="store-brand"
                    th:href="@{/}"
                    aria-label="Console Store — Trang chủ">
-
                     <span class="brand-logo">
                         <img th:src="@{/images/banners/logo.png}"
                              alt="Console Store"
@@ -249,52 +250,74 @@
                     Your next setup starts here.<br>
                     Thiết bị dành cho cách chơi của bạn.
                 </p>
+
+                <div class="footer-social">
+                    <!-- TODO: đổi 3 link bên dưới thành link thật của bạn -->
+                    <a href="https://www.facebook.com/tam.my.713521" target="_blank" rel="noopener" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    </a>
+                    <a href="https://www.instagram.com/theconsoleclub.gr/" target="_blank" rel="noopener" aria-label="Instagram">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                    </a>
+                    <a href="https://www.youtube.com/@Retrocatape2" target="_blank" rel="noopener" aria-label="YouTube">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
+                    </a>
+                </div>
             </div>
 
+            <!-- Cột 2: Khám phá -->
             <div>
                 <h2>Khám phá</h2>
-
-                <a th:href="@{/products(category='Máy chơi game')}">
-                    Máy console
-                </a>
-
-                <a th:href="@{/products(category='Tay cầm')}">
-                    Tay cầm
-                </a>
-
-                <a th:href="@{/products(category='Đĩa game')}">
-                    Trò chơi
-                </a>
-
-                <a th:href="@{/} + '#trade-in'">
-                    Thu cũ đổi mới
-                </a>
+                <a th:href="@{/products(category='Máy chơi game')}">Máy console</a>
+                <a th:href="@{/products(category='Tay cầm')}">Tay cầm</a>
+                <a th:href="@{/products(category='Đĩa game')}">Trò chơi</a>
+                <a th:href="@{/} + '#trade-in'">Thu cũ đổi mới</a>
             </div>
 
+            <!-- Cột 3: Dành cho bạn -->
             <div>
                 <h2>Dành cho bạn</h2>
-
                 <a th:href="@{/login}">Đăng nhập</a>
-
                 <a th:href="@{/register}">Tạo tài khoản</a>
+                <a th:href="@{/account}" data-customer-link>Hồ sơ tài khoản</a>
+                <a th:href="@{/orders}" data-customer-link>Đơn hàng của tôi</a>
+            </div>
 
-                <a th:href="@{/account}"  data-customer-link>
-                    Hồ sơ tài khoản
-                </a>
+            <!-- Cột 4: Liên hệ -->
+            <div>
+                <h2>Liên hệ</h2>
+                <ul class="footer-contact">
+                    <li>
+                        <span>Cửa hàng</span>
+                        <a href="https://www.google.com/maps/search/?api=1&query=140+L%C3%AA+Tr%E1%BB%8Dng+T%E1%BA%A5n,+T%C3%A2n+Ph%C3%BA,+H%E1%BB%93+Ch%C3%AD+Minh"
+                           target="_blank" rel="noopener">140 Lê Trọng Tấn, Tân Phú, TP. Hồ Chí Minh</a>
+                    </li>
+                    <li>
+                        <span>Hotline</span>
 
-                <a th:href="@{/orders}"data-customer-link>
-                    Đơn hàng của tôi
+                        <a href="tel:0900000000">0900 000 000</a>
+                    </li>
+                    <li>
+                        <span>Email</span>
+                        <!-- TODO: đổi email -->
+                        <a href="mailto:support@consolestore.vn">support@consolestore.vn</a>
+                    </li>
+                    <li>
+                        <span>Giờ mở cửa</span>
+
+                        08:00 – 21:00, mỗi ngày
+                    </li>
+                </ul>
+
+                <a class="footer-cta" href="https://www.facebook.com/tam.my.713521" target="_blank" rel="noopener">
+                    Nhắn tin qua Facebook ↗
                 </a>
             </div>
         </div>
 
         <div class="footer-bottom">
-            <span>© Console Store</span>
-
-            <span class="footer-signature">
-                FOR THE LOVE OF PLAY.
-            </span>
-
+            <span>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Console Store. Bảo lưu mọi quyền.</span>
+            <span class="footer-signature">FOR THE LOVE OF PLAY.</span>
             <a href="#main-content">Về đầu trang ↑</a>
         </div>
     </div>

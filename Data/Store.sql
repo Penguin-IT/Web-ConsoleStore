@@ -33,7 +33,6 @@ BEGIN
     CREATE TABLE LoaiSanPham (
         maLoai BIGINT IDENTITY(1,1) NOT NULL,
         tenLoai NVARCHAR(100) NOT NULL,
-
         CONSTRAINT PK_LoaiSanPham PRIMARY KEY (maLoai),
         CONSTRAINT UQ_LoaiSanPham_tenLoai UNIQUE (tenLoai)
     );
@@ -45,7 +44,6 @@ BEGIN
     CREATE TABLE NenTang (
         maNenTang BIGINT IDENTITY(1,1) NOT NULL,
         tenNenTang NVARCHAR(100) NOT NULL,
-
         CONSTRAINT PK_NenTang PRIMARY KEY (maNenTang),
         CONSTRAINT UQ_NenTang_tenNenTang UNIQUE (tenNenTang)
     );
@@ -58,7 +56,6 @@ BEGIN
         maKho BIGINT IDENTITY(1,1) NOT NULL,
         tenKho NVARCHAR(100) NOT NULL,
         diaChi NVARCHAR(255) NULL,
-
         CONSTRAINT PK_Kho PRIMARY KEY (maKho)
     );
 END;
@@ -79,7 +76,6 @@ BEGIN
         chucVu NVARCHAR(100) NULL,
         ngayVaoLam DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         daNghiViec BIT NOT NULL DEFAULT 0,
-
         CONSTRAINT PK_NhanVien PRIMARY KEY (maNV),
         CONSTRAINT UQ_NhanVien_soDienThoai UNIQUE (soDienThoai)
     );
@@ -95,7 +91,6 @@ BEGIN
         email NVARCHAR(100) NULL,
         diaChi NVARCHAR(255) NULL,
         ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
         CONSTRAINT PK_KhachHang PRIMARY KEY (maKH),
         CONSTRAINT UQ_KhachHang_soDienThoai UNIQUE (soDienThoai)
     );
@@ -118,26 +113,37 @@ BEGIN
         CONSTRAINT UQ_TaiKhoan_tenDangNhap UNIQUE (tenDangNhap),
 
         CONSTRAINT CK_TaiKhoan_vaiTro CHECK (
-            vaiTro IN (N'ADMIN', N'NHANVIEN', N'KHACHHANG')
+            vaiTro IN (
+                N'ADMIN', N'NHANVIEN', N'KHACHHANG',
+                N'BANHANG', N'KHO', N'BAOHANH'
+            )
         ),
+        CONSTRAINT CK_TaiKhoan_NV_KH CHECK (maNV IS NULL OR maKH IS NULL),
+        CONSTRAINT CK_TaiKhoan_NV CHECK (vaiTro <> N'NHANVIEN' OR maNV IS NOT NULL),
+        CONSTRAINT CK_TaiKhoan_KH CHECK (vaiTro <> N'KHACHHANG' OR maKH IS NOT NULL),
 
-        CONSTRAINT CK_TaiKhoan_NV_KH CHECK (
-            maNV IS NULL OR maKH IS NULL
-        ),
+        CONSTRAINT FK_TaiKhoan_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+        CONSTRAINT FK_TaiKhoan_KhachHang FOREIGN KEY (maKH) REFERENCES KhachHang(maKH)
+    );
+END;
+GO
 
-        CONSTRAINT CK_TaiKhoan_NV CHECK (
-            vaiTro <> N'NHANVIEN' OR maNV IS NOT NULL
-        ),
+-- DB cũ: mở rộng danh sách vai trò nếu chưa có BANHANG/KHO/BAOHANH
+IF EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name = N'CK_TaiKhoan_vaiTro'
+      AND parent_object_id = OBJECT_ID(N'dbo.TaiKhoan')
+      AND definition NOT LIKE N'%BANHANG%'
+)
+BEGIN
+    ALTER TABLE dbo.TaiKhoan DROP CONSTRAINT CK_TaiKhoan_vaiTro;
 
-        CONSTRAINT CK_TaiKhoan_KH CHECK (
-            vaiTro <> N'KHACHHANG' OR maKH IS NOT NULL
-        ),
-
-        CONSTRAINT FK_TaiKhoan_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
-        CONSTRAINT FK_TaiKhoan_KhachHang
-            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH)
+    ALTER TABLE dbo.TaiKhoan
+    ADD CONSTRAINT CK_TaiKhoan_vaiTro CHECK (
+        vaiTro IN (
+            N'ADMIN', N'NHANVIEN', N'KHACHHANG',
+            N'BANHANG', N'KHO', N'BAOHANH'
+        )
     );
 END;
 GO
@@ -151,14 +157,43 @@ BEGIN
         email NVARCHAR(100) NULL,
         diaChi NVARCHAR(255) NULL,
         ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
         CONSTRAINT PK_NhaCungCap PRIMARY KEY (maNCC)
     );
 END;
 GO
 
 -- =========================================================
--- 3. SẢN PHẨM, SERIAL, TỒN KHO
+-- 3. MÃ GIẢM GIÁ (tạo trước HoaDon vì HoaDon có FK tới bảng này)
+-- =========================================================
+
+IF OBJECT_ID(N'MaGiamGia', N'U') IS NULL
+BEGIN
+    CREATE TABLE MaGiamGia (
+        maCode        VARCHAR(30)   NOT NULL,
+        moTa          NVARCHAR(200) NOT NULL,
+        loai          VARCHAR(10)   NOT NULL,   -- PHAN_TRAM | SO_TIEN | FREESHIP
+        giaTri        DECIMAL(18,0) NOT NULL DEFAULT 0,
+        giamToiDa     DECIMAL(18,0) NULL,       -- chỉ dùng cho PHAN_TRAM
+        donToiThieu   DECIMAL(18,0) NOT NULL DEFAULT 0,
+        soLuong       INT           NULL,       -- NULL = không giới hạn
+        moiKhachToiDa INT           NOT NULL DEFAULT 1,
+        batDau        DATETIME      NOT NULL,
+        ketThuc       DATETIME      NOT NULL,
+        hienTrangChu  BIT           NOT NULL DEFAULT 1,
+        hoatDong      BIT           NOT NULL DEFAULT 1,
+
+        CONSTRAINT PK_MaGiamGia PRIMARY KEY (maCode),
+        CONSTRAINT CK_MaGiamGia_loai CHECK (loai IN ('PHAN_TRAM','SO_TIEN','FREESHIP')),
+        CONSTRAINT CK_MaGiamGia_giaTri CHECK (
+            giaTri >= 0 AND (loai <> 'PHAN_TRAM' OR giaTri BETWEEN 1 AND 100)
+        ),
+        CONSTRAINT CK_MaGiamGia_thoiGian CHECK (ketThuc > batDau)
+    );
+END;
+GO
+
+-- =========================================================
+-- 4. SẢN PHẨM, SERIAL, TỒN KHO
 -- =========================================================
 
 IF OBJECT_ID(N'SanPham', N'U') IS NULL
@@ -176,33 +211,17 @@ BEGIN
         maNenTang BIGINT NULL,
 
         CONSTRAINT PK_SanPham PRIMARY KEY (maSP),
-
-        CONSTRAINT CK_SanPham_tinhTrang CHECK (
-            tinhTrang IN (N'MOI', N'CU')
-        ),
-
+        CONSTRAINT CK_SanPham_tinhTrang CHECK (tinhTrang IN (N'MOI', N'CU')),
         CONSTRAINT CK_SanPham_giaBan CHECK (giaBan > 0),
-
-        CONSTRAINT CK_SanPham_deleted CHECK (
-            deleted IN (0, 1)
-        ),
-
+        CONSTRAINT CK_SanPham_deleted CHECK (deleted IN (0, 1)),
         CONSTRAINT CK_SanPham_maSPGoc CHECK (
             maSPGoc IS NULL
-            OR (
-                tinhTrang = N'CU'
-                AND maSPGoc <> maSP
-            )
+            OR (tinhTrang = N'CU' AND maSPGoc <> maSP)
         ),
 
-        CONSTRAINT FK_SanPham_SanPhamGoc
-            FOREIGN KEY (maSPGoc) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_SanPham_LoaiSanPham
-            FOREIGN KEY (maLoai) REFERENCES LoaiSanPham(maLoai),
-
-        CONSTRAINT FK_SanPham_NenTang
-            FOREIGN KEY (maNenTang) REFERENCES NenTang(maNenTang)
+        CONSTRAINT FK_SanPham_SanPhamGoc FOREIGN KEY (maSPGoc) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_SanPham_LoaiSanPham FOREIGN KEY (maLoai) REFERENCES LoaiSanPham(maLoai),
+        CONSTRAINT FK_SanPham_NenTang FOREIGN KEY (maNenTang) REFERENCES NenTang(maNenTang)
     );
 END;
 GO
@@ -220,20 +239,12 @@ BEGIN
 
         CONSTRAINT PK_SerialMay PRIMARY KEY (maSerial),
         CONSTRAINT UQ_SerialMay_soSerial UNIQUE (soSerial),
-
-        CONSTRAINT CK_SerialMay_tinhTrang CHECK (
-            tinhTrang IN (N'MOI', N'CU')
-        ),
-
+        CONSTRAINT CK_SerialMay_tinhTrang CHECK (tinhTrang IN (N'MOI', N'CU')),
         CONSTRAINT CK_SerialMay_trangThai CHECK (
             trangThai IN (N'TRONG_KHO', N'DA_BAN', N'BAO_HANH')
         ),
-
-        CONSTRAINT FK_SerialMay_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_SerialMay_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho)
+        CONSTRAINT FK_SerialMay_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_SerialMay_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho)
     );
 END;
 GO
@@ -249,18 +260,14 @@ BEGIN
         CONSTRAINT PK_TonKho PRIMARY KEY (maTon),
         CONSTRAINT CK_TonKho_soLuong CHECK (soLuong >= 0),
         CONSTRAINT UQ_TonKho_maKho_maSP UNIQUE (maKho, maSP),
-
-        CONSTRAINT FK_TonKho_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho),
-
-        CONSTRAINT FK_TonKho_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP)
+        CONSTRAINT FK_TonKho_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho),
+        CONSTRAINT FK_TonKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP)
     );
 END;
 GO
 
 -- =========================================================
--- 4. HÓA ĐƠN VÀ THANH TOÁN
+-- 5. HÓA ĐƠN VÀ THANH TOÁN
 -- =========================================================
 
 IF OBJECT_ID(N'HoaDon', N'U') IS NULL
@@ -279,33 +286,25 @@ BEGIN
         diaChi NVARCHAR(255) NULL,
         ghiChu NVARCHAR(255) NULL,
         maYeuCau VARCHAR(36) NULL,
+        phiVanChuyen DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_phiVanChuyen DEFAULT 0,
+        giamGia DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_giamGia DEFAULT 0,
+        maGiamGia VARCHAR(30) NULL,
 
         CONSTRAINT PK_HoaDon PRIMARY KEY (maHD),
-
-        CONSTRAINT FK_HoaDon_KhachHang
-            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
-
-        CONSTRAINT FK_HoaDon_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
-        CONSTRAINT FK_HoaDon_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho),
-
-        CONSTRAINT CK_HoaDon_kenhBan CHECK (
-            kenhBan IN (N'QUAY', N'ONLINE')
-        ),
-
+        CONSTRAINT FK_HoaDon_KhachHang FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT FK_HoaDon_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+        CONSTRAINT FK_HoaDon_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho),
+        CONSTRAINT FK_HoaDon_MaGiamGia FOREIGN KEY (maGiamGia) REFERENCES MaGiamGia(maCode),
+        CONSTRAINT CK_HoaDon_kenhBan CHECK (kenhBan IN (N'QUAY', N'ONLINE')),
         CONSTRAINT CK_HoaDon_trangThai CHECK (
             trangThai IN (
-                N'CHO_XAC_NHAN',
-                N'DA_XAC_NHAN',
-                N'DANG_GIAO',
-                N'HOAN_TAT',
-                N'HUY'
+                N'CHO_XAC_NHAN', N'DA_XAC_NHAN', N'DANG_GIAO',
+                N'HOAN_TAT', N'HUY'
             )
         ),
-
-        CONSTRAINT CK_HoaDon_tongTien CHECK (tongTien >= 0)
+        CONSTRAINT CK_HoaDon_tongTien CHECK (tongTien >= 0),
+        CONSTRAINT CK_HoaDon_phiVanChuyen CHECK (phiVanChuyen >= 0),
+        CONSTRAINT CK_HoaDon_giamGia CHECK (giamGia >= 0)
     );
 END;
 GO
@@ -322,19 +321,10 @@ BEGIN
         donGia DECIMAL(18,0) NOT NULL,
 
         CONSTRAINT PK_ChiTietHoaDon PRIMARY KEY (maCTHD),
-
-        CONSTRAINT FK_ChiTietHoaDon_HoaDon
-            FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
-
-        CONSTRAINT FK_ChiTietHoaDon_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_ChiTietHoaDon_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho),
-
-        CONSTRAINT FK_ChiTietHoaDon_SerialMay
-            FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial),
-
+        CONSTRAINT FK_ChiTietHoaDon_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
+        CONSTRAINT FK_ChiTietHoaDon_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_ChiTietHoaDon_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho),
+        CONSTRAINT FK_ChiTietHoaDon_SerialMay FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial),
         CONSTRAINT CK_ChiTietHoaDon_soLuong CHECK (soLuong > 0),
         CONSTRAINT CK_ChiTietHoaDon_donGia CHECK (donGia >= 0)
     );
@@ -348,45 +338,27 @@ BEGIN
         maHD BIGINT NOT NULL,
         phuongThuc NVARCHAR(20) NOT NULL,
         soTien DECIMAL(18,0) NOT NULL,
-
-        trangThai NVARCHAR(20) NOT NULL
-            DEFAULT N'CHUA_THANH_TOAN',
-
+        trangThai NVARCHAR(20) NOT NULL DEFAULT N'CHUA_THANH_TOAN',
         ngayThanhToan DATETIME NULL,
+        maGiaoDich NVARCHAR(50) NULL,
+        maNVDuyet BIGINT NULL,
 
-        CONSTRAINT PK_ThanhToan
-            PRIMARY KEY (maTT),
-
-        CONSTRAINT FK_ThanhToan_HoaDon
-            FOREIGN KEY (maHD)
-            REFERENCES HoaDon(maHD),
-
-        CONSTRAINT CK_ThanhToan_phuongThuc
-            CHECK (
-                phuongThuc IN (
-                    N'TIEN_MAT',
-                    N'CHUYEN_KHOAN',
-                    N'MOMO',
-                    N'ZALOPAY'
-                )
-            ),
-
-        CONSTRAINT CK_ThanhToan_trangThai
-            CHECK (
-                trangThai IN (
-                    N'CHUA_THANH_TOAN',
-                    N'DA_THANH_TOAN'
-                )
-            ),
-
-        CONSTRAINT CK_ThanhToan_soTien
-            CHECK (soTien >= 0)
+        CONSTRAINT PK_ThanhToan PRIMARY KEY (maTT),
+        CONSTRAINT FK_ThanhToan_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
+        CONSTRAINT FK_ThanhToan_NVDuyet FOREIGN KEY (maNVDuyet) REFERENCES NhanVien(maNV),
+        CONSTRAINT CK_ThanhToan_phuongThuc CHECK (
+            phuongThuc IN (N'TIEN_MAT', N'CHUYEN_KHOAN', N'MOMO', N'ZALOPAY')
+        ),
+        CONSTRAINT CK_ThanhToan_trangThai CHECK (
+            trangThai IN (N'CHUA_THANH_TOAN', N'DA_THANH_TOAN')
+        ),
+        CONSTRAINT CK_ThanhToan_soTien CHECK (soTien >= 0)
     );
 END;
 GO
 
 -- =========================================================
--- 5. NHẬP HÀNG
+-- 6. NHẬP HÀNG
 -- =========================================================
 
 IF OBJECT_ID(N'PhieuNhap', N'U') IS NULL
@@ -401,16 +373,9 @@ BEGIN
         ghiChu NVARCHAR(255) NULL,
 
         CONSTRAINT PK_PhieuNhap PRIMARY KEY (maPN),
-
-        CONSTRAINT FK_PhieuNhap_NhaCungCap
-            FOREIGN KEY (maNCC) REFERENCES NhaCungCap(maNCC),
-
-        CONSTRAINT FK_PhieuNhap_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
-        CONSTRAINT FK_PhieuNhap_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho),
-
+        CONSTRAINT FK_PhieuNhap_NhaCungCap FOREIGN KEY (maNCC) REFERENCES NhaCungCap(maNCC),
+        CONSTRAINT FK_PhieuNhap_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+        CONSTRAINT FK_PhieuNhap_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho),
         CONSTRAINT CK_PhieuNhap_tongTien CHECK (tongTien >= 0)
     );
 END;
@@ -426,13 +391,8 @@ BEGIN
         donGiaNhap DECIMAL(18,0) NOT NULL,
 
         CONSTRAINT PK_ChiTietPhieuNhap PRIMARY KEY (maCTPN),
-
-        CONSTRAINT FK_ChiTietPhieuNhap_PhieuNhap
-            FOREIGN KEY (maPN) REFERENCES PhieuNhap(maPN),
-
-        CONSTRAINT FK_ChiTietPhieuNhap_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-
+        CONSTRAINT FK_ChiTietPhieuNhap_PhieuNhap FOREIGN KEY (maPN) REFERENCES PhieuNhap(maPN),
+        CONSTRAINT FK_ChiTietPhieuNhap_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
         CONSTRAINT CK_ChiTietPhieuNhap_soLuong CHECK (soLuong > 0),
         CONSTRAINT CK_ChiTietPhieuNhap_donGiaNhap CHECK (donGiaNhap >= 0)
     );
@@ -445,23 +405,16 @@ BEGIN
         maCTPN BIGINT NOT NULL,
         maSerial BIGINT NOT NULL,
 
-        CONSTRAINT PK_ChiTietPhieuNhapSerial
-            PRIMARY KEY (maCTPN, maSerial),
-
-        CONSTRAINT UQ_ChiTietPhieuNhapSerial_maSerial
-            UNIQUE (maSerial),
-
-        CONSTRAINT FK_CTPNSerial_ChiTietPhieuNhap
-            FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap(maCTPN),
-
-        CONSTRAINT FK_CTPNSerial_SerialMay
-            FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial)
+        CONSTRAINT PK_ChiTietPhieuNhapSerial PRIMARY KEY (maCTPN, maSerial),
+        CONSTRAINT UQ_ChiTietPhieuNhapSerial_maSerial UNIQUE (maSerial),
+        CONSTRAINT FK_CTPNSerial_ChiTietPhieuNhap FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap(maCTPN),
+        CONSTRAINT FK_CTPNSerial_SerialMay FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial)
     );
 END;
 GO
 
 -- =========================================================
--- 6. THU MUA THIẾT BỊ CŨ
+-- 7. THU MUA THIẾT BỊ CŨ
 -- =========================================================
 
 IF OBJECT_ID(N'PhieuThuCu', N'U') IS NULL
@@ -477,18 +430,10 @@ BEGIN
         ghiChu NVARCHAR(255) NULL,
 
         CONSTRAINT PK_PhieuThuCu PRIMARY KEY (maPTC),
-
-        CONSTRAINT FK_PhieuThuCu_KhachHang
-            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
-
-        CONSTRAINT FK_PhieuThuCu_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
-        CONSTRAINT FK_PhieuThuCu_HoaDon
-            FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
-
-        CONSTRAINT FK_PhieuThuCu_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho)
+        CONSTRAINT FK_PhieuThuCu_KhachHang FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT FK_PhieuThuCu_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+        CONSTRAINT FK_PhieuThuCu_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
+        CONSTRAINT FK_PhieuThuCu_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho)
     );
 END;
 GO
@@ -505,13 +450,8 @@ BEGIN
         ghiChu NVARCHAR(255) NULL,
 
         CONSTRAINT PK_ChiTietPhieuThuCu PRIMARY KEY (maCTTC),
-
-        CONSTRAINT FK_ChiTietPhieuThuCu_PhieuThuCu
-            FOREIGN KEY (maPTC) REFERENCES PhieuThuCu(maPTC),
-
-        CONSTRAINT FK_ChiTietPhieuThuCu_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-
+        CONSTRAINT FK_ChiTietPhieuThuCu_PhieuThuCu FOREIGN KEY (maPTC) REFERENCES PhieuThuCu(maPTC),
+        CONSTRAINT FK_ChiTietPhieuThuCu_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
         CONSTRAINT CK_ChiTietPhieuThuCu_SoLuong CHECK (soLuong > 0),
         CONSTRAINT CK_ChiTietPhieuThuCu_DonGiaThu CHECK (donGiaThu >= 0)
     );
@@ -519,7 +459,7 @@ END;
 GO
 
 -- =========================================================
--- 7. BẢO HÀNH
+-- 8. BẢO HÀNH
 -- =========================================================
 
 IF OBJECT_ID(N'PhieuBaoHanh', N'U') IS NULL
@@ -537,24 +477,18 @@ BEGIN
         trangThai NVARCHAR(20) NOT NULL DEFAULT N'TIEP_NHAN',
 
         CONSTRAINT PK_PhieuBaoHanh PRIMARY KEY (maBH),
-
-        CONSTRAINT FK_PhieuBaoHanh_SerialMay
-            FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial),
-
-        CONSTRAINT FK_PhieuBaoHanh_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
+        CONSTRAINT FK_PhieuBaoHanh_SerialMay FOREIGN KEY (maSerial) REFERENCES SerialMay(maSerial),
+        CONSTRAINT FK_PhieuBaoHanh_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
         CONSTRAINT CK_PhieuBaoHanh_TrangThai CHECK (
             trangThai IN (N'TIEP_NHAN', N'DANG_XU_LY', N'HOAN_TAT')
         ),
-
         CONSTRAINT CK_PhieuBaoHanh_ChiPhi CHECK (chiPhi >= 0)
     );
 END;
 GO
 
 -- =========================================================
--- 8. BIẾN ĐỘNG KHO VÀ LỊCH SỬ TÁCH MÃ
+-- 9. BIẾN ĐỘNG KHO VÀ LỊCH SỬ TÁCH MÃ
 -- =========================================================
 
 IF OBJECT_ID(N'BienDongKho', N'U') IS NULL
@@ -578,57 +512,33 @@ BEGIN
         CONSTRAINT CK_BienDongKho_loaiBienDong CHECK (
             loaiBienDong IN (N'NHAP', N'BAN', N'THU_CU', N'HOAN_HUY')
         ),
-
         CONSTRAINT CK_BienDongKho_soLuong CHECK (soLuong > 0),
         CONSTRAINT CK_BienDongKho_soLuongTruoc CHECK (soLuongTruoc >= 0),
-
         CONSTRAINT CK_BienDongKho_soLuongSau CHECK (
             soLuongSau >= 0
             AND (
-                (
-                    loaiBienDong = N'BAN'
-                    AND soLuongSau = soLuongTruoc - soLuong
-                )
-                OR (
-                    loaiBienDong <> N'BAN'
-                    AND soLuongSau = soLuongTruoc + soLuong
-                )
+                (loaiBienDong = N'BAN' AND soLuongSau = soLuongTruoc - soLuong)
+                OR (loaiBienDong <> N'BAN' AND soLuongSau = soLuongTruoc + soLuong)
             )
         ),
-
         CONSTRAINT CK_BienDongKho_chungTu CHECK (
             CASE WHEN maCTPN IS NOT NULL THEN 1 ELSE 0 END
             + CASE WHEN maCTHD IS NOT NULL THEN 1 ELSE 0 END
             + CASE WHEN maCTTC IS NOT NULL THEN 1 ELSE 0 END
             = 1
         ),
-
         CONSTRAINT CK_BienDongKho_loaiVaChungTu CHECK (
             (loaiBienDong = N'NHAP' AND maCTPN IS NOT NULL)
             OR (loaiBienDong = N'THU_CU' AND maCTTC IS NOT NULL)
-            OR (
-                loaiBienDong IN (N'BAN', N'HOAN_HUY')
-                AND maCTHD IS NOT NULL
-            )
+            OR (loaiBienDong IN (N'BAN', N'HOAN_HUY') AND maCTHD IS NOT NULL)
         ),
 
-        CONSTRAINT FK_BienDongKho_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho),
-
-        CONSTRAINT FK_BienDongKho_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_BienDongKho_NhanVien
-            FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
-
-        CONSTRAINT FK_BienDongKho_ChiTietPhieuNhap
-            FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap(maCTPN),
-
-        CONSTRAINT FK_BienDongKho_ChiTietHoaDon
-            FOREIGN KEY (maCTHD) REFERENCES ChiTietHoaDon(maCTHD),
-
-        CONSTRAINT FK_BienDongKho_ChiTietPhieuThuCu
-            FOREIGN KEY (maCTTC) REFERENCES ChiTietPhieuThuCu(maCTTC)
+        CONSTRAINT FK_BienDongKho_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho),
+        CONSTRAINT FK_BienDongKho_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_BienDongKho_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV),
+        CONSTRAINT FK_BienDongKho_ChiTietPhieuNhap FOREIGN KEY (maCTPN) REFERENCES ChiTietPhieuNhap(maCTPN),
+        CONSTRAINT FK_BienDongKho_ChiTietHoaDon FOREIGN KEY (maCTHD) REFERENCES ChiTietHoaDon(maCTHD),
+        CONSTRAINT FK_BienDongKho_ChiTietPhieuThuCu FOREIGN KEY (maCTTC) REFERENCES ChiTietPhieuThuCu(maCTTC)
     );
 END;
 GO
@@ -644,152 +554,216 @@ BEGIN
         ngayTach DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
         CONSTRAINT PK_LichSuTachMaSanPham PRIMARY KEY (maTach),
-
-        CONSTRAINT UQ_LichSuTachMa
-            UNIQUE (maSPGoc, maSPMoi, maKho),
-
+        CONSTRAINT UQ_LichSuTachMa UNIQUE (maSPGoc, maSPMoi, maKho),
         CONSTRAINT CK_LichSuTachMa_soLuong CHECK (soLuong > 0),
-
-        CONSTRAINT FK_LichSuTachMa_SanPhamGoc
-            FOREIGN KEY (maSPGoc) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_LichSuTachMa_SanPhamMoi
-            FOREIGN KEY (maSPMoi) REFERENCES SanPham(maSP),
-
-        CONSTRAINT FK_LichSuTachMa_Kho
-            FOREIGN KEY (maKho) REFERENCES Kho(maKho)
+        CONSTRAINT FK_LichSuTachMa_SanPhamGoc FOREIGN KEY (maSPGoc) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_LichSuTachMa_SanPhamMoi FOREIGN KEY (maSPMoi) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_LichSuTachMa_Kho FOREIGN KEY (maKho) REFERENCES Kho(maKho)
     );
 END;
 GO
 
 -- =========================================================
--- 9. ĐỒNG BỘ CẤU TRÚC CN06 CHO CÁC BẢNG ĐÃ TẠO TRƯỚC
+-- 10. GIỎ HÀNG, LỊCH SỬ TRẠNG THÁI, ĐÁNH GIÁ
+-- =========================================================
+
+IF OBJECT_ID(N'GioHang', N'U') IS NULL
+BEGIN
+    CREATE TABLE GioHang (
+        maGioHang BIGINT IDENTITY(1,1) NOT NULL,
+        maKH BIGINT NULL,
+        maKhach VARCHAR(36) NULL,
+        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ngayCapNhat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT PK_GioHang PRIMARY KEY (maGioHang),
+        CONSTRAINT FK_GioHang_KhachHang FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT CK_GioHang_chuSoHuu CHECK (
+            (maKH IS NOT NULL AND maKhach IS NULL)
+            OR (maKH IS NULL AND maKhach IS NOT NULL)
+        )
+    );
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_GioHang_maKH'
+               AND object_id = OBJECT_ID(N'GioHang'))
+    CREATE UNIQUE INDEX UX_GioHang_maKH ON GioHang(maKH) WHERE maKH IS NOT NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_GioHang_maKhach'
+               AND object_id = OBJECT_ID(N'GioHang'))
+    CREATE UNIQUE INDEX UX_GioHang_maKhach ON GioHang(maKhach) WHERE maKhach IS NOT NULL;
+GO
+
+IF OBJECT_ID(N'ChiTietGioHang', N'U') IS NULL
+BEGIN
+    -- Cố ý không có FK tới SanPham: giỏ đã xử lý sản phẩm ngừng kinh doanh
+    CREATE TABLE ChiTietGioHang (
+        maGioHang BIGINT NOT NULL,
+        maSP BIGINT NOT NULL,
+        soLuong INT NOT NULL,
+        thuTu INT NOT NULL,
+
+        CONSTRAINT PK_ChiTietGioHang PRIMARY KEY (maGioHang, maSP),
+        CONSTRAINT FK_ChiTietGioHang_GioHang FOREIGN KEY (maGioHang)
+            REFERENCES GioHang(maGioHang) ON DELETE CASCADE,
+        CONSTRAINT CK_ChiTietGioHang_soLuong CHECK (soLuong > 0)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'LichSuTrangThaiHoaDon', N'U') IS NULL
+BEGIN
+    CREATE TABLE LichSuTrangThaiHoaDon (
+        maLS BIGINT IDENTITY(1,1) NOT NULL,
+        maHD BIGINT NOT NULL,
+        trangThaiCu NVARCHAR(20) NULL,
+        trangThaiMoi NVARCHAR(20) NOT NULL,
+        maNV BIGINT NULL,
+        thoiGian DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT PK_LichSuTrangThaiHoaDon PRIMARY KEY (maLS),
+        CONSTRAINT FK_LSTT_HoaDon FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
+        CONSTRAINT FK_LSTT_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'DanhGia', N'U') IS NULL
+BEGIN
+    CREATE TABLE DanhGia (
+        maDG BIGINT IDENTITY(1,1) NOT NULL,
+        maSP BIGINT NOT NULL,
+        maKH BIGINT NOT NULL,
+        soSao INT NOT NULL,
+        noiDung NVARCHAR(1000) NOT NULL,
+        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT PK_DanhGia PRIMARY KEY (maDG),
+        CONSTRAINT FK_DanhGia_SanPham FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+        CONSTRAINT FK_DanhGia_KhachHang FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
+        CONSTRAINT CK_DanhGia_soSao CHECK (soSao BETWEEN 1 AND 5),
+        CONSTRAINT CK_DanhGia_noiDung CHECK (LEN(LTRIM(RTRIM(noiDung))) >= 10),
+        CONSTRAINT UQ_DanhGia_SP_KH UNIQUE (maSP, maKH)
+    );
+END;
+GO
+
+-- =========================================================
+-- 11. ĐỒNG BỘ CẤU TRÚC CHO DB ĐÃ TẠO TỪ PHIÊN BẢN CŨ
+--     (batch 1: thêm cột, batch 2: thêm constraint/index)
 -- =========================================================
 
 IF COL_LENGTH(N'HoaDon', N'tenNguoiNhan') IS NULL
     ALTER TABLE HoaDon ADD tenNguoiNhan NVARCHAR(100) NULL;
-
 IF COL_LENGTH(N'HoaDon', N'soDienThoaiNhan') IS NULL
     ALTER TABLE HoaDon ADD soDienThoaiNhan NVARCHAR(10) NULL;
-
 IF COL_LENGTH(N'HoaDon', N'diaChi') IS NULL
     ALTER TABLE HoaDon ADD diaChi NVARCHAR(255) NULL;
-
 IF COL_LENGTH(N'HoaDon', N'ghiChu') IS NULL
     ALTER TABLE HoaDon ADD ghiChu NVARCHAR(255) NULL;
-
 IF COL_LENGTH(N'HoaDon', N'maYeuCau') IS NULL
     ALTER TABLE HoaDon ADD maYeuCau VARCHAR(36) NULL;
-GO
+IF COL_LENGTH(N'HoaDon', N'phiVanChuyen') IS NULL
+    ALTER TABLE HoaDon ADD phiVanChuyen DECIMAL(18,0) NOT NULL
+        CONSTRAINT DF_HoaDon_phiVanChuyen DEFAULT 0;
+IF COL_LENGTH(N'HoaDon', N'giamGia') IS NULL
+    ALTER TABLE HoaDon ADD giamGia DECIMAL(18,0) NOT NULL
+        CONSTRAINT DF_HoaDon_giamGia DEFAULT 0;
+IF COL_LENGTH(N'HoaDon', N'maGiamGia') IS NULL
+    ALTER TABLE HoaDon ADD maGiamGia VARCHAR(30) NULL;
 
-ALTER TABLE HoaDon ALTER COLUMN maKho BIGINT NULL;
-GO
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'HoaDon') AND name = N'maKho' AND is_nullable = 0
+)
+    ALTER TABLE HoaDon ALTER COLUMN maKho BIGINT NULL;
 
 IF COL_LENGTH(N'ChiTietHoaDon', N'maKho') IS NULL
     ALTER TABLE ChiTietHoaDon ADD maKho BIGINT NULL;
-GO
-
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.foreign_keys
-    WHERE parent_object_id = OBJECT_ID(N'ChiTietHoaDon')
-      AND name = N'FK_ChiTietHoaDon_Kho'
-)
-BEGIN
-    ALTER TABLE ChiTietHoaDon
-        ADD CONSTRAINT FK_ChiTietHoaDon_Kho
-        FOREIGN KEY (maKho) REFERENCES Kho(maKho);
-END;
-GO
 
 IF COL_LENGTH(N'SerialMay', N'maKho') IS NULL
     ALTER TABLE SerialMay ADD maKho BIGINT NULL;
+
+IF COL_LENGTH(N'ThanhToan', N'maGiaoDich') IS NULL
+    ALTER TABLE ThanhToan ADD maGiaoDich NVARCHAR(50) NULL;
+IF COL_LENGTH(N'ThanhToan', N'maNVDuyet') IS NULL
+    ALTER TABLE ThanhToan ADD maNVDuyet BIGINT NULL;
 GO
 
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.foreign_keys
-    WHERE parent_object_id = OBJECT_ID(N'SerialMay')
-      AND name = N'FK_SerialMay_Kho'
-)
-BEGIN
-    ALTER TABLE SerialMay
-        ADD CONSTRAINT FK_SerialMay_Kho
-        FOREIGN KEY (maKho) REFERENCES Kho(maKho);
-END;
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints
+               WHERE name = N'CK_HoaDon_phiVanChuyen'
+                 AND parent_object_id = OBJECT_ID(N'dbo.HoaDon'))
+    ALTER TABLE dbo.HoaDon ADD CONSTRAINT CK_HoaDon_phiVanChuyen CHECK (phiVanChuyen >= 0);
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints
+               WHERE name = N'CK_HoaDon_giamGia'
+                 AND parent_object_id = OBJECT_ID(N'dbo.HoaDon'))
+    ALTER TABLE dbo.HoaDon ADD CONSTRAINT CK_HoaDon_giamGia CHECK (giamGia >= 0);
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys
+               WHERE name = N'FK_HoaDon_MaGiamGia'
+                 AND parent_object_id = OBJECT_ID(N'dbo.HoaDon'))
+    ALTER TABLE dbo.HoaDon ADD CONSTRAINT FK_HoaDon_MaGiamGia
+        FOREIGN KEY (maGiamGia) REFERENCES dbo.MaGiamGia(maCode);
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys
+               WHERE name = N'FK_ChiTietHoaDon_Kho'
+                 AND parent_object_id = OBJECT_ID(N'dbo.ChiTietHoaDon'))
+    ALTER TABLE dbo.ChiTietHoaDon ADD CONSTRAINT FK_ChiTietHoaDon_Kho
+        FOREIGN KEY (maKho) REFERENCES dbo.Kho(maKho);
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys
+               WHERE name = N'FK_SerialMay_Kho'
+                 AND parent_object_id = OBJECT_ID(N'dbo.SerialMay'))
+    ALTER TABLE dbo.SerialMay ADD CONSTRAINT FK_SerialMay_Kho
+        FOREIGN KEY (maKho) REFERENCES dbo.Kho(maKho);
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys
+               WHERE name = N'FK_ThanhToan_NVDuyet'
+                 AND parent_object_id = OBJECT_ID(N'dbo.ThanhToan'))
+    ALTER TABLE dbo.ThanhToan ADD CONSTRAINT FK_ThanhToan_NVDuyet
+        FOREIGN KEY (maNVDuyet) REFERENCES dbo.NhanVien(maNV);
 GO
 
 -- =========================================================
--- 10. INDEX
+-- 12. INDEX
 -- =========================================================
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'TaiKhoan')
-      AND name = N'UQ_TaiKhoan_maNV'
-)
-BEGIN
-    CREATE UNIQUE INDEX UQ_TaiKhoan_maNV
-        ON TaiKhoan(maNV)
-        WHERE maNV IS NOT NULL;
-END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'TaiKhoan') AND name = N'UQ_TaiKhoan_maNV')
+    CREATE UNIQUE INDEX UQ_TaiKhoan_maNV ON TaiKhoan(maNV) WHERE maNV IS NOT NULL;
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'TaiKhoan')
-      AND name = N'UQ_TaiKhoan_maKH'
-)
-BEGIN
-    CREATE UNIQUE INDEX UQ_TaiKhoan_maKH
-        ON TaiKhoan(maKH)
-        WHERE maKH IS NOT NULL;
-END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'TaiKhoan') AND name = N'UQ_TaiKhoan_maKH')
+    CREATE UNIQUE INDEX UQ_TaiKhoan_maKH ON TaiKhoan(maKH) WHERE maKH IS NOT NULL;
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'SanPham')
-      AND name = N'UQ_SanPham_Goc_TinhTrang'
-)
-BEGIN
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'SanPham') AND name = N'UQ_SanPham_Goc_TinhTrang')
     CREATE UNIQUE INDEX UQ_SanPham_Goc_TinhTrang
-        ON SanPham(maSPGoc, tinhTrang)
-        WHERE maSPGoc IS NOT NULL;
-END;
+        ON SanPham(maSPGoc, tinhTrang) WHERE maSPGoc IS NOT NULL;
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'HoaDon')
-      AND name = N'UQ_HoaDon_maYeuCau'
-)
-BEGIN
-    CREATE UNIQUE INDEX UQ_HoaDon_maYeuCau
-        ON HoaDon(maYeuCau)
-        WHERE maYeuCau IS NOT NULL;
-END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'HoaDon') AND name = N'UQ_HoaDon_maYeuCau')
+    CREATE UNIQUE INDEX UQ_HoaDon_maYeuCau ON HoaDon(maYeuCau) WHERE maYeuCau IS NOT NULL;
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'ThanhToan')
-      AND name = N'UQ_ThanhToan_maHD'
-)
-BEGIN
-    CREATE UNIQUE INDEX UQ_ThanhToan_maHD
-        ON ThanhToan(maHD);
-END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'ThanhToan') AND name = N'UQ_ThanhToan_maHD')
+    CREATE UNIQUE INDEX UQ_ThanhToan_maHD ON ThanhToan(maHD);
 
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'BienDongKho')
-      AND name = N'IX_BienDongKho_maSP_thoiGian'
-)
-BEGIN
-    CREATE INDEX IX_BienDongKho_maSP_thoiGian
-        ON BienDongKho(maSP, thoiGian);
-END;
+-- Một mã giao dịch ngân hàng chỉ dùng được cho một khoản thanh toán
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'ThanhToan') AND name = N'UX_ThanhToan_maGiaoDich')
+    CREATE UNIQUE INDEX UX_ThanhToan_maGiaoDich
+        ON ThanhToan(maGiaoDich) WHERE maGiaoDich IS NOT NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID(N'BienDongKho') AND name = N'IX_BienDongKho_maSP_thoiGian')
+    CREATE INDEX IX_BienDongKho_maSP_thoiGian ON BienDongKho(maSP, thoiGian);
 GO
 
 -- =========================================================
--- 11. TRIGGER KIỂM TRA SẢN PHẨM MỚI/CŨ
+-- 13. TRIGGER KIỂM TRA SẢN PHẨM MỚI/CŨ
 -- =========================================================
 
 CREATE OR ALTER TRIGGER TRIGGER_SanPham_KiemTraGiaCu
@@ -824,8 +798,7 @@ BEGIN
             OR moi.tinhTrang <> N'MOI'
             OR cu.giaBan >= moi.giaBan
             OR cu.maLoai <> moi.maLoai
-            OR ISNULL(cu.maNenTang, -1)
-                <> ISNULL(moi.maNenTang, -1)
+            OR ISNULL(cu.maNenTang, -1) <> ISNULL(moi.maNenTang, -1)
         )
     )
     BEGIN
@@ -837,7 +810,7 @@ END;
 GO
 
 -- =========================================================
--- 12. TRIGGER BÁN HÀNG
+-- 14. TRIGGER BÁN HÀNG
 -- =========================================================
 
 CREATE OR ALTER TRIGGER TRIGGER_ChiTietHoaDon_After_Insert
@@ -861,17 +834,14 @@ BEGIN
         @status NVARCHAR(20);
 
     DECLARE detail_rows CURSOR LOCAL FAST_FORWARD FOR
-        SELECT
-            maCTHD, maHD, maSP, maSerial,
-            maKho, soLuong, donGia
+        SELECT maCTHD, maHD, maSP, maSerial, maKho, soLuong, donGia
         FROM inserted
         ORDER BY maSP, maKho, maCTHD;
 
     OPEN detail_rows;
 
     FETCH NEXT FROM detail_rows
-    INTO @id, @hd, @sp, @serial,
-         @lineWarehouse, @quantity, @price;
+    INTO @id, @hd, @sp, @serial, @lineWarehouse, @quantity, @price;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -887,25 +857,19 @@ BEGIN
 
         IF @warehouse IS NULL OR @status IS NULL
         BEGIN
-            ;THROW 54002,
-                N'Chưa xác định được hóa đơn hoặc kho xuất.',
-                1;
+            ;THROW 54002, N'Chưa xác định được hóa đơn hoặc kho xuất.', 1;
         END;
 
         IF @status = N'HUY'
         BEGIN
-            ;THROW 54003,
-                N'Không thể thêm sản phẩm vào hóa đơn đã hủy.',
-                1;
+            ;THROW 54003, N'Không thể thêm sản phẩm vào hóa đơn đã hủy.', 1;
         END;
 
         IF @serial IS NOT NULL
         BEGIN
             IF @quantity <> 1
             BEGIN
-                ;THROW 54004,
-                    N'Dòng có serial phải có số lượng bằng 1.',
-                    1;
+                ;THROW 54004, N'Dòng có serial phải có số lượng bằng 1.', 1;
             END;
 
             IF NOT EXISTS (
@@ -917,9 +881,7 @@ BEGIN
                   AND trangThai = N'TRONG_KHO'
             )
             BEGIN
-                ;THROW 54005,
-                    N'Serial không hợp lệ hoặc không thuộc kho xuất.',
-                    1;
+                ;THROW 54005, N'Serial không hợp lệ hoặc không thuộc kho xuất.', 1;
             END;
         END;
 
@@ -961,8 +923,7 @@ BEGIN
         WHERE maHD = @hd;
 
         FETCH NEXT FROM detail_rows
-        INTO @id, @hd, @sp, @serial,
-             @lineWarehouse, @quantity, @price;
+        INTO @id, @hd, @sp, @serial, @lineWarehouse, @quantity, @price;
     END;
 
     CLOSE detail_rows;
@@ -981,19 +942,11 @@ BEGIN
         SELECT 1
         FROM inserted i
         JOIN deleted d ON d.maHD = i.maHD
-        WHERE (
-            d.trangThai = N'HUY'
-            AND i.trangThai <> N'HUY'
-        )
-        OR (
-            d.trangThai = N'HOAN_TAT'
-            AND i.trangThai <> N'HOAN_TAT'
-        )
+        WHERE (d.trangThai = N'HUY' AND i.trangThai <> N'HUY')
+           OR (d.trangThai = N'HOAN_TAT' AND i.trangThai <> N'HOAN_TAT')
     )
     BEGIN
-        ;THROW 54009,
-            N'Không thể mở lại hoặc sửa trạng thái đơn đã kết thúc.',
-            1;
+        ;THROW 54009, N'Không thể mở lại hoặc sửa trạng thái đơn đã kết thúc.', 1;
     END;
 
     IF EXISTS (
@@ -1001,16 +954,10 @@ BEGIN
         FROM inserted i
         JOIN deleted d ON d.maHD = i.maHD
         WHERE ISNULL(i.maKho, -1) <> ISNULL(d.maKho, -1)
-          AND EXISTS (
-              SELECT 1
-              FROM ChiTietHoaDon c
-              WHERE c.maHD = i.maHD
-          )
+          AND EXISTS (SELECT 1 FROM ChiTietHoaDon c WHERE c.maHD = i.maHD)
     )
     BEGIN
-        ;THROW 54010,
-            N'Không đổi kho của hóa đơn đã có chi tiết.',
-            1;
+        ;THROW 54010, N'Không đổi kho của hóa đơn đã có chi tiết.', 1;
     END;
 
     IF EXISTS (
@@ -1030,9 +977,7 @@ BEGIN
           )
     )
     BEGIN
-        ;THROW 54011,
-            N'Đơn đã thanh toán hoặc đang giao cần nghiệp vụ hoàn trả riêng.',
-            1;
+        ;THROW 54011, N'Đơn đã thanh toán hoặc đang giao cần nghiệp vụ hoàn trả riêng.', 1;
     END;
 
     IF EXISTS (
@@ -1040,10 +985,8 @@ BEGIN
         FROM inserted i
         JOIN deleted d ON d.maHD = i.maHD
         WHERE i.trangThai <> d.trangThai
-          AND i.trangThai IN (
-              N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
-          )
-                    AND NOT EXISTS (
+          AND i.trangThai IN (N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT')
+          AND NOT EXISTS (
               SELECT 1
               FROM ThanhToan t
               WHERE t.maHD = i.maHD
@@ -1052,17 +995,13 @@ BEGIN
                     t.trangThai = N'DA_THANH_TOAN'
                     OR (
                         t.phuongThuc = N'TIEN_MAT'
-                        AND i.trangThai IN (
-                            N'DA_XAC_NHAN', N'DANG_GIAO'
-                        )
+                        AND i.trangThai IN (N'DA_XAC_NHAN', N'DANG_GIAO')
                     )
                 )
           )
     )
     BEGIN
-        ;THROW 54012,
-            N'Chưa xác nhận đủ thanh toán cho hóa đơn.',
-            1;
+        ;THROW 54012, N'Chưa xác nhận đủ thanh toán cho hóa đơn.', 1;
     END;
 
     IF EXISTS (
@@ -1078,9 +1017,7 @@ BEGIN
           AND c.maSerial IS NULL
     )
     BEGIN
-        ;THROW 54013,
-            N'Cần gán đủ serial máy trước khi giao hàng.',
-            1;
+        ;THROW 54013, N'Cần gán đủ serial máy trước khi giao hàng.', 1;
     END;
 END;
 GO
@@ -1095,25 +1032,12 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM inserted
-        WHERE phuongThuc NOT IN (
-            N'TIEN_MAT',
-            N'CHUYEN_KHOAN',
-            N'MOMO',
-            N'ZALOPAY'
-        )
-        OR (
-            trangThai = N'CHUA_THANH_TOAN'
-            AND ngayThanhToan IS NOT NULL
-        )
-        OR (
-            trangThai = N'DA_THANH_TOAN'
-            AND ngayThanhToan IS NULL
-        )
+        WHERE phuongThuc NOT IN (N'TIEN_MAT', N'CHUYEN_KHOAN', N'MOMO', N'ZALOPAY')
+           OR (trangThai = N'CHUA_THANH_TOAN' AND ngayThanhToan IS NOT NULL)
+           OR (trangThai = N'DA_THANH_TOAN' AND ngayThanhToan IS NULL)
     )
     BEGIN
-        ;THROW 54019,
-            N'Thông tin thanh toán không hợp lệ.',
-            1;
+        ;THROW 54019, N'Thông tin thanh toán không hợp lệ.', 1;
     END;
 
     IF EXISTS (
@@ -1123,27 +1047,19 @@ BEGIN
         WHERE i.maHD <> d.maHD
     )
     BEGIN
-        ;THROW 56001,
-            N'Không chuyển giao dịch thanh toán sang hóa đơn khác.',
-            1;
+        ;THROW 56001, N'Không chuyển giao dịch thanh toán sang hóa đơn khác.', 1;
     END;
 
     IF EXISTS (
         SELECT 1
         FROM inserted i
-        JOIN HoaDon h WITH (UPDLOCK, HOLDLOCK)
-            ON h.maHD = i.maHD
+        JOIN HoaDon h WITH (UPDLOCK, HOLDLOCK) ON h.maHD = i.maHD
         WHERE i.soTien <> h.tongTien
            OR h.tongTien <= 0
-           OR (
-               i.trangThai = N'DA_THANH_TOAN'
-               AND h.trangThai = N'HUY'
-           )
+           OR (i.trangThai = N'DA_THANH_TOAN' AND h.trangThai = N'HUY')
     )
     BEGIN
-        ;THROW 54020,
-            N'Số tiền hoặc trạng thái hóa đơn không phù hợp.',
-            1;
+        ;THROW 54020, N'Số tiền hoặc trạng thái hóa đơn không phù hợp.', 1;
     END;
 
     IF EXISTS (
@@ -1155,11 +1071,8 @@ BEGIN
           AND i.trangThai <> N'DA_THANH_TOAN'
     )
     BEGIN
-        ;THROW 56003,
-            N'Chỉ ghi nhận thanh toán tiền mặt sau khi đã nhận tiền.',
-            1;
+        ;THROW 56003, N'Chỉ ghi nhận thanh toán tiền mặt sau khi đã nhận tiền.', 1;
     END;
-    
 
     IF EXISTS (
         SELECT 1
@@ -1170,14 +1083,11 @@ BEGIN
               i.trangThai <> d.trangThai
               OR i.soTien <> d.soTien
               OR i.phuongThuc <> d.phuongThuc
-              OR ISNULL(i.ngayThanhToan, '19000101')
-                   <> ISNULL(d.ngayThanhToan, '19000101')
+              OR ISNULL(i.ngayThanhToan, '19000101') <> ISNULL(d.ngayThanhToan, '19000101')
           )
     )
     BEGIN
-        ;THROW 54021,
-            N'Không sửa giao dịch đã xác nhận thanh toán.',
-            1;
+        ;THROW 54021, N'Không sửa giao dịch đã xác nhận thanh toán.', 1;
     END;
 END;
 GO
@@ -1216,16 +1126,13 @@ BEGIN
     OPEN cancelled_rows;
 
     FETCH NEXT FROM cancelled_rows
-    INTO @detailId, @productId, @quantity,
-         @serialId, @warehouseId, @employeeId;
+    INTO @detailId, @productId, @quantity, @serialId, @warehouseId, @employeeId;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
         IF @warehouseId IS NULL
         BEGIN
-            ;THROW 54007,
-                N'Không xác định được kho cần hoàn tồn.',
-                1;
+            ;THROW 54007, N'Không xác định được kho cần hoàn tồn.', 1;
         END;
 
         SET @before = NULL;
@@ -1270,8 +1177,7 @@ BEGIN
         END;
 
         FETCH NEXT FROM cancelled_rows
-        INTO @detailId, @productId, @quantity,
-             @serialId, @warehouseId, @employeeId;
+        INTO @detailId, @productId, @quantity, @serialId, @warehouseId, @employeeId;
     END;
 
     CLOSE cancelled_rows;
@@ -1280,7 +1186,7 @@ END;
 GO
 
 -- =========================================================
--- 13. TRIGGER THU CŨ VÀ NHẬP HÀNG
+-- 15. TRIGGER THU CŨ VÀ NHẬP HÀNG
 -- =========================================================
 
 CREATE OR ALTER TRIGGER TRIGGER_ChiTietPhieuThuCu_After_Insert
@@ -1300,9 +1206,7 @@ BEGIN
            OR l.tenLoai = N'Đĩa game'
     )
     BEGIN
-        ;THROW 50021,
-            N'Chỉ thu cũ thiết bị có mã hàng cũ; không thu đĩa game.',
-            1;
+        ;THROW 50021, N'Chỉ thu cũ thiết bị có mã hàng cũ; không thu đĩa game.', 1;
     END;
 
     DECLARE
@@ -1322,8 +1226,7 @@ BEGIN
 
     OPEN rows_to_process;
 
-    FETCH NEXT FROM rows_to_process
-    INTO @id, @parent, @sp, @qty, @price;
+    FETCH NEXT FROM rows_to_process INTO @id, @parent, @sp, @qty, @price;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -1369,8 +1272,7 @@ BEGIN
             @kho, @sp, @nv, @id
         );
 
-        FETCH NEXT FROM rows_to_process
-        INTO @id, @parent, @sp, @qty, @price;
+        FETCH NEXT FROM rows_to_process INTO @id, @parent, @sp, @qty, @price;
     END;
 
     CLOSE rows_to_process;
@@ -1403,8 +1305,7 @@ BEGIN
 
     OPEN rows_to_process;
 
-    FETCH NEXT FROM rows_to_process
-    INTO @id, @parent, @sp, @qty, @price;
+    FETCH NEXT FROM rows_to_process INTO @id, @parent, @sp, @qty, @price;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -1450,8 +1351,7 @@ BEGIN
             @kho, @sp, @nv, @id
         );
 
-        FETCH NEXT FROM rows_to_process
-        INTO @id, @parent, @sp, @qty, @price;
+        FETCH NEXT FROM rows_to_process INTO @id, @parent, @sp, @qty, @price;
     END;
 
     CLOSE rows_to_process;
@@ -1469,18 +1369,14 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM inserted i
-        JOIN ChiTietPhieuNhap c WITH (UPDLOCK, HOLDLOCK)
-            ON c.maCTPN = i.maCTPN
+        JOIN ChiTietPhieuNhap c WITH (UPDLOCK, HOLDLOCK) ON c.maCTPN = i.maCTPN
         JOIN PhieuNhap p ON p.maPN = c.maPN
-        JOIN SerialMay s WITH (UPDLOCK, HOLDLOCK)
-            ON s.maSerial = i.maSerial
+        JOIN SerialMay s WITH (UPDLOCK, HOLDLOCK) ON s.maSerial = i.maSerial
         WHERE c.maSP <> s.maSP
            OR (s.maKho IS NOT NULL AND s.maKho <> p.maKho)
     )
     BEGIN
-        ;THROW 54017,
-            N'Serial không phù hợp với sản phẩm hoặc kho nhập.',
-            1;
+        ;THROW 54017, N'Serial không phù hợp với sản phẩm hoặc kho nhập.', 1;
     END;
 
     IF EXISTS (
@@ -1507,7 +1403,7 @@ END;
 GO
 
 -- =========================================================
--- 14. TRIGGER BẢO HÀNH
+-- 16. TRIGGER BẢO HÀNH
 -- =========================================================
 
 CREATE OR ALTER TRIGGER TRIGGER_PhieuBaoHanh_Before_Insert
@@ -1532,8 +1428,7 @@ BEGIN
 
     OPEN rows_to_process;
 
-    FETCH NEXT FROM rows_to_process
-    INTO @id, @serial, @received, @status;
+    FETCH NEXT FROM rows_to_process INTO @id, @serial, @received, @status;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -1544,10 +1439,10 @@ BEGIN
               AND trangThai = N'DA_BAN'
         )
         BEGIN
-            ;THROW 50010,
-                N'Serial chưa bán hoặc đang bảo hành, không thể tiếp nhận.',
-                1;
+            ;THROW 50010, N'Serial chưa bán hoặc đang bảo hành, không thể tiếp nhận.', 1;
         END;
+
+        SET @sold = NULL;
 
         SELECT @sold = MIN(hd.ngayLap)
         FROM ChiTietHoaDon ct
@@ -1572,8 +1467,7 @@ BEGIN
             WHERE maSerial = @serial;
         END;
 
-        FETCH NEXT FROM rows_to_process
-        INTO @id, @serial, @received, @status;
+        FETCH NEXT FROM rows_to_process INTO @id, @serial, @received, @status;
     END;
 
     CLOSE rows_to_process;
@@ -1600,7 +1494,7 @@ END;
 GO
 
 -- =========================================================
--- 15. KIỂM SOÁT SỬA/XÓA CHI TIẾT CHỨNG TỪ
+-- 17. KIỂM SOÁT SỬA/XÓA CHI TIẾT CHỨNG TỪ
 -- =========================================================
 
 CREATE OR ALTER TRIGGER TRIGGER_ChiTietHoaDon_Before_Update
@@ -1619,15 +1513,10 @@ BEGIN
            OR i.soLuong <> d.soLuong
            OR i.donGia <> d.donGia
            OR ISNULL(i.maKho, -1) <> ISNULL(d.maKho, -1)
-           OR (
-               d.maSerial IS NOT NULL
-               AND ISNULL(i.maSerial, -1) <> d.maSerial
-           )
+           OR (d.maSerial IS NOT NULL AND ISNULL(i.maSerial, -1) <> d.maSerial)
     )
     BEGIN
-        ;THROW 54014,
-            N'Chỉ được bổ sung serial cho chi tiết hóa đơn.',
-            1;
+        ;THROW 54014, N'Chỉ được bổ sung serial cho chi tiết hóa đơn.', 1;
     END;
 
     DECLARE
@@ -1640,9 +1529,7 @@ BEGIN
         @status NVARCHAR(20);
 
     DECLARE serial_rows CURSOR LOCAL FAST_FORWARD FOR
-        SELECT
-            i.maCTHD, i.maHD, i.maSP,
-            i.maSerial, i.maKho, i.soLuong
+        SELECT i.maCTHD, i.maHD, i.maSP, i.maSerial, i.maKho, i.soLuong
         FROM inserted i
         JOIN deleted d ON d.maCTHD = i.maCTHD
         WHERE d.maSerial IS NULL
@@ -1652,8 +1539,7 @@ BEGIN
     OPEN serial_rows;
 
     FETCH NEXT FROM serial_rows
-    INTO @detailId, @invoiceId, @productId,
-         @serialId, @warehouseId, @quantity;
+    INTO @detailId, @invoiceId, @productId, @serialId, @warehouseId, @quantity;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -1665,9 +1551,7 @@ BEGIN
 
         IF @status <> N'DA_XAC_NHAN' OR @quantity <> 1
         BEGIN
-            ;THROW 54015,
-                N'Chỉ gán serial cho đơn đã xác nhận, số lượng 1.',
-                1;
+            ;THROW 54015, N'Chỉ gán serial cho đơn đã xác nhận, số lượng 1.', 1;
         END;
 
         IF NOT EXISTS (
@@ -1679,23 +1563,19 @@ BEGIN
               AND trangThai = N'TRONG_KHO'
         )
         BEGIN
-            ;THROW 54016,
-                N'Serial không thuộc sản phẩm, kho hoặc đã được sử dụng.',
-                1;
+            ;THROW 54016, N'Serial không thuộc sản phẩm, kho hoặc đã được sử dụng.', 1;
         END;
 
         UPDATE SerialMay
         SET trangThai = N'DA_BAN'
         WHERE maSerial = @serialId;
 
-        
         UPDATE ChiTietHoaDon
         SET maSerial = @serialId
         WHERE maCTHD = @detailId;
 
         FETCH NEXT FROM serial_rows
-        INTO @detailId, @invoiceId, @productId,
-             @serialId, @warehouseId, @quantity;
+        INTO @detailId, @invoiceId, @productId, @serialId, @warehouseId, @quantity;
     END;
 
     CLOSE serial_rows;
@@ -1711,9 +1591,7 @@ BEGIN
     IF ROWCOUNT_BIG() = 0 RETURN;
     SET NOCOUNT ON;
 
-    ;THROW 50011,
-        N'Không được xóa chi tiết hóa đơn, hãy hủy hóa đơn.',
-        1;
+    ;THROW 50011, N'Không được xóa chi tiết hóa đơn, hãy hủy hóa đơn.', 1;
 END;
 GO
 
@@ -1766,7 +1644,7 @@ END;
 GO
 
 -- =========================================================
--- 16. PROCEDURE HÓA ĐƠN VÀ THANH TOÁN
+-- 18. PROCEDURE HÓA ĐƠN VÀ THANH TOÁN
 -- =========================================================
 
 CREATE OR ALTER PROCEDURE sp_TaoHoaDon
@@ -1779,7 +1657,10 @@ CREATE OR ALTER PROCEDURE sp_TaoHoaDon
     @p_maHD BIGINT OUTPUT,
     @p_tenNguoiNhan NVARCHAR(100) = NULL,
     @p_soDienThoaiNhan NVARCHAR(10) = NULL,
-    @p_maYeuCau VARCHAR(36) = NULL
+    @p_maYeuCau VARCHAR(36) = NULL,
+    @p_phiVanChuyen DECIMAL(18,0) = 0,
+    @p_giamGia DECIMAL(18,0) = 0,
+    @p_maGiamGia VARCHAR(30) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1787,12 +1668,14 @@ BEGIN
     INSERT INTO HoaDon (
         maKH, maNV, maKho, kenhBan,
         tenNguoiNhan, soDienThoaiNhan,
-        diaChi, ghiChu, maYeuCau
+        diaChi, ghiChu, maYeuCau,
+        phiVanChuyen, giamGia, maGiamGia
     )
     VALUES (
         @p_maKH, @p_maNV, @p_maKho, @p_kenhBan,
         @p_tenNguoiNhan, @p_soDienThoaiNhan,
-        @p_diaChi, @p_ghiChu, @p_maYeuCau
+        @p_diaChi, @p_ghiChu, @p_maYeuCau,
+        ISNULL(@p_phiVanChuyen, 0), ISNULL(@p_giamGia, 0), @p_maGiamGia
     );
 
     SET @p_maHD = CAST(SCOPE_IDENTITY() AS BIGINT);
@@ -1817,17 +1700,11 @@ BEGIN
 
     IF @v_gia IS NULL
     BEGIN
-        ;THROW 50020,
-            N'Sản phẩm không tồn tại hoặc đã ngừng bán.',
-            1;
+        ;THROW 50020, N'Sản phẩm không tồn tại hoặc đã ngừng bán.', 1;
     END;
 
-    INSERT INTO ChiTietHoaDon (
-        maHD, maSP, maSerial, soLuong, donGia
-    )
-    VALUES (
-        @p_maHD, @p_maSP, @p_maSerial, @p_soLuong, @v_gia
-    );
+    INSERT INTO ChiTietHoaDon (maHD, maSP, maSerial, soLuong, donGia)
+    VALUES (@p_maHD, @p_maSP, @p_maSerial, @p_soLuong, @v_gia);
 END;
 GO
 
@@ -1842,23 +1719,13 @@ BEGIN
     SET XACT_ABORT ON;
 
     IF @p_phuongThuc IS NULL
-       OR @p_phuongThuc NOT IN (
-           N'TIEN_MAT',
-           N'CHUYEN_KHOAN',
-           N'MOMO',
-           N'ZALOPAY'
-       )
+       OR @p_phuongThuc NOT IN (N'TIEN_MAT', N'CHUYEN_KHOAN', N'MOMO', N'ZALOPAY')
     BEGIN
-        ;THROW 50022,
-            N'Phương thức thanh toán không hợp lệ.',
-            1;
+        ;THROW 50022, N'Phương thức thanh toán không hợp lệ.', 1;
     END;
 
     DECLARE @ownTransaction BIT =
-        CASE
-            WHEN @@TRANCOUNT = 0 THEN 1
-            ELSE 0
-        END;
+        CASE WHEN @@TRANCOUNT = 0 THEN 1 ELSE 0 END;
 
     DECLARE
         @total DECIMAL(18,0),
@@ -1886,23 +1753,17 @@ BEGIN
 
         IF @total IS NULL
         BEGIN
-            ;THROW 50020,
-                N'Hóa đơn không tồn tại.',
-                1;
+            ;THROW 50020, N'Hóa đơn không tồn tại.', 1;
         END;
 
         IF @invoiceStatus <> N'CHO_XAC_NHAN'
         BEGIN
-            ;THROW 56004,
-                N'Chỉ tạo thanh toán cho hóa đơn đang chờ xác nhận.',
-                1;
+            ;THROW 56004, N'Chỉ tạo thanh toán cho hóa đơn đang chờ xác nhận.', 1;
         END;
 
         IF @total <= 0
         BEGIN
-            ;THROW 50024,
-                N'Hóa đơn chưa có sản phẩm để thanh toán.',
-                1;
+            ;THROW 50024, N'Hóa đơn chưa có sản phẩm để thanh toán.', 1;
         END;
 
         IF EXISTS (
@@ -1911,15 +1772,10 @@ BEGIN
             WHERE maHD = @p_maHD
         )
         BEGIN
-            ;THROW 50025,
-                N'Hóa đơn đã có thông tin thanh toán.',
-                1;
+            ;THROW 50025, N'Hóa đơn đã có thông tin thanh toán.', 1;
         END;
 
-        -- =================================================
         -- LUỒNG ONLINE
-        -- =================================================
-
         IF @channel = N'ONLINE'
         BEGIN
             IF ISNULL(@p_xacNhanDaNhanTien, 0) <> 0
@@ -1935,34 +1791,24 @@ BEGIN
             SET @change = NULL;
         END
 
-        -- =================================================
         -- LUỒNG BÁN TẠI QUẦY
-        -- =================================================
-
         ELSE IF @channel = N'QUAY'
         BEGIN
             IF @employeeId IS NULL
             BEGIN
-                ;THROW 56006,
-                    N'Hóa đơn tại quầy phải có nhân viên phụ trách.',
-                    1;
+                ;THROW 56006, N'Hóa đơn tại quầy phải có nhân viên phụ trách.', 1;
             END;
 
             IF ISNULL(@p_xacNhanDaNhanTien, 0) <> 1
             BEGIN
-                ;THROW 56007,
-                    N'Nhân viên phải xác nhận đã nhận đủ tiền.',
-                    1;
+                ;THROW 56007, N'Nhân viên phải xác nhận đã nhận đủ tiền.', 1;
             END;
 
             IF @p_phuongThuc = N'TIEN_MAT'
             BEGIN
-                IF @p_tienKhachDua IS NULL
-                   OR @p_tienKhachDua < @total
+                IF @p_tienKhachDua IS NULL OR @p_tienKhachDua < @total
                 BEGIN
-                    ;THROW 56008,
-                        N'Tiền khách đưa chưa đủ thanh toán.',
-                        1;
+                    ;THROW 56008, N'Tiền khách đưa chưa đủ thanh toán.', 1;
                 END;
 
                 SET @change = @p_tienKhachDua - @total;
@@ -1984,30 +1830,14 @@ BEGIN
         END
         ELSE
         BEGIN
-            ;THROW 56010,
-                N'Kênh bán không hợp lệ.',
-                1;
+            ;THROW 56010, N'Kênh bán không hợp lệ.', 1;
         END;
 
-        INSERT INTO ThanhToan (
-            maHD,
-            phuongThuc,
-            soTien,
-            trangThai,
-            ngayThanhToan
-        )
-        VALUES (
-            @p_maHD,
-            @p_phuongThuc,
-            @total,
-            @paymentStatus,
-            @paymentDate
-        );
+        INSERT INTO ThanhToan (maHD, phuongThuc, soTien, trangThai, ngayThanhToan)
+        VALUES (@p_maHD, @p_phuongThuc, @total, @paymentStatus, @paymentDate);
 
-        SET @paymentId =
-            CONVERT(BIGINT, SCOPE_IDENTITY());
+        SET @paymentId = CONVERT(BIGINT, SCOPE_IDENTITY());
 
-       
         IF @channel = N'QUAY'
         BEGIN
             UPDATE HoaDon
@@ -2030,13 +1860,11 @@ BEGIN
             @change AS tienThoi;
     END TRY
     BEGIN CATCH
-        IF @ownTransaction = 1
-           AND XACT_STATE() <> 0
+        IF @ownTransaction = 1 AND XACT_STATE() <> 0
         BEGIN
             ROLLBACK TRANSACTION;
         END
-        ELSE IF @ownTransaction = 0
-                AND XACT_STATE() = 1
+        ELSE IF @ownTransaction = 0 AND XACT_STATE() = 1
         BEGIN
             ROLLBACK TRANSACTION PaymentSavepoint;
         END;
@@ -2056,16 +1884,10 @@ BEGIN
 
     IF @p_trangThai IS NULL
        OR @p_trangThai NOT IN (
-           N'CHO_XAC_NHAN',
-           N'DA_XAC_NHAN',
-           N'DANG_GIAO',
-           N'HOAN_TAT',
-           N'HUY'
+           N'CHO_XAC_NHAN', N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT', N'HUY'
        )
     BEGIN
-        ;THROW 50026,
-            N'Trạng thái hóa đơn không hợp lệ.',
-            1;
+        ;THROW 50026, N'Trạng thái hóa đơn không hợp lệ.', 1;
     END;
 
     BEGIN TRY
@@ -2090,14 +1912,10 @@ BEGIN
         BEGIN
             IF @v_cu IN (N'HOAN_TAT', N'HUY')
             BEGIN
-                ;THROW 50020,
-                    N'Hóa đơn đã kết thúc, không thể đổi trạng thái.',
-                    1;
+                ;THROW 50020, N'Hóa đơn đã kết thúc, không thể đổi trạng thái.', 1;
             END;
 
-            IF @p_trangThai IN (
-                N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
-            )
+            IF @p_trangThai IN (N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT')
             BEGIN
                 IF @v_tong <= 0 OR NOT EXISTS (
                     SELECT 1
@@ -2130,7 +1948,7 @@ END;
 GO
 
 -- =========================================================
--- 17. PROCEDURE TRA CỨU VÀ BÁO CÁO
+-- 19. PROCEDURE TRA CỨU VÀ BÁO CÁO
 -- =========================================================
 
 CREATE OR ALTER PROCEDURE sp_TiepNhanBaoHanh
@@ -2153,12 +1971,8 @@ BEGIN
         ;THROW 50020, N'Không tìm thấy số serial.', 1;
     END;
 
-    INSERT INTO PhieuBaoHanh (
-        maSerial, maNV, ngayHenTra, moTaLoi
-    )
-    VALUES (
-        @v_maSerial, @p_maNV, @p_ngayHenTra, @p_moTaLoi
-    );
+    INSERT INTO PhieuBaoHanh (maSerial, maNV, ngayHenTra, moTaLoi)
+    VALUES (@v_maSerial, @p_maNV, @p_ngayHenTra, @p_moTaLoi);
 
     SELECT CAST(SCOPE_IDENTITY() AS BIGINT) AS maBH;
 END;
@@ -2179,8 +1993,7 @@ BEGIN
         DATEADD(MONTH, 12, hd.ngayLap) AS hanBaoHanh,
         CAST(
             CASE
-                WHEN GETDATE() < DATEADD(MONTH, 12, hd.ngayLap)
-                THEN 1
+                WHEN GETDATE() < DATEADD(MONTH, 12, hd.ngayLap) THEN 1
                 ELSE 0
             END AS BIT
         ) AS conHan
@@ -2269,7 +2082,25 @@ END;
 GO
 
 -- =========================================================
--- 18. DỮ LIỆU MẪU
+-- 20. MÃ GIẢM GIÁ MẪU (thêm nếu chưa có, chạy lại không lỗi)
+-- =========================================================
+
+INSERT INTO MaGiamGia (
+    maCode, moTa, loai, giaTri, giamToiDa,
+    donToiThieu, soLuong, moiKhachToiDa, batDau, ketThuc
+)
+SELECT v.maCode, v.moTa, v.loai, v.giaTri, v.giamToiDa,
+       v.donToiThieu, v.soLuong, v.moiKhachToiDa, v.batDau, v.ketThuc
+FROM (VALUES
+    ('WELCOME5', N'Giảm 5% cho đơn từ 1 triệu',         'PHAN_TRAM', 5,      500000, 1000000, NULL, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
+    ('GAME200K', N'Giảm 200.000₫ cho đơn từ 3 triệu',    'SO_TIEN',   200000, NULL,   3000000, 100,  1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
+    ('FREESHIP', N'Miễn phí vận chuyển cho đơn từ 500k', 'FREESHIP',  0,      NULL,   500000,  NULL, 3, GETDATE(), DATEADD(MONTH, 3, GETDATE()))
+) AS v(maCode, moTa, loai, giaTri, giamToiDa, donToiThieu, soLuong, moiKhachToiDa, batDau, ketThuc)
+WHERE NOT EXISTS (SELECT 1 FROM MaGiamGia m WHERE m.maCode = v.maCode);
+GO
+
+-- =========================================================
+-- 21. DỮ LIỆU MẪU (chỉ chạy khi DB còn trống hoàn toàn)
 -- =========================================================
 
 IF NOT EXISTS (
@@ -2300,9 +2131,7 @@ BEGIN
         BEGIN TRANSACTION;
 
         -- Danh mục
-
         SET IDENTITY_INSERT LoaiSanPham ON;
-
         INSERT INTO LoaiSanPham(maLoai, tenLoai)
         VALUES
             (1, N'Máy console'),
@@ -2310,37 +2139,28 @@ BEGIN
             (3, N'Tay cầm'),
             (4, N'Phụ kiện'),
             (5, N'Thẻ nhớ');
-
         SET IDENTITY_INSERT LoaiSanPham OFF;
 
         SET IDENTITY_INSERT NenTang ON;
-
         INSERT INTO NenTang(maNenTang, tenNenTang)
         VALUES
             (1, N'PlayStation'),
             (2, N'Xbox'),
             (3, N'Nintendo Switch'),
             (4, N'PC / Steam');
-
         SET IDENTITY_INSERT NenTang OFF;
 
         SET IDENTITY_INSERT Kho ON;
-
         INSERT INTO Kho(maKho, tenKho, diaChi)
         VALUES
             (1, N'Kho chính Quận 7', N'12 Nguyễn Thị Thập, Quận 7, TP.HCM'),
             (2, N'Kho phụ kiện Quận 1', N'45 Lê Lợi, Quận 1, TP.HCM'),
             (3, N'Kho hàng cũ Thủ Đức', N'88 Võ Văn Ngân, TP. Thủ Đức, TP.HCM');
-
         SET IDENTITY_INSERT Kho OFF;
 
         -- Nhân viên
-
         SET IDENTITY_INSERT NhanVien ON;
-
-        INSERT INTO NhanVien (
-            maNV, hoTen, soDienThoai, email, diaChi, chucVu
-        )
+        INSERT INTO NhanVien (maNV, hoTen, soDienThoai, email, diaChi, chucVu)
         VALUES
             (1, N'Nguyễn Thanh Ngân', N'0901000001', N'ngan.nt@store.vn', N'Quận 7, TP.HCM', N'Quản lý'),
             (2, N'Trần Hữu Nhật', N'0901000002', N'nhat.th@store.vn', N'Quận 1, TP.HCM', N'Thu ngân'),
@@ -2362,16 +2182,11 @@ BEGIN
             (18, N'Đinh Thị Hoa', N'0901000018', N'hoa.dt@store.vn', N'Bình Tân, TP.HCM', N'Kế toán'),
             (19, N'Lương Minh Khoa', N'0901000019', N'khoa.lm@store.vn', N'Quận 11, TP.HCM', N'Bán hàng'),
             (20, N'Tạ Quỳnh Như', N'0901000020', N'nhu.tq@store.vn', N'Nhà Bè, TP.HCM', N'Bán hàng');
-
         SET IDENTITY_INSERT NhanVien OFF;
 
         -- Khách hàng
-
         SET IDENTITY_INSERT KhachHang ON;
-
-        INSERT INTO KhachHang (
-            maKH, hoTen, soDienThoai, email, diaChi
-        )
+        INSERT INTO KhachHang (maKH, hoTen, soDienThoai, email, diaChi)
         VALUES
             (1, N'Nguyễn Văn An', N'0911000001', N'an.nv@mail.com', N'Quận 7, TP.HCM'),
             (2, N'Trần Thị Bình', N'0911000002', N'binh.tt@mail.com', N'Quận 1, TP.HCM'),
@@ -2393,19 +2208,14 @@ BEGIN
             (18, N'Đinh Thị Thảo', N'0911000018', N'thao.dt@mail.com', N'Quận 11, TP.HCM'),
             (19, N'Lương Văn Tín', N'0911000019', N'tin.lv@mail.com', N'Nhà Bè, TP.HCM'),
             (20, N'Tạ Thị Uyên', N'0911000020', N'uyen.tt@mail.com', N'Cần Giờ, TP.HCM');
-
         SET IDENTITY_INSERT KhachHang OFF;
 
-        -- Tài khoản mẫu: mật khẩu 123456, lưu BCrypt.
-
+        -- Tài khoản mẫu: mật khẩu 123456, lưu BCrypt
         DECLARE @PasswordHash NVARCHAR(255) =
             N'$2a$12$kPX7nJ3TS//82nKTOWPe8.S4.AxbgM4AN2XUMMEE2wzVMVbqKagEW';
 
         SET IDENTITY_INSERT TaiKhoan ON;
-
-        INSERT INTO TaiKhoan (
-            maTK, tenDangNhap, matKhau, vaiTro, maNV, maKH
-        )
+        INSERT INTO TaiKhoan (maTK, tenDangNhap, matKhau, vaiTro, maNV, maKH)
         VALUES
             (1, N'admin', @PasswordHash, N'ADMIN', 1, NULL),
             (2, N'nv02', @PasswordHash, N'NHANVIEN', 2, NULL),
@@ -2427,16 +2237,11 @@ BEGIN
             (18, N'kh10', @PasswordHash, N'KHACHHANG', NULL, 10),
             (19, N'kh11', @PasswordHash, N'KHACHHANG', NULL, 11),
             (20, N'kh12', @PasswordHash, N'KHACHHANG', NULL, 12);
-
         SET IDENTITY_INSERT TaiKhoan OFF;
 
         -- Nhà cung cấp
-
         SET IDENTITY_INSERT NhaCungCap ON;
-
-        INSERT INTO NhaCungCap (
-            maNCC, tenNCC, soDienThoai, email, diaChi
-        )
+        INSERT INTO NhaCungCap (maNCC, tenNCC, soDienThoai, email, diaChi)
         VALUES
             (1, N'Sony Interactive Việt Nam', N'0281000001', N'sales@sony-vn.com', N'Quận 1, TP.HCM'),
             (2, N'Microsoft Việt Nam', N'0281000002', N'sales@microsoft-vn.com', N'Quận 1, TP.HCM'),
@@ -2458,11 +2263,9 @@ BEGIN
             (18, N'Đại Dương Gaming', N'0236000018', N'sales@daiduong.vn', N'Đà Nẵng'),
             (19, N'Pixel Trade', N'0281000019', N'sales@pixeltrade.vn', N'Phú Nhuận, TP.HCM'),
             (20, N'Nova Distribution', N'0281000020', N'sales@nova.vn', N'Quận 2, TP.HCM');
-
         SET IDENTITY_INSERT NhaCungCap OFF;
 
-        
-
+        -- Sản phẩm: mã hàng mới trước, mã hàng cũ (có maSPGoc) sau
         SET IDENTITY_INSERT SanPham ON;
 
         INSERT INTO SanPham (
@@ -2491,8 +2294,6 @@ BEGIN
             (19, N'Tay cầm DualSense', N'Tay cầm PS5 chính hãng mới', 1890000, 3, 1, N'SP19.jpg', N'MOI', NULL),
             (20, N'Nintendo Switch Pro Controller', N'Tay cầm Switch chính hãng mới', 1590000, 3, 3, N'SP20.jpg', N'MOI', NULL);
 
-       
-
         INSERT INTO SanPham (
             maSP, tenSP, moTa, giaBan, maLoai,
             maNenTang, hinhAnh, tinhTrang, maSPGoc
@@ -2505,81 +2306,53 @@ BEGIN
 
         SET IDENTITY_INSERT SanPham OFF;
 
-        -- Serial máy nhập hàng.
-        
+        -- Serial máy nhập hàng
+        SET IDENTITY_INSERT SerialMay ON;
 
-       SET IDENTITY_INSERT SerialMay ON;
+        INSERT INTO SerialMay (maSerial, maSP, soSerial, tinhTrang)
+        VALUES
+            (1, 1, N'SN-PS5STD-0001', N'MOI'),
+            (2, 1, N'SN-PS5STD-0002', N'MOI'),
+            (3, 2, N'SN-PS5DIG-0001', N'MOI'),
+            (4, 2, N'SN-PS5DIG-0002', N'MOI'),
+            (5, 3, N'SN-PS5PRO-0001', N'MOI'),
+            (6, 3, N'SN-PS5PRO-0002', N'MOI'),
+            (7, 4, N'SN-XSX-0001', N'MOI'),
+            (8, 4, N'SN-XSX-0002', N'MOI'),
+            (9, 5, N'SN-XSS-0001', N'MOI'),
+            (10, 5, N'SN-XSS-0002', N'MOI'),
+            (11, 6, N'SN-NSWOLED-0001', N'MOI'),
+            (12, 6, N'SN-NSWOLED-0002', N'MOI'),
+            (13, 7, N'SN-NSWLITE-0001', N'MOI'),
+            (14, 7, N'SN-NSWLITE-0002', N'MOI'),
+            (15, 8, N'SN-STEAMDECK-0001', N'MOI'),
+            (16, 8, N'SN-STEAMDECK-0002', N'MOI'),
+            (17, 9, N'SN-PS4SLIM-0001', N'CU'),
+            (18, 9, N'SN-PS4SLIM-0002', N'CU'),
+            (19, 10, N'SN-NSW2-0001', N'MOI'),
+            (20, 10, N'SN-NSW2-0002', N'MOI');
 
-INSERT INTO SerialMay (
-    maSerial,
-    maSP,
-    soSerial,
-    tinhTrang
-)
-VALUES
-    (1, 1, N'SN-PS5STD-0001', N'MOI'),
-    (2, 1, N'SN-PS5STD-0002', N'MOI'),
-    (3, 2, N'SN-PS5DIG-0001', N'MOI'),
-    (4, 2, N'SN-PS5DIG-0002', N'MOI'),
-    (5, 3, N'SN-PS5PRO-0001', N'MOI'),
-    (6, 3, N'SN-PS5PRO-0002', N'MOI'),
-    (7, 4, N'SN-XSX-0001', N'MOI'),
-    (8, 4, N'SN-XSX-0002', N'MOI'),
-    (9, 5, N'SN-XSS-0001', N'MOI'),
-    (10, 5, N'SN-XSS-0002', N'MOI'),
-    (11, 6, N'SN-NSWOLED-0001', N'MOI'),
-    (12, 6, N'SN-NSWOLED-0002', N'MOI'),
-    (13, 7, N'SN-NSWLITE-0001', N'MOI'),
-    (14, 7, N'SN-NSWLITE-0002', N'MOI'),
-    (15, 8, N'SN-STEAMDECK-0001', N'MOI'),
-    (16, 8, N'SN-STEAMDECK-0002', N'MOI'),
-    (17, 9, N'SN-PS4SLIM-0001', N'CU'),
-    (18, 9, N'SN-PS4SLIM-0002', N'CU'),
-    (19, 10, N'SN-NSW2-0001', N'MOI'),
-    (20, 10, N'SN-NSW2-0002', N'MOI');
+        INSERT INTO SerialMay (maSerial, maSP, soSerial, tinhTrang)
+        SELECT
+            25 + ROW_NUMBER() OVER (ORDER BY sp.maSP, n.soThuTu),
+            sp.maSP,
+            CONCAT(
+                N'SN-TEST-', sp.maSP, N'-',
+                RIGHT(N'0000' + CONVERT(NVARCHAR(4), n.soThuTu), 4)
+            ),
+            sp.tinhTrang
+        FROM SanPham sp
+        CROSS JOIN (
+            VALUES (3), (4), (5), (6), (7), (8), (9), (10), (11),
+                   (12), (13), (14), (15), (16), (17), (18), (19), (20)
+        ) n(soThuTu)
+        WHERE sp.maSP IN (2, 4, 5, 6, 7, 8, 9, 10);
 
-
-INSERT INTO SerialMay (
-    maSerial,
-    maSP,
-    soSerial,
-    tinhTrang
-)
-SELECT
-    25 + ROW_NUMBER() OVER (
-        ORDER BY sp.maSP, n.soThuTu
-    ),
-    sp.maSP,
-    CONCAT(
-        N'SN-TEST-',
-        sp.maSP,
-        N'-',
-        RIGHT(
-            N'0000' + CONVERT(NVARCHAR(4), n.soThuTu),
-            4
-        )
-    ),
-    sp.tinhTrang
-FROM SanPham sp
-CROSS JOIN (
-    VALUES
-        (3), (4), (5), (6), (7), (8),
-        (9), (10), (11), (12), (13), (14),
-        (15), (16), (17), (18), (19), (20)
-) n(soThuTu)
-WHERE sp.maSP IN (
-    2, 4, 5, 6, 7, 8, 9, 10
-);
-
-SET IDENTITY_INSERT SerialMay OFF;
+        SET IDENTITY_INSERT SerialMay OFF;
 
         -- Phiếu nhập
-
         SET IDENTITY_INSERT PhieuNhap ON;
-
-        INSERT INTO PhieuNhap (
-            maPN, maNCC, maNV, maKho, ghiChu
-        )
+        INSERT INTO PhieuNhap (maPN, maNCC, maNV, maKho, ghiChu)
         VALUES
             (1, 1, 3, 1, N'Nhập PS5 Standard'),
             (2, 2, 4, 1, N'Nhập PS5 Digital'),
@@ -2601,62 +2374,42 @@ SET IDENTITY_INSERT SerialMay OFF;
             (18, 18, 5, 1, N'Nhập Elden Ring'),
             (19, 19, 6, 2, N'Nhập DualSense'),
             (20, 20, 2, 2, N'Nhập Pro Controller');
-
         SET IDENTITY_INSERT PhieuNhap OFF;
 
-        -- Trigger tự tạo tồn và tổng tiền, không chèn tồn lần nữa.
-
+        -- Trigger tự tạo tồn kho và tổng tiền
         SET IDENTITY_INSERT ChiTietPhieuNhap ON;
+        INSERT INTO ChiTietPhieuNhap (maCTPN, maPN, maSP, soLuong, donGiaNhap)
+        VALUES
+            (1, 1, 1, 2, 11500000),
+            (2, 2, 2, 20, 9900000),
+            (3, 3, 3, 2, 16000000),
+            (4, 4, 4, 20, 10800000),
+            (5, 5, 5, 20, 6100000),
+            (6, 6, 6, 20, 7000000),
+            (7, 7, 7, 20, 4300000),
+            (8, 8, 8, 20, 15200000),
+            (9, 9, 9, 20, 3300000),
+            (10, 10, 10, 20, 10900000),
+            (11, 11, 11, 30, 1000000),
+            (12, 12, 12, 30, 1100000),
+            (13, 13, 13, 30, 1050000),
+            (14, 14, 14, 30, 950000),
+            (15, 15, 15, 30, 870000),
+            (16, 16, 16, 30, 620000),
+            (17, 17, 17, 30, 950000),
+            (18, 18, 18, 30, 790000),
+            (19, 19, 19, 20, 1500000),
+            (20, 20, 20, 20, 1250000);
+        SET IDENTITY_INSERT ChiTietPhieuNhap OFF;
 
-INSERT INTO ChiTietPhieuNhap (
-    maCTPN,
-    maPN,
-    maSP,
-    soLuong,
-    donGiaNhap
-)
-VALUES
-    (1, 1, 1, 2, 11500000),
-    (2, 2, 2, 20, 9900000),
-    (3, 3, 3, 2, 16000000),
-    (4, 4, 4, 20, 10800000),
-    (5, 5, 5, 20, 6100000),
-    (6, 6, 6, 20, 7000000),
-    (7, 7, 7, 20, 4300000),
-    (8, 8, 8, 20, 15200000),
-    (9, 9, 9, 20, 3300000),
-    (10, 10, 10, 20, 10900000),
-    (11, 11, 11, 30, 1000000),
-    (12, 12, 12, 30, 1100000),
-    (13, 13, 13, 30, 1050000),
-    (14, 14, 14, 30, 950000),
-    (15, 15, 15, 30, 870000),
-    (16, 16, 16, 30, 620000),
-    (17, 17, 17, 30, 950000),
-    (18, 18, 18, 30, 790000),
-    (19, 19, 19, 20, 1500000),
-    (20, 20, 20, 20, 1250000);
+        INSERT INTO ChiTietPhieuNhapSerial (maCTPN, maSerial)
+        SELECT ct.maCTPN, s.maSerial
+        FROM ChiTietPhieuNhap ct
+        JOIN SerialMay s ON s.maSP = ct.maSP
+        WHERE ct.maCTPN BETWEEN 1 AND 10
+          AND (s.maSerial BETWEEN 1 AND 20 OR s.soSerial LIKE N'SN-TEST-%');
 
-SET IDENTITY_INSERT ChiTietPhieuNhap OFF;
-
-        INSERT INTO ChiTietPhieuNhapSerial (
-    maCTPN,
-    maSerial
-)
-SELECT
-    ct.maCTPN,
-    s.maSerial
-FROM ChiTietPhieuNhap ct
-JOIN SerialMay s
-    ON s.maSP = ct.maSP
-WHERE ct.maCTPN BETWEEN 1 AND 10
-  AND (
-      s.maSerial BETWEEN 1 AND 20
-      OR s.soSerial LIKE N'SN-TEST-%'
-  );
-
-      
-
+        -- Hóa đơn mẫu
         DECLARE @HoaDonMau TABLE (
             maHD BIGINT PRIMARY KEY,
             maKH BIGINT NOT NULL,
@@ -2667,10 +2420,7 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             ghiChu NVARCHAR(255) NULL
         );
 
-        INSERT INTO @HoaDonMau (
-            maHD, maKH, maNV, maKho,
-            kenhBan, trangThaiDich, ghiChu
-        )
+        INSERT INTO @HoaDonMau (maHD, maKH, maNV, maKho, kenhBan, trangThaiDich, ghiChu)
         VALUES
             (1, 1, 3, 1, N'QUAY', N'HOAN_TAT', N'Mua tại quầy'),
             (2, 2, NULL, 1, N'ONLINE', N'HOAN_TAT', N'Giao hàng nhanh'),
@@ -2694,11 +2444,9 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             (20, 20, 3, 2, N'QUAY', N'HUY', N'Khách hủy trước khi thanh toán');
 
         SET IDENTITY_INSERT HoaDon ON;
-
         INSERT INTO HoaDon (
             maHD, maKH, maNV, maKho, kenhBan, trangThai,
-            tenNguoiNhan, soDienThoaiNhan,
-            diaChi, ghiChu, maYeuCau
+            tenNguoiNhan, soDienThoaiNhan, diaChi, ghiChu, maYeuCau
         )
         SELECT
             m.maHD,
@@ -2714,23 +2462,11 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             CONVERT(VARCHAR(36), NEWID())
         FROM @HoaDonMau m
         JOIN KhachHang k ON k.maKH = m.maKH;
-
         SET IDENTITY_INSERT HoaDon OFF;
 
         SET IDENTITY_INSERT ChiTietHoaDon ON;
-
-        INSERT INTO ChiTietHoaDon (
-            maCTHD, maHD, maSP, maKho,
-            maSerial, soLuong, donGia
-        )
-        SELECT
-            d.maCTHD,
-            d.maHD,
-            d.maSP,
-            m.maKho,
-            d.maSerial,
-            d.soLuong,
-            d.donGia
+        INSERT INTO ChiTietHoaDon (maCTHD, maHD, maSP, maKho, maSerial, soLuong, donGia)
+        SELECT d.maCTHD, d.maHD, d.maSP, m.maKho, d.maSerial, d.soLuong, d.donGia
         FROM (
             VALUES
                 (1, 1, 1, 1, 1, 13990000),
@@ -2755,14 +2491,9 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
                 (20, 20, 20, NULL, 1, 1590000)
         ) d(maCTHD, maHD, maSP, maSerial, soLuong, donGia)
         JOIN @HoaDonMau m ON m.maHD = d.maHD;
-
         SET IDENTITY_INSERT ChiTietHoaDon OFF;
 
-     
-        INSERT INTO ThanhToan (
-            maHD, phuongThuc, soTien,
-            trangThai, ngayThanhToan
-        )
+        INSERT INTO ThanhToan (maHD, phuongThuc, soTien, trangThai, ngayThanhToan)
         SELECT
             h.maHD,
             CASE h.maHD % 3
@@ -2772,16 +2503,12 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             END,
             h.tongTien,
             CASE
-                WHEN m.trangThaiDich IN (
-                    N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
-                )
+                WHEN m.trangThaiDich IN (N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT')
                 THEN N'DA_THANH_TOAN'
                 ELSE N'CHUA_THANH_TOAN'
             END,
             CASE
-                WHEN m.trangThaiDich IN (
-                    N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
-                )
+                WHEN m.trangThaiDich IN (N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT')
                 THEN h.ngayLap
                 ELSE NULL
             END
@@ -2792,9 +2519,7 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
         SET h.trangThai = N'DA_XAC_NHAN'
         FROM HoaDon h
         JOIN @HoaDonMau m ON m.maHD = h.maHD
-        WHERE m.trangThaiDich IN (
-            N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT'
-        );
+        WHERE m.trangThaiDich IN (N'DA_XAC_NHAN', N'DANG_GIAO', N'HOAN_TAT');
 
         UPDATE h
         SET h.trangThai = N'DANG_GIAO'
@@ -2808,20 +2533,15 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
         JOIN @HoaDonMau m ON m.maHD = h.maHD
         WHERE m.trangThaiDich = N'HOAN_TAT';
 
-
         UPDATE h
         SET h.trangThai = N'HUY'
         FROM HoaDon h
         JOIN @HoaDonMau m ON m.maHD = h.maHD
         WHERE m.trangThaiDich = N'HUY';
 
-        -- Phiếu thu cũ nhập về kho 3.
-
+        -- Phiếu thu cũ nhập về kho 3
         SET IDENTITY_INSERT PhieuThuCu ON;
-
-        INSERT INTO PhieuThuCu (
-            maPTC, maKH, maNV, maHD, maKho, ghiChu
-        )
+        INSERT INTO PhieuThuCu (maPTC, maKH, maNV, maHD, maKho, ghiChu)
         VALUES
             (1, 1, 3, 1, 3, N'Thu PS4 cũ khi mua PS5'),
             (2, 2, 4, 2, 3, N'Thu Switch Lite cũ'),
@@ -2843,14 +2563,11 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             (18, 18, 5, NULL, 3, N'Thu tay cầm cũ'),
             (19, 19, 6, NULL, 3, N'Thu tay cầm cũ'),
             (20, 20, 2, NULL, 3, N'Thu tay cầm cũ');
-
         SET IDENTITY_INSERT PhieuThuCu OFF;
 
         SET IDENTITY_INSERT ChiTietPhieuThuCu ON;
-
         INSERT INTO ChiTietPhieuThuCu (
-            maCTTC, maPTC, maSP, soLuong,
-            donGiaThu, tinhTrang, ghiChu
+            maCTTC, maPTC, maSP, soLuong, donGiaThu, tinhTrang, ghiChu
         )
         VALUES
             (1, 1, 9, 1, 2000000, N'CU', N'Máy chạy tốt, trầy nhẹ'),
@@ -2873,30 +2590,21 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             (18, 18, 23, 2, 380000, N'CU', NULL),
             (19, 19, 23, 1, 750000, N'CU', NULL),
             (20, 20, 23, 2, 650000, N'CU', NULL);
-
         SET IDENTITY_INSERT ChiTietPhieuThuCu OFF;
 
-        -- Serial tương ứng với các máy thu cũ.
-
+        -- Serial tương ứng với các máy thu cũ
         SET IDENTITY_INSERT SerialMay ON;
-
-        INSERT INTO SerialMay (
-            maSerial, maSP, maKho,
-            soSerial, tinhTrang, trangThai
-        )
+        INSERT INTO SerialMay (maSerial, maSP, maKho, soSerial, tinhTrang, trangThai)
         VALUES
             (21, 9, 3, N'SN-PTC01-PS4-0001', N'CU', N'TRONG_KHO'),
             (22, 9, 3, N'SN-PTC14-PS4-0001', N'CU', N'TRONG_KHO'),
             (23, 21, 3, N'SN-PTC03-OLED-0001', N'CU', N'TRONG_KHO'),
             (24, 22, 3, N'SN-PTC02-LITE-0001', N'CU', N'TRONG_KHO'),
             (25, 22, 3, N'SN-PTC15-LITE-0001', N'CU', N'TRONG_KHO');
-
         SET IDENTITY_INSERT SerialMay OFF;
 
         -- Bảo hành mẫu
-
         SET IDENTITY_INSERT PhieuBaoHanh ON;
-
         INSERT INTO PhieuBaoHanh (
             maBH, maSerial, maNV, ngayHenTra,
             noiDung, moTaLoi, chiPhi, trangThai
@@ -2922,7 +2630,6 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             (18, 15, 8, DATEADD(DAY, 7, GETDATE()), N'Chờ kiểm tra', N'Mất âm thanh', 0, N'TIEP_NHAN'),
             (19, 17, 9, DATEADD(DAY, 7, GETDATE()), N'Chờ kiểm tra', N'Không đọc đĩa', 0, N'TIEP_NHAN'),
             (20, 19, 10, DATEADD(DAY, 7, GETDATE()), N'Chờ kiểm tra', N'Lỗi wifi', 0, N'TIEP_NHAN');
-
         SET IDENTITY_INSERT PhieuBaoHanh OFF;
 
         COMMIT TRANSACTION;
@@ -2933,16 +2640,13 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
         IF XACT_STATE() <> 0
             ROLLBACK TRANSACTION;
 
-       
-
         DECLARE @tableName SYSNAME;
         DECLARE @cleanupSql NVARCHAR(300);
 
         DECLARE identity_cleanup CURSOR LOCAL FAST_FORWARD FOR
             SELECT t.name
             FROM sys.tables t
-            JOIN sys.identity_columns c
-                ON c.object_id = t.object_id
+            JOIN sys.identity_columns c ON c.object_id = t.object_id
             WHERE t.name IN (
                 N'LoaiSanPham', N'NenTang', N'Kho',
                 N'NhanVien', N'KhachHang', N'TaiKhoan',
@@ -2955,29 +2659,22 @@ WHERE ct.maCTPN BETWEEN 1 AND 10
             );
 
         OPEN identity_cleanup;
-
-        FETCH NEXT FROM identity_cleanup
-        INTO @tableName;
+        FETCH NEXT FROM identity_cleanup INTO @tableName;
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
             SET @cleanupSql =
-                N'SET IDENTITY_INSERT '
-                + QUOTENAME(@tableName)
-                + N' OFF;';
+                N'SET IDENTITY_INSERT ' + QUOTENAME(@tableName) + N' OFF;';
 
             BEGIN TRY
                 EXEC sys.sp_executesql @cleanupSql;
             END TRY
             BEGIN CATCH
-                PRINT N'Chưa tắt IDENTITY_INSERT của '
-                    + @tableName
-                    + N': '
-                    + ERROR_MESSAGE();
+                PRINT N'Chưa tắt IDENTITY_INSERT của ' + @tableName
+                    + N': ' + ERROR_MESSAGE();
             END CATCH;
 
-            FETCH NEXT FROM identity_cleanup
-            INTO @tableName;
+            FETCH NEXT FROM identity_cleanup INTO @tableName;
         END;
 
         CLOSE identity_cleanup;
@@ -2993,244 +2690,9 @@ END;
 GO
 
 -- =========================================================
--- 19. KIỂM TRA SAU KHỞI TẠO
+-- 22. TRIGGER LỊCH SỬ TRẠNG THÁI HÓA ĐƠN
+--     (tạo sau dữ liệu mẫu, chỉ ghi lịch sử từ lúc này trở đi)
 -- =========================================================
-
-SELECT N'SanPham' AS tenBang, COUNT_BIG(*) AS soDong
-FROM SanPham
-UNION ALL
-SELECT N'SerialMay', COUNT_BIG(*)
-FROM SerialMay
-UNION ALL
-SELECT N'HoaDon', COUNT_BIG(*)
-FROM HoaDon
-UNION ALL
-SELECT N'ChiTietHoaDon', COUNT_BIG(*)
-FROM ChiTietHoaDon
-UNION ALL
-SELECT N'ThanhToan', COUNT_BIG(*)
-FROM ThanhToan
-UNION ALL
-SELECT N'TonKho', COUNT_BIG(*)
-FROM TonKho;
-
-SELECT
-    COUNT_BIG(*) AS tongSoMaSanPham,
-    SUM(CASE WHEN tinhTrang = N'MOI' THEN 1 ELSE 0 END) AS soMaHangMoi,
-    SUM(CASE WHEN tinhTrang = N'CU' THEN 1 ELSE 0 END) AS soMaHangCu
-FROM SanPham;
-
-SELECT
-    moi.maSP AS maHangMoi,
-    cu.maSP AS maHangCu,
-    moi.tenSP,
-    moi.giaBan AS giaMoi,
-    cu.giaBan AS giaCu,
-    moi.giaBan - cu.giaBan AS chenhLech
-FROM SanPham cu
-JOIN SanPham moi ON moi.maSP = cu.maSPGoc
-ORDER BY moi.maSP;
-
-SELECT
-    trangThai,
-    COUNT_BIG(*) AS soHoaDon
-FROM HoaDon
-GROUP BY trangThai;
-
-SELECT
-    phuongThuc,
-    trangThai,
-    COUNT_BIG(*) AS soThanhToan
-FROM ThanhToan
-GROUP BY phuongThuc, trangThai
-ORDER BY phuongThuc, trangThai;
-
-SELECT
-    SUM(CONVERT(BIGINT, soLuong)) AS tongTonKhaDung
-FROM TonKho;
-
-SELECT
-    k.tenKho,
-    sp.maSP,
-    sp.tenSP,
-    sp.tinhTrang,
-    tk.soLuong
-FROM TonKho tk
-JOIN Kho k ON k.maKho = tk.maKho
-JOIN SanPham sp ON sp.maSP = tk.maSP
-ORDER BY k.maKho, sp.maSP;
-
-
-SELECT maCTHD, maHD, maSP
-FROM ChiTietHoaDon
-WHERE maKho IS NULL;
-
-
-SELECT
-    h.maHD,
-    h.tongTien,
-    COALESCE(SUM(c.soLuong * c.donGia), 0) AS tongChiTiet
-FROM HoaDon h
-LEFT JOIN ChiTietHoaDon c ON c.maHD = h.maHD
-GROUP BY h.maHD, h.tongTien, h.phiVanChuyen, h.giamGia
-HAVING h.tongTien <> COALESCE(SUM(c.soLuong * c.donGia), 0) + h.phiVanChuyen - h.giamGia;
-
-
-SELECT
-    t.maTT,
-    t.maHD,
-    t.soTien,
-    h.tongTien
-FROM ThanhToan t
-JOIN HoaDon h ON h.maHD = t.maHD
-WHERE t.soTien <> h.tongTien;
-GO
---====
-USE QLStoreConsole;
-GO
-
-ALTER TABLE dbo.TaiKhoan
-DROP CONSTRAINT CK_TaiKhoan_vaiTro;
-GO
-
-ALTER TABLE dbo.TaiKhoan
-ADD CONSTRAINT CK_TaiKhoan_vaiTro
-CHECK (vaiTro IN (
-    N'ADMIN',
-    N'NHANVIEN',
-    N'KHACHHANG',
-    N'BANHANG',
-    N'KHO',
-    N'BAOHANH'
-));
-GO
-
-
-
-SELECT
-    tenDangNhap,
-    vaiTro,
-    LEN(matKhau) AS DoDaiMatKhau,
-    LEFT(matKhau, 4) AS DauMaHoa
-FROM dbo.TaiKhoan
-WHERE vaiTro IN ('BANHANG', 'KHO', 'BAOHANH');
-go
-
-
-IF OBJECT_ID(N'GioHang', N'U') IS NULL
-BEGIN
-    CREATE TABLE GioHang (
-        maGioHang BIGINT IDENTITY(1,1) NOT NULL,
-        maKH BIGINT NULL,
-        maKhach VARCHAR(36) NULL,
-        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        ngayCapNhat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-        CONSTRAINT PK_GioHang PRIMARY KEY (maGioHang),
-        CONSTRAINT FK_GioHang_KhachHang
-            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
-        CONSTRAINT CK_GioHang_chuSoHuu CHECK (
-            (maKH IS NOT NULL AND maKhach IS NULL)
-            OR (maKH IS NULL AND maKhach IS NOT NULL)
-        )
-    );
-
-    CREATE UNIQUE INDEX UX_GioHang_maKH
-        ON GioHang(maKH) WHERE maKH IS NOT NULL;
-    CREATE UNIQUE INDEX UX_GioHang_maKhach
-        ON GioHang(maKhach) WHERE maKhach IS NOT NULL;
-END;
-GO
-
-IF OBJECT_ID(N'ChiTietGioHang', N'U') IS NULL
-BEGIN
-    -- Cố ý không có FK tới SanPham: giỏ đã xử lý sản phẩm ngừng kinh doanh
-    CREATE TABLE ChiTietGioHang (
-        maGioHang BIGINT NOT NULL,
-        maSP BIGINT NOT NULL,
-        soLuong INT NOT NULL,
-        thuTu INT NOT NULL,
-
-        CONSTRAINT PK_ChiTietGioHang PRIMARY KEY (maGioHang, maSP),
-        CONSTRAINT FK_ChiTietGioHang_GioHang
-            FOREIGN KEY (maGioHang) REFERENCES GioHang(maGioHang)
-            ON DELETE CASCADE,
-        CONSTRAINT CK_ChiTietGioHang_soLuong CHECK (soLuong > 0)
-    );
-END;
-GO
-USE QLStoreConsole;
-GO
-
-ALTER TABLE HoaDon ADD
-    phiVanChuyen DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_phiVanChuyen DEFAULT 0,
-    giamGia      DECIMAL(18,0) NOT NULL CONSTRAINT DF_HoaDon_giamGia      DEFAULT 0,
-    maGiamGia    VARCHAR(30)   NULL;
-GO
-
-CREATE TABLE MaGiamGia (
-    maCode        VARCHAR(30)   NOT NULL,
-    moTa          NVARCHAR(200) NOT NULL,
-    loai          VARCHAR(10)   NOT NULL,          -- PHAN_TRAM | SO_TIEN | FREESHIP
-    giaTri        DECIMAL(18,0) NOT NULL DEFAULT 0,
-    giamToiDa     DECIMAL(18,0) NULL,              -- chỉ dùng cho PHAN_TRAM
-    donToiThieu   DECIMAL(18,0) NOT NULL DEFAULT 0,
-    soLuong       INT           NULL,              -- NULL = không giới hạn
-    moiKhachToiDa INT           NOT NULL DEFAULT 1,
-    batDau        DATETIME      NOT NULL,
-    ketThuc       DATETIME      NOT NULL,
-    hienTrangChu  BIT           NOT NULL DEFAULT 1,
-    hoatDong      BIT           NOT NULL DEFAULT 1,
-    CONSTRAINT PK_MaGiamGia PRIMARY KEY (maCode),
-    CONSTRAINT CK_MaGiamGia_loai CHECK (loai IN ('PHAN_TRAM','SO_TIEN','FREESHIP')),
-    CONSTRAINT CK_MaGiamGia_giaTri CHECK (giaTri >= 0
-        AND (loai <> 'PHAN_TRAM' OR giaTri BETWEEN 1 AND 100)),
-    CONSTRAINT CK_MaGiamGia_thoiGian CHECK (ketThuc > batDau)
-);
-GO
-
-ALTER TABLE HoaDon ADD
-    CONSTRAINT CK_HoaDon_phiVanChuyen CHECK (phiVanChuyen >= 0),
-    CONSTRAINT CK_HoaDon_giamGia      CHECK (giamGia >= 0),
-    CONSTRAINT FK_HoaDon_MaGiamGia    FOREIGN KEY (maGiamGia) REFERENCES MaGiamGia(maCode);
-GO
-
-INSERT INTO MaGiamGia (maCode, moTa, loai, giaTri, giamToiDa, donToiThieu, soLuong, moiKhachToiDa, batDau, ketThuc) VALUES
-('WELCOME5', N'Giảm 5% cho đơn từ 1 triệu',          'PHAN_TRAM', 5,      500000, 1000000, NULL, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
-('GAME200K', N'Giảm 200.000₫ cho đơn từ 3 triệu',     'SO_TIEN',   200000, NULL,   3000000, 100,  1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
-('FREESHIP', N'Miễn phí vận chuyển cho đơn từ 500k',  'FREESHIP',  0,      NULL,   500000,  NULL, 3, GETDATE(), DATEADD(MONTH, 3, GETDATE()));
-GO
-
-IF COL_LENGTH('ThanhToan', 'maGiaoDich') IS NULL
-    ALTER TABLE ThanhToan ADD maGiaoDich NVARCHAR(50) NULL;
-
-IF COL_LENGTH('ThanhToan', 'maNVDuyet') IS NULL
-    ALTER TABLE ThanhToan ADD maNVDuyet BIGINT NULL;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ThanhToan_NVDuyet')
-    ALTER TABLE ThanhToan ADD CONSTRAINT FK_ThanhToan_NVDuyet
-        FOREIGN KEY (maNVDuyet) REFERENCES NhanVien(maNV);
-
--- Một mã giao dịch ngân hàng chỉ dùng được cho một khoản thanh toán
-IF NOT EXISTS (SELECT 1 FROM sys.indexes
-               WHERE name = 'UX_ThanhToan_maGiaoDich'
-                 AND object_id = OBJECT_ID('ThanhToan'))
-    CREATE UNIQUE INDEX UX_ThanhToan_maGiaoDich
-        ON ThanhToan(maGiaoDich) WHERE maGiaoDich IS NOT NULL;
-GO
-IF OBJECT_ID(N'LichSuTrangThaiHoaDon', N'U') IS NULL
-CREATE TABLE LichSuTrangThaiHoaDon (
-    maLS         BIGINT IDENTITY(1,1) PRIMARY KEY,
-    maHD         BIGINT NOT NULL,
-    trangThaiCu  NVARCHAR(20) NULL,
-    trangThaiMoi NVARCHAR(20) NOT NULL,
-    maNV         BIGINT NULL,
-    thoiGian     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT FK_LSTT_HoaDon  FOREIGN KEY (maHD) REFERENCES HoaDon(maHD),
-    CONSTRAINT FK_LSTT_NhanVien FOREIGN KEY (maNV) REFERENCES NhanVien(maNV)
-);
-GO
 
 CREATE OR ALTER TRIGGER TRIGGER_HoaDon_LichSuTrangThai
 ON HoaDon
@@ -3250,25 +2712,130 @@ BEGIN
        OR d.trangThai <> i.trangThai;
 END;
 GO
-IF OBJECT_ID(N'DanhGia', N'U') IS NULL
-BEGIN
-    CREATE TABLE DanhGia (
-        maDG    BIGINT IDENTITY(1,1) NOT NULL,
-        maSP    BIGINT NOT NULL,
-        maKH    BIGINT NOT NULL,
-        soSao   INT NOT NULL,
-        noiDung NVARCHAR(1000) NOT NULL,
-        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-        CONSTRAINT PK_DanhGia PRIMARY KEY (maDG),
-        CONSTRAINT FK_DanhGia_SanPham
-            FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
-        CONSTRAINT FK_DanhGia_KhachHang
-            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH),
-        CONSTRAINT CK_DanhGia_soSao CHECK (soSao BETWEEN 1 AND 5),
-        CONSTRAINT CK_DanhGia_noiDung
-            CHECK (LEN(LTRIM(RTRIM(noiDung))) >= 10),
-        CONSTRAINT UQ_DanhGia_SP_KH UNIQUE (maSP, maKH)
-    );
-END;
+-- =========================================================
+-- 23. KIỂM TRA SAU KHỞI TẠO (chỉ SELECT, không sửa dữ liệu)
+-- =========================================================
+
+SELECT N'SanPham' AS tenBang, COUNT_BIG(*) AS soDong FROM SanPham
+UNION ALL SELECT N'SerialMay', COUNT_BIG(*) FROM SerialMay
+UNION ALL SELECT N'HoaDon', COUNT_BIG(*) FROM HoaDon
+UNION ALL SELECT N'ChiTietHoaDon', COUNT_BIG(*) FROM ChiTietHoaDon
+UNION ALL SELECT N'ThanhToan', COUNT_BIG(*) FROM ThanhToan
+UNION ALL SELECT N'TonKho', COUNT_BIG(*) FROM TonKho
+UNION ALL SELECT N'MaGiamGia', COUNT_BIG(*) FROM MaGiamGia;
+
+SELECT
+    COUNT_BIG(*) AS tongSoMaSanPham,
+    SUM(CASE WHEN tinhTrang = N'MOI' THEN 1 ELSE 0 END) AS soMaHangMoi,
+    SUM(CASE WHEN tinhTrang = N'CU' THEN 1 ELSE 0 END) AS soMaHangCu
+FROM SanPham;
+
+SELECT
+    moi.maSP AS maHangMoi,
+    cu.maSP AS maHangCu,
+    moi.tenSP,
+    moi.giaBan AS giaMoi,
+    cu.giaBan AS giaCu,
+    moi.giaBan - cu.giaBan AS chenhLech
+FROM SanPham cu
+JOIN SanPham moi ON moi.maSP = cu.maSPGoc
+ORDER BY moi.maSP;
+
+SELECT trangThai, COUNT_BIG(*) AS soHoaDon
+FROM HoaDon
+GROUP BY trangThai;
+
+SELECT phuongThuc, trangThai, COUNT_BIG(*) AS soThanhToan
+FROM ThanhToan
+GROUP BY phuongThuc, trangThai
+ORDER BY phuongThuc, trangThai;
+
+SELECT SUM(CONVERT(BIGINT, soLuong)) AS tongTonKhaDung
+FROM TonKho;
+
+SELECT
+    k.tenKho, sp.maSP, sp.tenSP, sp.tinhTrang, tk.soLuong
+FROM TonKho tk
+JOIN Kho k ON k.maKho = tk.maKho
+JOIN SanPham sp ON sp.maSP = tk.maSP
+ORDER BY k.maKho, sp.maSP;
+
+-- Chi tiết hóa đơn thiếu kho (kỳ vọng: 0 dòng)
+SELECT maCTHD, maHD, maSP
+FROM ChiTietHoaDon
+WHERE maKho IS NULL;
+
+-- Hóa đơn lệch tổng tiền (kỳ vọng: 0 dòng với dữ liệu mẫu)
+SELECT
+    h.maHD,
+    h.tongTien,
+    COALESCE(SUM(c.soLuong * c.donGia), 0) AS tongChiTiet,
+    h.phiVanChuyen,
+    h.giamGia
+FROM HoaDon h
+LEFT JOIN ChiTietHoaDon c ON c.maHD = h.maHD
+GROUP BY h.maHD, h.tongTien, h.phiVanChuyen, h.giamGia
+HAVING h.tongTien <> COALESCE(SUM(c.soLuong * c.donGia), 0) + h.phiVanChuyen - h.giamGia;
+
+-- Thanh toán lệch số tiền (kỳ vọng: 0 dòng)
+SELECT t.maTT, t.maHD, t.soTien, h.tongTien
+FROM ThanhToan t
+JOIN HoaDon h ON h.maHD = t.maHD
+WHERE t.soTien <> h.tongTien;
+
+-- Tài khoản vai trò mới
+SELECT
+    tenDangNhap,
+    vaiTro,
+    LEN(matKhau) AS DoDaiMatKhau,
+    LEFT(matKhau, 4) AS DauMaHoa
+FROM dbo.TaiKhoan
+WHERE vaiTro IN (N'BANHANG', N'KHO', N'BAOHANH');
+GO
+USE QLStoreConsole;
+GO
+
+SELECT h.maHD, h.kenhBan, h.trangThai, c.maSP, sp.tenSP,
+       CASE WHEN h.trangThai = N'HOAN_TAT'
+            THEN N'Được đánh giá'
+            ELSE N'Chưa được (đơn chưa hoàn tất)' END AS ketQua
+FROM TaiKhoan tk
+JOIN HoaDon h ON h.maKH = tk.maKH
+JOIN ChiTietHoaDon c ON c.maHD = h.maHD
+JOIN SanPham sp ON sp.maSP = c.maSP
+WHERE tk.tenDangNhap = N'kh01'
+ORDER BY h.maHD;
+GO
+
+INSERT INTO DanhGia (maSP, maKH, soSao, noiDung)
+SELECT v.maSP, v.maKH, v.soSao, v.noiDung
+FROM (VALUES
+    (2,  2,  5, N'PS5 Digital chạy êm, tải game nhanh, đóng gói cẩn thận.'),
+    (3,  3,  5, N'PS5 Pro hình ảnh rất đẹp, đáng tiền cho người chơi lâu năm.'),
+    (4,  4,  4, N'Xbox Series X mạnh, hơi nóng khi chơi lâu nhưng vẫn ổn.'),
+    (5,  5,  4, N'Series S nhỏ gọn, phù hợp phòng nhỏ, giá hợp lý.'),
+    (6,  6,  5, N'Switch OLED màn hình đẹp, cầm lâu không bị mỏi tay.'),
+    (7,  7,  4, N'Switch Lite gọn nhẹ, mang đi du lịch rất tiện.'),
+    (8,  8,  5, N'Steam Deck chơi được nhiều game PC, pin dùng khá ổn.'),
+    (9,  9,  3, N'PS4 Slim cũ chạy ổn, vỏ có vài vết xước nhỏ như mô tả.'),
+    (10, 10, 5, N'Switch 2 mượt hơn hẳn đời đầu, giao hàng nhanh.'),
+    (11, 11, 5, N'God of War Ragnarök đĩa mới nguyên seal, game quá hay.'),
+    (12, 12, 4, N'Spider-Man 2 đồ họa đẹp, cốt truyện cuốn từ đầu.'),
+    (13, 13, 5, N'Zelda Tears of the Kingdom đĩa chính hãng, chơi rất cuốn.'),
+    (14, 14, 4, N'Mario Kart 8 Deluxe chơi nhóm vui, phù hợp cả gia đình.')
+) AS v(maSP, maKH, soSao, noiDung)
+WHERE EXISTS (SELECT 1 FROM SanPham s WHERE s.maSP = v.maSP)
+  AND EXISTS (SELECT 1 FROM KhachHang k WHERE k.maKH = v.maKH)
+  AND NOT EXISTS (
+      SELECT 1 FROM DanhGia d
+      WHERE d.maSP = v.maSP AND d.maKH = v.maKH
+  );
+GO
+
+SELECT d.maSP, sp.tenSP, k.hoTen, d.soSao, d.ngayTao
+FROM DanhGia d
+JOIN SanPham sp ON sp.maSP = d.maSP
+JOIN KhachHang k ON k.maKH = d.maKH
+ORDER BY d.maSP;
 GO
