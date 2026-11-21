@@ -17,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import com.example.consolestore.Service.CartStore;
+import com.example.consolestore.Service.GuestCartCookie;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,7 +27,6 @@ import java.util.stream.Stream;
 public class SecurityConfig {
     // Các trang dành cho khách hàng
     private static final List<String> CUSTOMER_PAGES = List.of(
-            "cart",
             "checkout",
             "orders",
             "account"
@@ -95,7 +96,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            TaiKhoanRepository taiKhoanRepository
+            TaiKhoanRepository taiKhoanRepository,
+            CartStore cartStore                      // thêm
     ) throws Exception {
 
         http.authenticationProvider(authenticationProvider);
@@ -140,7 +142,10 @@ public class SecurityConfig {
                         "/pages/product-detail.html",
                         "/auth/session"
                 ).permitAll()
-
+                .requestMatchers(HttpMethod.POST, "/products/*/reviews")
+                .hasRole("KHACHHANG")
+                // Giỏ hàng: khách vãng lai cũng dùng được
+                .requestMatchers("/cart", "/cart/**", "/pages/cart.html").permitAll()
                 // Trang HTML của nhân viên bán hàng
                 .requestMatchers(pagePaths(SALES_PAGES))
                 .hasAnyRole(
@@ -255,13 +260,34 @@ public class SecurityConfig {
                 .passwordParameter("password")
 
                 .successHandler((request, response, authentication) -> {
-                    String target = landingPage(
-                            roleOf(authentication)
-                    );
+                    String role = roleOf(authentication);
+                    String target = landingPage(role);
 
-                    response.sendRedirect(
-                            request.getContextPath() + target
-                    );
+                    // Gộp giỏ vãng lai vào giỏ tài khoản
+                    if ("KHACHHANG".equals(role)) {
+                        String guestToken = GuestCartCookie.read(request);
+
+                        if (guestToken != null) {
+                            try {
+                                var owner = cartStore.customerOwner(
+                                        authentication.getName()
+                                );
+
+                                if (cartStore.mergeGuestCart(
+                                        guestToken,
+                                        owner.customerId()
+                                )) {
+                                    target = "/cart";
+                                }
+
+                                GuestCartCookie.clear(request, response);
+                            } catch (RuntimeException exception) {
+                                // Lỗi gộp giỏ không được chặn đăng nhập; giữ cookie để thử lại
+                            }
+                        }
+                    }
+
+                    response.sendRedirect(request.getContextPath() + target);
                 })
 
                 .failureHandler((request, response, exception) -> {

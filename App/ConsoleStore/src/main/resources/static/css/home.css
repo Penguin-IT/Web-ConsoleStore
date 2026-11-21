@@ -2440,3 +2440,76 @@ body.customer-page .ui-auth-form {
 .tier-card strong { font-size: 1.1rem; }
 .tier-card em { font-style: normal; color: #4ade80; font-weight: 600; }
 .promo-note { margin-top: 14px; font-size: 13px; opacity: .7; }
+/* ===== Khuyến mãi (theo brand: tím / xanh / hồng) ===== */
+.promos h2 { margin: 6px 0 24px; }
+
+.promo-bar { background: var(--dark); color: #fff; font-size: 13px; font-weight: 600; text-align: center; padding: 9px 12px; border-bottom: 2px solid; border-image: var(--brand-gradient) 1; }
+.promo-bar b { letter-spacing: .05em; padding: 2px 10px; border-radius: 999px; color: #19171e; background: var(--brand-gradient); }
+.promo-bar a { color: var(--brand-blue); text-decoration: underline; }
+
+.promo-hero { display: flex; align-items: center; min-height: 150px; padding: 28px 32px; margin-bottom: 18px; border-radius: 20px; overflow: hidden; color: #fff;
+    background: linear-gradient(95deg, rgba(12,12,16,.92) 28%, rgba(12,12,16,.3)), url("../images/banners/bannerconsole.jpg") center/cover; }
+.promo-hero-tag { display: inline-block; margin-bottom: 10px; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #19171e; background: var(--brand-gradient); }
+.promo-hero h3 { margin: 0 0 6px; font-size: 1.6rem; }
+.promo-hero p { margin: 0; max-width: 520px; font-size: 14px; opacity: .85; }
+
+.coupon-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.coupon-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 128px; padding: 20px 22px; border-radius: 18px; overflow: hidden; color: #fff;
+    background: linear-gradient(100deg, rgba(12,12,16,.94) 40%, rgba(12,12,16,.5)), var(--coupon-img) center/cover; box-shadow: 0 10px 28px rgba(25,23,30,.14); }
+.coupon-card--0 { --coupon-img: url("../images/banners/banner15.jpg"); }
+.coupon-card--1 { --coupon-img: url("../images/banners/bannerconsole.jpg"); }
+.coupon-card--2 { --coupon-img: url("../images/banners/banner10.jpg"); }
+.coupon-main { display: grid; gap: 4px; min-width: 0; }
+.coupon-title { font-size: 1.15rem; }
+.coupon-desc { font-size: 13px; opacity: .85; }
+.coupon-expiry { font-size: 12px; opacity: .65; }
+.coupon-code { flex: none; display: grid; gap: 2px; padding: 10px 16px; border: 0; border-radius: 12px; background: var(--brand-gradient); color: #19171e; font-weight: 800; letter-spacing: .08em; text-align: center; cursor: pointer; transition: transform .15s, filter .15s; }
+.coupon-code:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.coupon-code em { font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: 0; }
+.coupon-code.is-copied { background: #fff; }
+
+.promo-cards, .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.promo-card { padding: 22px; border: 1px solid var(--border); border-top: 3px solid var(--brand-violet); border-radius: 16px; background: #faf9fc; }
+.promo-card h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--ink); }
+.promo-card p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.promo-card a { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; }
+.promo-sub { margin: 36px 0 14px; }
+.promo-note { margin-top: 14px; font-size: 13px; color: var(--muted); }
+
+.tier-card { display: grid; align-content: end; gap: 6px; min-height: 150px; padding: 20px; border-radius: 18px; overflow: hidden; color: #fff;
+    background: linear-gradient(160deg, var(--tier-tint) 0%, rgba(12,12,16,.88) 100%), var(--tier-img) center/cover; }
+.tier-card strong { font-size: 1.15rem; color: var(--tier-color); }
+.tier-card span { font-size: 13px; opacity: .85; }
+.tier-card em { font-style: normal; font-size: 1.3rem; font-weight: 700; color: var(--tier-color); }
+.tier-member  { --tier-color: #cbd5e1; --tier-tint: rgba(100,116,139,.55); --tier-img: url("../images/banners/banner 13.jpg"); }
+.tier-silver  { --tier-color: #e5e7eb; --tier-tint: rgba(156,163,175,.55); --tier-img: url("../images/banners/banner15.jpg"); }
+.tier-gold    { --tier-color: #fcd34d; --tier-tint: rgba(217,119,6,.55);   --tier-img: url("../images/banners/banner10.jpg"); }
+.tier-diamond { --tier-color: #a5f3fc; --tier-tint: rgba(121,85,213,.6);   --tier-img: url("../images/banners/bannerconsole.jpg"); }
+
+/* Freeship progress (giỏ hàng) */
+.ship-progress { margin: 14px 0; font-size: 14px; }
+.ship-progress p { margin: 0 0 8px; }
+.ship-progress small { display: block; margin-top: 8px; color: var(--muted); }
+.ship-bar { height: 8px; border-radius: 999px; background: #ece7f3; overflow: hidden; }
+.ship-bar span { display: block; height: 100%; background: var(--brand-gradient); transition: width .3s; }
+
+/* Ô nhập mã (checkout) */
+.coupon-box { margin: 14px 0; display: grid; gap: 8px; }
+.coupon-box label { font-size: 13px; font-weight: 600; color: #4d4458; }
+.coupon-input { display: flex; gap: 8px; }
+.coupon-input input { flex: 1; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--ink); text-transform: uppercase; font-weight: 700; letter-spacing: .04em; }
+.coupon-input input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.coupon-input button { padding: 11px 18px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+.coupon-input button:hover { filter: brightness(1.08); }
+.coupon-input button:disabled { opacity: .5; cursor: wait; }
+.coupon-msg { margin: 0; font-size: 13px; }
+.coupon-msg.ok { color: #15803d; }
+.coupon-msg.err { color: #dc2626; }
+.coupon-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.coupon-chips button { padding: 5px 12px; border: 1px dashed var(--accent); border-radius: 999px; background: #f4f0ff; color: var(--accent); font-size: 12px; font-weight: 700; cursor: pointer; }
+
+/* Dòng giảm giá trong bảng tính tiền */
+.co-sum-discount span:last-child,
+.cart-sum-discount { color: var(--accent); font-weight: 600; }
+.co-saved { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: #f4f0ff; color: var(--accent); font-size: 13px; font-weight: 600; text-align: center; }
+.co-saved b { font-size: 15px; }

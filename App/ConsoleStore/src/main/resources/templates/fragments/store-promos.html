@@ -7,17 +7,39 @@
         <p class="cs-home-kicker">MEMBER REWARDS</p>
         <h2>Chương trình ưu đãi</h2>
 
+        <article class="promo-hero">
+            <div>
+                <span class="promo-hero-tag">FREESHIP</span>
+                <h3 th:text="${'Freeship đơn từ ' + #numbers.formatDecimal(@pricingService.freeShipFrom(), 1, 'POINT', 0, 'COMMA') + ' ₫'}"></h3>
+                <p th:text="${'Nội thành TP.HCM chỉ ' + #numbers.formatDecimal(@pricingService.shipHcm(), 1, 'POINT', 0, 'COMMA') + ' ₫, tỉnh thành khác ' + #numbers.formatDecimal(@pricingService.shipOther(), 1, 'POINT', 0, 'COMMA') + ' ₫.'}"></p>
+            </div>
+        </article>
+
+        <th:block th:with="coupons=${@pricingService.featuredCoupons()}">
+            <div class="coupon-list" th:if="${!coupons.isEmpty()}">
+                <article class="coupon-card" th:each="c, st : ${coupons}"
+                         th:classappend="${'coupon-card--' + (st.index % 3)}">
+                    <div class="coupon-main">
+                        <strong class="coupon-title" th:text="${@pricingService.headline(c)}"></strong>
+                        <span class="coupon-desc" th:text="${c.description}"></span>
+                        <small class="coupon-expiry" th:text="${@pricingService.expires(c)}"></small>
+                    </div>
+                    <button type="button" class="coupon-code" data-copy-code th:attr="data-code=${c.code}">
+                        <span th:text="${c.code}"></span><em>Sao chép</em>
+                    </button>
+                </article>
+            </div>
+        </th:block>
+
         <div class="promo-cards">
             <article class="promo-card">
                 <h3 th:text="${'Mua kèm giảm ' + @memberService.bundlePercent() + '%'}"></h3>
                 <p>Thêm game hoặc phụ kiện cùng nền tảng với máy console trong giỏ, giá giảm tự động.</p>
             </article>
-
             <article class="promo-card">
                 <h3 th:text="${'Hạng thành viên: giảm tới ' + @memberService.maxPercent() + '%'}"></h3>
                 <p>Mua càng nhiều, hạng càng cao. Ưu đãi áp dụng cho mọi sản phẩm trong đơn.</p>
             </article>
-
             <article class="promo-card">
                 <h3>Thu cũ đổi mới</h3>
                 <p>Đổi thiết bị cũ lấy thiết bị mới ngay tại cửa hàng.</p>
@@ -26,9 +48,9 @@
         </div>
 
         <h3 class="promo-sub">Các hạng thành viên</h3>
-
         <div class="tier-grid">
-            <div class="tier-card" th:each="tier : ${@memberService.tiers()}">
+            <div class="tier-card" th:each="tier : ${@memberService.tiers()}"
+                 th:classappend="${'tier-' + tier.name().toLowerCase()}">
                 <strong th:text="${tier.label}"></strong>
                 <span th:text="${tier.threshold.signum() == 0
                         ? 'Khi đăng ký'
@@ -42,6 +64,18 @@
         </p>
     </div>
 </section>
+
+<div th:fragment="promoBar" class="promo-bar">
+    🚚 Freeship đơn từ
+    <b th:text="${#numbers.formatDecimal(@pricingService.freeShipFrom(), 1, 'POINT', 0, 'COMMA') + ' ₫'}"></b>
+    <th:block th:with="top=${@pricingService.featuredCoupons()}">
+        <th:block th:if="${!top.isEmpty()}">
+            · Nhập mã <b th:text="${top[0].code}"></b> —
+            <span th:text="${@pricingService.headline(top[0])}"></span>
+        </th:block>
+    </th:block>
+    · <a th:href="@{/#uu-dai}">Xem ưu đãi</a>
+</div>
 
 </body>
 </html>

@@ -239,30 +239,47 @@
                    th:text="${'Tích lũy thêm ' + #numbers.formatDecimal(member.remaining, 1, 'POINT', 0, 'COMMA') + ' ₫ để lên hạng ' + member.next.label}"></p>
             </div>
             <div class="cart-summary-row">
-                <span th:text="${'Tạm tính (' + cart.totalQuantity + ' sản phẩm)'}">
-                    Tạm tính
-                </span>
-
-                <strong th:text="${#numbers.formatDecimal(
-                    cart.totalAmount, 1, 'POINT', 0, 'COMMA'
-                ) + ' ₫'}">
-                </strong>
+                <span th:text="${'Tạm tính (' + cart.totalQuantity + ' sản phẩm)'}"></span>
+                <strong th:text="${#numbers.formatDecimal(cart.listTotal, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+            </div>
+            <th:block th:with="remain=${@pricingService.freeShipRemaining(cart.totalAmount)}">
+                <div class="ship-progress">
+                    <p th:if="${remain.signum() > 0}">
+                        Mua thêm <strong th:text="${#numbers.formatDecimal(remain, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+                        để được <strong>miễn phí vận chuyển</strong>
+                    </p>
+                    <p th:if="${remain.signum() == 0}">🎉 Đơn hàng của bạn được miễn phí vận chuyển</p>
+                    <div class="ship-bar">
+                        <span th:style="${'width:' + @pricingService.freeShipPercent(cart.totalAmount) + '%'}"></span>
+                    </div>
+                    <small>Phí ship và mã giảm giá được tính ở bước thanh toán.</small>
+                </div>
+            </th:block>
+            <div class="cart-summary-row cart-sum-discount" th:if="${cart.bundleSaved.signum() > 0}">
+                <span th:text="${'Mua kèm (-' + bundlePercent + '%)'}"></span>
+                <span th:text="${'-' + #numbers.formatDecimal(cart.bundleSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+            </div>
+            <div class="cart-summary-row cart-sum-discount" th:if="${member != null and cart.memberSaved.signum() > 0}">
+                <span th:text="${'Hạng ' + member.tier.label + ' (-' + member.percent + '%)'}"></span>
+                <span th:text="${'-' + #numbers.formatDecimal(cart.memberSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
             </div>
 
-            <div class="cart-summary-row cart-summary-total">
-                <span>Tổng cộng</span>
-
-                <strong th:text="${#numbers.formatDecimal(
-                    cart.totalAmount, 1, 'POINT', 0, 'COMMA'
-                ) + ' ₫'}">
-                </strong>
-            </div>
-
-            <a th:if="${cart.readyToCheckout}"
+            <a th:if="${cart.readyToCheckout && !guest}"
                class="button-primary cart-checkout"
                th:href="@{/checkout}">
                 Tiến hành đặt hàng
             </a>
+
+            <a th:if="${cart.readyToCheckout && guest}"
+               class="button-primary cart-checkout"
+               th:href="@{/login}">
+                Đăng nhập để đặt hàng
+            </a>
+
+            <p th:if="${guest}" class="cart-summary-note">
+                Chưa có tài khoản? <a th:href="@{/register}">Đăng ký</a>.
+                Giỏ hàng sẽ được giữ lại sau khi bạn đăng nhập.
+            </p>
 
             <button th:unless="${cart.readyToCheckout}"
                     class="button-primary cart-checkout"

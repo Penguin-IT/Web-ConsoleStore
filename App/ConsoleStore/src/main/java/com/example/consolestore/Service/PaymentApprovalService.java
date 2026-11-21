@@ -200,6 +200,24 @@ public class PaymentApprovalService {
                     "Cần xác nhận đã kiểm tra và nhận đủ tiền."
             );
         }
+        String code = null;
+
+        if (!paid) {
+            code = clean(form.getTransactionCode())
+                    .toUpperCase(Locale.ROOT);
+
+            if (!code.matches("[A-Z0-9]{6,30}")) {
+                throw bad(
+                        "Mã giao dịch ngân hàng gồm 6–30 chữ hoặc số."
+                );
+            }
+
+            if (payments.countByTransactionCode(code) > 0) {
+                throw bad(
+                        "Mã giao dịch này đã được dùng cho khoản thanh toán khác."
+                );
+            }
+        }
 
         BigDecimal received = money(
                 form.getReceivedAmount()
@@ -237,7 +255,7 @@ public class PaymentApprovalService {
         }
 
         if (!paid) {
-            payments.approve(id);
+            payments.approve(id, code, actor.getEmployeeId());
         }
 
         var state = payments.state(id)

@@ -16,6 +16,12 @@ public class CheckoutRequest {
     private String address = "";
 
     private String note = "";
+    private String couponCode = "";
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String value) {
+        couponCode = value == null ? "" : value.strip().toUpperCase(java.util.Locale.ROOT);
+    }
     private String paymentMethod = "CHUYEN_KHOAN";
 
     public String getFullName() {

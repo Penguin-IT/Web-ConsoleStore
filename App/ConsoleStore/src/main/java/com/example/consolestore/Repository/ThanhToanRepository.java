@@ -119,6 +119,46 @@ public interface ThanhToanRepository
             value = """
                 UPDATE t
                 SET trangThai = N'DA_THANH_TOAN',
+                    ngayThanhToan = GETDATE(),
+                    maGiaoDich = :code,
+                    maNVDuyet = :employeeId
+                FROM ThanhToan t
+                JOIN HoaDon h ON h.maHD = t.maHD
+                WHERE t.maTT = :id
+                  AND t.trangThai = N'CHUA_THANH_TOAN'
+                  AND t.phuongThuc IN (
+                      N'CHUYEN_KHOAN',
+                      N'MOMO',
+                      N'ZALOPAY'
+                  )
+                  AND h.kenhBan = N'ONLINE'
+                  AND h.trangThai = N'CHO_XAC_NHAN'
+                  AND t.soTien = h.tongTien
+                  AND h.tongTien > 0
+                """,
+            nativeQuery = true
+    )
+    void approve(
+            @Param("id") Long id,
+            @Param("code") String code,
+            @Param("employeeId") Long employeeId
+    );
+
+    @Query(
+            value = """
+                SELECT COUNT_BIG(*)
+                FROM ThanhToan
+                WHERE maGiaoDich = :code
+                """,
+            nativeQuery = true
+    )
+    long countByTransactionCode(@Param("code") String code);
+
+    @Modifying
+    @Query(
+            value = """
+                UPDATE t
+                SET trangThai = N'DA_THANH_TOAN',
                     ngayThanhToan = GETDATE()
                 FROM ThanhToan t
                 JOIN HoaDon h ON h.maHD = t.maHD

@@ -20,9 +20,11 @@
 
     <script th:src="@{/js/store.js(v='20261113-3')}"
             defer></script>
+    <script th:src="@{/js/coupon.js}" defer></script>
 </head>
 
 <body class="home-page customer-page">
+<div th:replace="~{fragments/store-promos :: promoBar}"></div>
 <header th:replace="~{fragments/store :: header}"></header>
 
 <main id="main-content" tabindex="-1">

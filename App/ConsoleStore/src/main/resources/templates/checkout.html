@@ -14,7 +14,7 @@
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="stylesheet" th:href="@{/css/checkout.css}">
     <link rel="stylesheet" th:href="@{/css/cart-checkout.css}">
-
+    <script th:src="@{/js/coupon.js}" defer></script>
     <script th:src="@{/js/store.js}" defer></script>
     <script th:src="@{/js/checkout.js}" defer></script>
 </head>
@@ -108,6 +108,7 @@
               method="post"
               novalidate
               class="co-form"
+              id="checkout-form"
               data-checkout-form>
 
             <input type="hidden"
@@ -389,7 +390,7 @@
                 <p class="member-next" th:if="${member.next != null}"
                    th:text="${'Tích lũy thêm ' + #numbers.formatDecimal(member.remaining, 1, 'POINT', 0, 'COMMA') + ' ₫ để lên hạng ' + member.next.label}"></p>
             </div>
-            <th:block th:if="${cart != null}">
+            <th:block th:if="${cart != null and pricing != null}">
                 <div class="checkout-item"
                      th:each="line : ${cart.lines}">
 
@@ -421,27 +422,60 @@
                     }"></strong>
                 </div>
 
-                <div class="co-sum-row">
-                    <span>Tạm tính</span>
 
-                    <span th:text="${
-                        #numbers.formatDecimal(
-                            cart.totalAmount, 1, 'POINT', 0, 'COMMA'
-                        ) + ' ₫'
-                    }"></span>
+                <div class="coupon-box" th:attr="data-url=@{/checkout/pricing}">
+                    <label for="couponCode">Mã giảm giá</label>
+                    <div class="coupon-input">
+                        <input type="text" id="couponCode" name="couponCode" form="checkout-form"
+                               maxlength="30" autocomplete="off" placeholder="Nhập mã"
+                               th:value="${form.couponCode}" data-coupon-input>
+                        <button type="button" data-coupon-apply>Áp dụng</button>
+                    </div>
+                    <p class="coupon-msg" data-coupon-msg
+                       th:text="${pricing.message}"
+                       th:classappend="${pricing.couponValid} ? 'ok' : (${#strings.isEmpty(pricing.message)} ? '' : 'err')"></p>
+                    <div class="coupon-chips">
+                        <button type="button" th:each="c : ${@pricingService.featuredCoupons()}"
+                                data-coupon-pick th:attr="data-code=${c.code}"
+                                th:text="${c.code}"></button>
+                    </div>
                 </div>
-                <div class="co-sum-row" th:if="${cart.saved.signum() > 0}">
-                    <span>Đã tiết kiệm nhờ mua kèm</span>
-                    <span th:text="${#numbers.formatDecimal(cart.saved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+
+                <div class="co-sum-row">
+                    <span>Tạm tính (giá niêm yết)</span>
+                    <span th:text="${#numbers.formatDecimal(cart.listTotal, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" th:if="${cart.bundleSaved.signum() > 0}">
+                    <span th:text="${'Mua kèm (-' + bundlePercent + '%)'}"></span>
+                    <span th:text="${'-' + #numbers.formatDecimal(cart.bundleSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" th:if="${member != null and cart.memberSaved.signum() > 0}">
+                    <span th:text="${'Hạng ' + member.tier.label + ' (-' + member.percent + '%)'}"></span>
+                    <span th:text="${'-' + #numbers.formatDecimal(cart.memberSaved, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row co-sum-discount" data-sum-discount-row
+                     th:classappend="${pricing.discount.signum() == 0} ? 'is-hidden'">
+                    <span>Mã giảm giá <b data-sum="code" th:text="${pricing.couponCode != null ? '(' + pricing.couponCode + ')' : ''}"></b></span>
+                    <span data-sum="discount"
+                          th:text="${'-' + #numbers.formatDecimal(pricing.discount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></span>
+                </div>
+                <div class="co-sum-row">
+                    <span>Phí vận chuyển</span>
+                    <span data-sum="shipping"
+                          th:text="${pricing.shippingPending ? 'Chọn tỉnh/thành để tính'
+        : (pricing.shipping.signum() == 0 ? 'Miễn phí'
+        : #numbers.formatDecimal(pricing.shipping, 1, 'POINT', 0, 'COMMA') + ' ₫')}"></span>
                 </div>
                 <div class="checkout-total">
-                    <span>Tổng thanh toán</span>
-
-                    <strong th:text="${
-                        #numbers.formatDecimal(
-                            cart.totalAmount, 1, 'POINT', 0, 'COMMA'
-                        ) + ' ₫'
-                    }"></strong>
+                    <span>Còn phải trả</span>
+                    <strong data-sum="payable"
+                            th:text="${#numbers.formatDecimal(pricing.payable, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></strong>
+                </div>
+                <div class="co-saved" data-sum-saved-row
+                     th:classappend="${cart.saved.add(pricing.discount).signum() == 0} ? 'is-hidden'">
+                    Bạn đã tiết kiệm
+                    <b data-sum="saved"
+                       th:text="${#numbers.formatDecimal(cart.saved.add(pricing.discount), 1, 'POINT', 0, 'COMMA') + ' ₫'}"></b>
                 </div>
 
                 <p class="checkout-note">
