@@ -9,7 +9,8 @@ public record OrderSummary(
         String channel,
         String status,
         BigDecimal totalAmount,
-        String paymentStatus
+        String paymentStatus,
+        String paymentMethod
 ) {
 
     public String getStatusLabel() {
@@ -55,6 +56,8 @@ public record OrderSummary(
     public boolean isPayable() {
         return "ONLINE".equals(channel)
                 && "CHO_XAC_NHAN".equals(status)
-                && "CHUA_THANH_TOAN".equals(paymentStatus);
+                && "CHUA_THANH_TOAN".equals(paymentStatus)
+                && paymentMethod != null
+                && !"TIEN_MAT".equals(paymentMethod);
     }
 }
