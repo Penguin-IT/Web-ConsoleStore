@@ -1,0 +1,26 @@
+.invoice-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 600;
+    background: #f2edf9;
+    color: #5c4b8a;
+}
+.invoice-money { text-align: right; white-space: nowrap; }
+.invoice-muted { color: #888; font-size: .85rem; }
+.invoice-empty { text-align: center; color: #888; padding: 24px; }
+
+.invoice-brand { font-weight: 800; font-size: 1.1rem; letter-spacing: .08em; color: #5c4b8a; }
+.invoice-badge {
+    display: inline-block; padding: 3px 12px;
+    border-radius: 999px; font-size: .82rem; font-weight: 600;
+    background: #f2edf9; color: #5c4b8a;
+}
+.invoice-money { text-align: right; white-space: nowrap; font-weight: 600; }
+.invoice-muted { color: #888; font-size: .85rem; }
+.invoice-empty { text-align: center; color: #888; padding: 20px; }
+@media print {
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: none !important; }
+}

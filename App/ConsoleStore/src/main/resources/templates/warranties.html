@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Bảo hành | Console Store</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="stylesheet" th:href="@{/css/pos.css}">
@@ -15,87 +16,109 @@
 <header th:replace="~{fragments/store :: header}"></header>
 
 <main id="main-content" class="container store-container pos-page">
+
     <div class="ui-page-heading">
         <h1>Bảo hành</h1>
         <a class="ui-btn ui-primary" th:href="@{/warranties/new}">＋ Tiếp nhận máy</a>
     </div>
 
-    <p class="ui-alert validation-summary" role="alert"
-       th:if="${error != null}" th:text="${error}"></p>
+    <p class="ui-alert validation-summary" role="alert" th:if="${error != null}" th:text="${error}"></p>
 
-    <section class="ui-panel">
-        <form class="ui-toolbar validation-form" method="get" th:action="@{/warranties}">
-            <label class="ui-field">
-                <span>Tìm kiếm</span>
-                <input name="keyword" type="search" maxlength="100"
-                       placeholder="Mã phiếu, serial, sản phẩm"
-                       th:value="${keyword}" aria-label="Từ khóa tìm kiếm">
-                <small class="field-hint">Tối đa 100 ký tự.</small>
-            </label>
+    <!-- Panel tìm kiếm + bảng -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
 
-            <label class="ui-field">
-                <span>Trạng thái</span>
-                <select name="status">
-                    <option value="">Tất cả</option>
-                    <option th:each="item : ${statusLabels}"
-                            th:value="${item.key}"
-                            th:selected="${status == item.key}"
-                            th:text="${item.value}"></option>
-                </select>
-            </label>
+            <form class="validation-form" method="get" th:action="@{/warranties}">
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-12 col-sm-5 col-lg-4">
+                        <label class="form-label fw-semibold">Tìm kiếm</label>
+                        <input class="form-control form-control-sm" name="keyword" type="search" maxlength="100"
+                               placeholder="Mã phiếu, serial, sản phẩm"
+                               th:value="${keyword}" aria-label="Từ khóa tìm kiếm">
+                        <small class="text-muted">Tối đa 100 ký tự.</small>
+                    </div>
+                    <div class="col-6 col-sm-3 col-lg-2">
+                        <label class="form-label fw-semibold">Trạng thái</label>
+                        <select class="form-select form-select-sm" name="status">
+                            <option value="">Tất cả</option>
+                            <option th:each="item : ${statusLabels}"
+                                    th:value="${item.key}"
+                                    th:selected="${status == item.key}"
+                                    th:text="${item.value}"></option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3 col-lg-2">
+                        <label class="form-label fw-semibold">Từ ngày</label>
+                        <input class="form-control form-control-sm" type="date" name="from" th:value="${from}">
+                    </div>
+                    <div class="col-6 col-sm-3 col-lg-2">
+                        <label class="form-label fw-semibold">Đến ngày</label>
+                        <input class="form-control form-control-sm" type="date" name="to" th:value="${to}">
+                    </div>
+                    <div class="col-12 col-sm-auto d-flex gap-2">
+                        <button class="ui-btn ui-primary" type="submit">Tìm kiếm</button>
+                        <a class="ui-btn" th:href="@{/warranties}">Xóa bộ lọc</a>
+                    </div>
+                </div>
+            </form>
 
-            <label class="ui-field">
-                <span>Từ ngày</span>
-                <input type="date" name="from" th:value="${from}">
-            </label>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0 ui-table">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Mã phiếu</th>
+                        <th>Thiết bị / Serial</th>
+                        <th>Tiếp nhận</th>
+                        <th>Hẹn trả</th>
+                        <th>BH lúc nhận</th>
+                        <th>Trạng thái</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${cases.content}">
+                        <td class="fw-semibold" th:text="${'BH' + item.id}"></td>
+                        <td>
+                            <strong th:text="${item.productName}"></strong><br>
+                            <span class="text-muted small" th:text="${item.number}"></span>
+                        </td>
+                        <td th:text="${item.receivedAt == null ? '—' : #temporals.format(item.receivedAt,'dd/MM/yyyy HH:mm')}"></td>
+                        <td th:text="${item.dueAt == null ? '—' : #temporals.format(item.dueAt,'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <span th:class="${item.covered ? 'badge bg-success' : 'badge bg-secondary'}"
+                                  th:text="${item.covered ? 'Còn hạn' : 'Ngoài hạn'}"></span>
+                        </td>
+                        <td th:text="${statusLabels[item.status]}"></td>
+                        <td>
+                            <a class="ui-btn" th:href="@{/warranties/{id}(id=${item.id})}">Chi tiết</a>
+                        </td>
+                    </tr>
+                    <tr th:if="${cases.empty}">
+                        <td colspan="7" class="text-center text-muted py-3">Không tìm thấy phiếu bảo hành.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
 
-            <label class="ui-field">
-                <span>Đến ngày</span>
-                <input type="date" name="to" th:value="${to}">
-            </label>
-
-            <button class="ui-btn ui-primary" type="submit">Tìm kiếm</button>
-            <a class="ui-btn" th:href="@{/warranties}">Xóa bộ lọc</a>
-        </form>
-
-        <div class="ui-table-wrap">
-            <table class="ui-table">
-                <thead>
-                <tr>
-                    <th>Mã phiếu</th><th>Thiết bị / Serial</th>
-                    <th>Tiếp nhận</th><th>Hẹn trả</th>
-                    <th>Bảo hành lúc nhận</th><th>Trạng thái</th><th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="item : ${cases.content}">
-                    <td th:text="${'BH' + item.id}"></td>
-                    <td><strong th:text="${item.productName}"></strong><br>
-                        <span th:text="${item.number}"></span></td>
-                    <td th:text="${item.receivedAt == null ? '—' : #temporals.format(item.receivedAt, 'dd/MM/yyyy HH:mm')}"></td>
-                    <td th:text="${item.dueAt == null ? '—' : #temporals.format(item.dueAt, 'dd/MM/yyyy HH:mm')}"></td>
-                    <td th:text="${item.covered ? 'Còn hạn' : 'Ngoài hạn'}"></td>
-                    <td th:text="${statusLabels[item.status]}"></td>
-                    <td><a class="ui-btn" th:href="@{/warranties/{id}(id=${item.id})}">Chi tiết</a></td>
-                </tr>
-                <tr th:if="${cases.empty}">
-                    <td colspan="7">Không tìm thấy phiếu bảo hành.</td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="ui-pagination">
-            <span th:text="${cases.totalElements + ' phiếu'}"></span>
-            <div>
-                <a class="ui-btn" th:if="${cases.hasPrevious()}"
-                   th:href="@{/warranties(page=${cases.number - 1}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}">← Trước</a>
-                <span th:text="${'Trang ' + (cases.number + 1) + ' / ' + (cases.totalPages == 0 ? 1 : cases.totalPages)}"></span>
-                <a class="ui-btn" th:if="${cases.hasNext()}"
-                   th:href="@{/warranties(page=${cases.number + 1}, keyword=${keyword}, status=${status}, from=${from}, to=${to})}">Sau →</a>
+            <div class="d-flex justify-content-between align-items-center pt-3 flex-wrap gap-2">
+                <span class="text-muted small" th:text="${cases.totalElements + ' phiếu'}"></span>
+                <div class="d-flex gap-2 align-items-center">
+                    <a class="ui-btn" th:if="${cases.hasPrevious()}"
+                       th:href="@{/warranties(page=${cases.number - 1},keyword=${keyword},status=${status},from=${from},to=${to})}">
+                        ← Trước
+                    </a>
+                    <span class="text-muted small"
+                          th:text="${'Trang ' + (cases.number + 1) + ' / ' + (cases.totalPages == 0 ? 1 : cases.totalPages)}">
+                    </span>
+                    <a class="ui-btn" th:if="${cases.hasNext()}"
+                       th:href="@{/warranties(page=${cases.number + 1},keyword=${keyword},status=${status},from=${from},to=${to})}">
+                        Sau →
+                    </a>
+                </div>
             </div>
         </div>
-    </section>
+    </div>
+
 </main>
 
 <footer th:replace="~{fragments/store :: footer}"></footer>

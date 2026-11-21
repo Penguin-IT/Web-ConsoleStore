@@ -2,238 +2,121 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Đơn hàng của tôi | Console Store</title>
-
-    <link rel="icon"
-          th:href="@{/images/banners/logo.png}">
-
-    <link rel="stylesheet"
-          th:href="@{/css/home.css}">
-
-    <link rel="stylesheet"
-          th:href="@{/css/app.css}">
-
+    <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
     <script th:src="@{/js/store.js}" defer></script>
-
     <style>
-        .orders-page {
-            padding-block: 48px 72px;
+        .orders-page { padding-block: 48px 72px; }
+        .order-payment {
+            display: inline-block; padding: 4px 10px;
+            border-radius: 999px; background: #f2edf9; font-size: .82rem;
         }
-
-        .orders-page .order-message {
-            padding: 15px 18px;
-            margin-bottom: 20px;
-            border: 1px solid #ded5ed;
-            border-radius: 12px;
-            background: #f7f3fc;
-        }
-
-        .orders-page .order-error {
-            color: #903e2c;
-            background: #fff5f1;
-            border-color: #eccfc4;
-        }
-
-        .orders-page .order-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .orders-page .order-actions form {
-            margin: 0;
-        }
-
-        .orders-page .order-note {
-            color: #73697f;
-            line-height: 1.7;
-            margin: 20px 0;
-        }
-
-        .orders-page .order-payment {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #f2edf9;
-        }
-
-        .orders-page .order-actions .ui-btn {
-            white-space: nowrap;
-        }
+        .order-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .order-actions form { margin: 0; }
+        .order-actions .ui-btn { white-space: nowrap; }
+        .order-note { color: #73697f; line-height: 1.7; }
     </style>
 </head>
-
 <body class="customer-page">
 <header th:replace="~{fragments/store :: header}"></header>
 
-<main id="main-content"
-      class="container store-container orders-page">
+<main id="main-content" class="container store-container orders-page">
     <section th:replace="~{fragments/store :: customerRibbon(
-    'YOUR ORDERS',
-    'Theo dõi hành trình của bạn.',
-    'Xem đơn hàng, trạng thái xử lý và thông tin thanh toán.',
-    'banner14.jpg'
+        'YOUR ORDERS',
+        'Theo dõi hành trình của bạn.',
+        'Xem đơn hàng, trạng thái xử lý và thông tin thanh toán.',
+        'banner14.jpg'
     )}"></section>
+
     <div class="ui-page-heading">
         <div>
-            <p class="eyebrow">
-                YOUR ORDERS. YOUR NEXT ADVENTURE.
-            </p>
-
+            <p class="eyebrow">YOUR ORDERS. YOUR NEXT ADVENTURE.</p>
             <h1>Đơn hàng của tôi</h1>
-
             <p>Theo dõi đơn hàng và tiếp tục thanh toán.</p>
         </div>
-
-        <a class="ui-btn"
-           th:href="@{/products}">
-            Tiếp tục mua sắm ↗
-        </a>
+        <a class="ui-btn" th:href="@{/products}">Tiếp tục mua sắm ↗</a>
     </div>
 
-    <p class="order-message"
-       role="status"
-       th:if="${orderSuccess}"
-       th:text="${orderSuccess}">
-    </p>
+    <!-- Thông báo -->
+    <div class="alert alert-success" role="status" th:if="${orderSuccess}" th:text="${orderSuccess}"></div>
+    <div class="alert alert-danger"  role="alert"  th:if="${orderError}"   th:text="${orderError}"></div>
 
-    <p class="order-message order-error"
-       role="alert"
-       th:if="${orderError}"
-       th:text="${orderError}">
-    </p>
-
-    <p class="order-note">
+    <p class="order-note mb-3">
         Đơn chưa thanh toán vẫn giữ hàng trong kho.
-        Bạn có thể tiếp tục thanh toán hoặc hủy đơn đang chờ
-        để trả hàng về tồn khả dụng.
+        Bạn có thể tiếp tục thanh toán hoặc hủy đơn đang chờ để trả hàng về tồn khả dụng.
     </p>
 
-    <section class="ui-panel"
-             th:if="${orders != null}">
+    <!-- Bảng đơn hàng -->
+    <div class="card shadow-sm" th:if="${orders != null}">
+        <div class="card-body">
+            <div class="ui-empty" th:if="${orders.empty}">
+                <h2>Chưa có đơn hàng</h2>
+                <p>Các đơn của tài khoản đang đăng nhập sẽ xuất hiện tại đây.</p>
+            </div>
 
-        <div class="ui-empty"
-             th:if="${orders.empty}">
-            <h2>Chưa có đơn hàng</h2>
+            <div th:unless="${orders.empty}">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0 ui-table">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Ngày đặt</th>
+                            <th>Kênh bán</th>
+                            <th class="text-end">Tổng tiền</th>
+                            <th>Đơn hàng</th>
+                            <th>Thanh toán</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item : ${orders.content}">
+                            <td class="fw-semibold" th:text="${'HD' + item.id}"></td>
+                            <td th:text="${#temporals.format(item.createdAt,'dd/MM/yyyy HH:mm')}"></td>
+                            <td th:text="${item.channelLabel}"></td>
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(item.totalAmount,1,'POINT',0,'COMMA') + ' ₫'}"></td>
+                            <td th:text="${item.statusLabel}"></td>
+                            <td><span class="order-payment" th:text="${item.paymentLabel}"></span></td>
+                            <td>
+                                <div class="order-actions">
+                                    <a class="ui-btn" th:href="@{/orders/{id}(id=${item.id})}">Xem chi tiết</a>
+                                    <a class="ui-btn ui-primary" th:if="${item.payable}"
+                                       th:href="@{/checkout/orders/{id}/payment(id=${item.id})}">
+                                        Thanh toán tiếp
+                                    </a>
+                                    <form th:if="${item.cancelable}"
+                                          th:action="@{/orders/{id}/cancel(id=${item.id})}"
+                                          method="post"
+                                          onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn này?')">
+                                        <button class="ui-btn btn-sm" type="submit">Hủy đơn</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <p>
-                Các đơn của tài khoản đang đăng nhập
-                sẽ xuất hiện tại đây.
-            </p>
-        </div>
-
-        <div class="ui-table-wrap"
-             th:unless="${orders.empty}">
-
-            <table class="ui-table">
-                <thead>
-                <tr>
-                    <th>Mã đơn</th>
-                    <th>Ngày đặt</th>
-                    <th>Kênh bán</th>
-                    <th>Tổng tiền</th>
-                    <th>Đơn hàng</th>
-                    <th>Thanh toán</th>
-                    <th>Thao tác</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="item : ${orders.content}">
-                    <td th:text="${'HD' + item.id}"></td>
-
-                    <td th:text="${
-                        #temporals.format(
-                            item.createdAt,
-                            'dd/MM/yyyy HH:mm'
-                        )
-                    }"></td>
-
-                    <td th:text="${item.channelLabel}"></td>
-
-                    <td th:text="${
-                        #numbers.formatDecimal(
-                            item.totalAmount,
-                            1, 'POINT', 0, 'COMMA'
-                        ) + ' ₫'
-                    }"></td>
-
-                    <td th:text="${item.statusLabel}"></td>
-
-                    <td>
-                        <span class="order-payment"
-                              th:text="${item.paymentLabel}">
+                <!-- Phân trang -->
+                <div class="d-flex justify-content-between align-items-center pt-3 flex-wrap gap-2">
+                    <span class="text-muted small" th:text="${orders.totalElements + ' đơn hàng'}"></span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <a class="ui-btn" th:if="${orders.hasPrevious()}"
+                           th:href="@{/orders(page=${orders.number - 1})}">← Trước</a>
+                        <span class="text-muted small"
+                              th:text="${'Trang ' + (orders.number + 1) + ' / ' + (orders.totalPages == 0 ? 1 : orders.totalPages)}">
                         </span>
-                    </td>
-
-                    <td>
-                        <div class="order-actions">
-                            <a class="ui-btn ui-primary"
-                               th:if="${item.payable}"
-                               th:href="@{
-                                   /checkout/orders/{id}/payment(
-                                       id=${item.id}
-                                   )
-                               }">
-                                Thanh toán tiếp
-                            </a>
-
-                            <form th:if="${item.cancelable}"
-                                  th:action="@{
-                                      /orders/{id}/cancel(
-                                          id=${item.id}
-                                      )
-                                  }"
-                                  method="post">
-
-                                <button class="ui-btn"
-                                        type="submit">
-                                    Hủy đơn
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="ui-table-foot">
-            <span th:text="${
-                orders.totalElements + ' đơn hàng'
-            }"></span>
-
-            <div class="ui-pagination">
-                <a class="ui-btn"
-                   th:if="${orders.hasPrevious()}"
-                   th:href="@{
-                       /orders(page=${orders.number - 1})
-                   }">
-                    ← Trước
-                </a>
-
-                <span th:text="${
-                    'Trang ' + (orders.number + 1)
-                    + ' / '
-                    + (orders.totalPages == 0
-                        ? 1
-                        : orders.totalPages)
-                }"></span>
-
-                <a class="ui-btn"
-                   th:if="${orders.hasNext()}"
-                   th:href="@{
-                       /orders(page=${orders.number + 1})
-                   }">
-                    Sau →
-                </a>
+                        <a class="ui-btn" th:if="${orders.hasNext()}"
+                           th:href="@{/orders(page=${orders.number + 1})}">Sau →</a>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
+    </div>
 </main>
 
 <footer th:replace="~{fragments/store :: footer}"></footer>
