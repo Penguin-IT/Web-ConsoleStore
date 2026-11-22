@@ -113,9 +113,9 @@ public class ProductManagementService {
                     .and(Sort.by("maSP"));
             case "price-asc" -> Sort.by("giaBan").ascending()
                     .and(Sort.by("maSP"));
-            case "price-desc" -> Sort.by("giaBan").descending()
+            case "price-desc" -> Sort.by("giaBan").ascending()
                     .and(Sort.by("maSP"));
-            default -> Sort.by("maSP").descending();
+            default -> Sort.by("maSP").ascending();
         };
 
         return products.findAll(
