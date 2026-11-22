@@ -189,8 +189,13 @@
                             <label class="pos-field">
                                 <span>Giá thu mỗi thiết bị (đ)</span>
 
-                                <input data-key="price" inputmode="numeric" pattern="[0-9]{1,18}" maxlength="18"
-                                    required th:value="${item.price}" th:name="${'items[' + row.index + '].price'}">
+                                <div class="d-flex flex-column w-100">
+                                    <input data-key="price" inputmode="numeric" pattern="[0-9]{1,18}" maxlength="18"
+                                           required th:value="${item.price}" th:name="${'items[' + row.index + '].price'}">
+                                    <small class="text-muted mt-1" style="font-size: 0.75rem;">
+                                        Chỉ nhập số, tối đa 18 chữ số.
+                                    </small>
+                                </div>
                             </label>
 
                             <label class="pos-field" data-serial-field>
