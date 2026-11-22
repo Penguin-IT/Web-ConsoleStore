@@ -49,9 +49,9 @@ public class CatalogService {
     public Page<ProductCard> search(CatalogSearch f) {
         Sort sort=switch(f.getSort()) {
             case "priceAsc"->Sort.by("giaBan").ascending();
-            case "priceDesc"->Sort.by("giaBan").ascending();
+            case "priceDesc"->Sort.by("giaBan").descending();
             case "nameAsc"->Sort.by("tenSP").ascending();
-            case "nameDesc"->Sort.by("tenSP").ascending();
+            case "nameDesc"->Sort.by("tenSP").descending();
             default->Sort.by("maSP");
         };
         if(sort.getOrderFor("maSP")==null)sort=sort.and(Sort.by("maSP"));
