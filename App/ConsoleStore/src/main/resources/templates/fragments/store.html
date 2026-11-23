@@ -321,6 +321,8 @@
             <a href="#main-content">Về đầu trang ↑</a>
         </div>
     </div>
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+    <script th:src="@{/js/chat.js}" th:attr="data-chat-base=@{/chat}" defer></script>
 </footer>
 
 <th:block th:fragment="dialogs"></th:block>
