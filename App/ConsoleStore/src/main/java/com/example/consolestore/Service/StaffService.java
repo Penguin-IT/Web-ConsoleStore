@@ -56,7 +56,7 @@ public class StaffService {
                 PageRequest.of(
                         Math.max(0, page),
                         15,
-                        Sort.by("id").descending()
+                        Sort.by("id").ascending()
                 )
         );
     }
@@ -73,7 +73,7 @@ public class StaffService {
                 PageRequest.of(
                         Math.max(0, page),
                         15,
-                        Sort.by("id").descending()
+                        Sort.by("id").ascending()
                 )
         ).map(account -> {
             String owner = "Quản trị hệ thống";

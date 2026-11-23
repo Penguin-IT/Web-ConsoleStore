@@ -13,6 +13,7 @@
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
     <script th:src="@{/js/product-gallery.js}" defer></script>
@@ -121,11 +122,11 @@
     </style>
 </head>
 
-<body class="customer-page">
+<body class="customer-page product-detail-page">
 <header th:replace="~{fragments/store :: header}"></header>
 
 <main id="main-content"
-      class="container store-container detail-main"
+      class="container store-container pd-main"
       tabindex="-1">
 
     <section class="detail-empty" th:if="${product == null}">
@@ -373,22 +374,17 @@
                         <dt>Mã sản phẩm</dt>
                         <dd th:text="${product.id}"></dd>
                     </div>
-
                     <div>
-                        <dt>Loại</dt>
+                        <dt>Loại sản phẩm</dt>
                         <dd th:text="${product.category}"></dd>
                     </div>
-
                     <div>
                         <dt>Nền tảng</dt>
                         <dd th:text="${product.platform}"></dd>
                     </div>
-
                     <div>
                         <dt>Tình trạng</dt>
-                        <dd th:text="${product.condition == 'CU'
-                            ? 'Cũ' : 'Mới'}">
-                        </dd>
+                        <dd th:text="${product.condition == 'CU' ? 'Cũ' : 'Mới'}"></dd>
                     </div>
                     <div>
                         <dt>Kho hàng</dt>
@@ -514,7 +510,7 @@
                                     ) + ' đ'}"></strong>
                         </div>
 
-                        <form th:if="${customer}"
+                        <form th:if="${(!authenticated or customer) and item.stock > 0}"
                               method="post"
                               th:action="@{/cart/items}"
                               class="related-add">
