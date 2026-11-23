@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * Máy chủ chat TCP thuần (ServerSocket) giữa khách hàng và nhân viên.
@@ -55,16 +57,30 @@ public class ChatSocketServer implements AutoCloseable {
     ) {
     }
 
+    /** Ảnh chụp một kết nối đang mở, dùng cho giao diện quản lý. */
+    public record PeerInfo(
+            boolean staff,
+            String id,
+            String name,
+            String address,
+            long since
+    ) {
+    }
+
     /** Một kết nối TCP (một tab trình duyệt hoặc một client Java). */
     private static final class Peer {
         final Socket socket;
         final BufferedWriter out;
+        final String address;
+        final long since = System.currentTimeMillis();
         boolean staff;
         String id = "";
         String name = "";
 
         Peer(Socket socket) throws IOException {
             this.socket = socket;
+            this.address = String.valueOf(socket.getRemoteSocketAddress())
+                    .replaceFirst("^/", "");
             this.out = new BufferedWriter(
                     new OutputStreamWriter(
                             socket.getOutputStream(),
@@ -90,9 +106,13 @@ public class ChatSocketServer implements AutoCloseable {
     private final Map<String, String> roomNames = new HashMap<>();
 
     private final Set<Peer> peers = ConcurrentHashMap.newKeySet();
-    private final ExecutorService workers;
+    private final AtomicLong totalMessages = new AtomicLong();
+
+    private ExecutorService workers;
 
     private volatile boolean running;
+    private volatile long startedAt;
+    private volatile Consumer<String> logSink = line -> { };
     private ServerSocket serverSocket;
 
     public ChatSocketServer(int port) {
@@ -103,18 +123,6 @@ public class ChatSocketServer implements AutoCloseable {
         }
 
         this.port = port;
-
-        AtomicInteger sequence = new AtomicInteger();
-
-        // Mỗi kết nối chat sống lâu nên cần một luồng riêng cho mỗi kết nối
-        this.workers = Executors.newCachedThreadPool(task -> {
-            Thread thread = new Thread(
-                    task,
-                    "chat-worker-" + sequence.incrementAndGet()
-            );
-            thread.setDaemon(true);
-            return thread;
-        });
     }
 
     public synchronized void start() throws IOException {
@@ -122,26 +130,51 @@ public class ChatSocketServer implements AutoCloseable {
             return;
         }
 
-        serverSocket = new ServerSocket();
-        serverSocket.bind(new InetSocketAddress("127.0.0.1", port), 50);
+        ServerSocket server = new ServerSocket();
 
+        try {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("127.0.0.1", port), 50);
+        } catch (IOException exception) {
+            closeQuietly(server);
+            throw exception;
+        }
+
+        AtomicInteger sequence = new AtomicInteger();
+
+        // Mỗi kết nối chat sống lâu nên cần một luồng riêng cho mỗi kết nối.
+        // Tạo lại ở mỗi lần start() để server có thể dừng rồi chạy lại.
+        workers = Executors.newCachedThreadPool(task -> {
+            Thread thread = new Thread(
+                    task,
+                    "chat-worker-" + sequence.incrementAndGet()
+            );
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        serverSocket = server;
+        startedAt = System.currentTimeMillis();
         running = true;
 
-        Thread accept = new Thread(this::acceptConnections, "chat-accept");
+        Thread accept = new Thread(
+                () -> acceptConnections(server),
+                "chat-accept"
+        );
         accept.setDaemon(true);
         accept.start();
 
-        log.info("Chat socket server started at 127.0.0.1:{}", port);
+        emit("Server đã chạy tại 127.0.0.1:" + port);
     }
 
-    private void acceptConnections() {
+    private void acceptConnections(ServerSocket server) {
         try {
-            while (running) {
-                Socket socket = serverSocket.accept();
+            while (running && !server.isClosed()) {
+                Socket socket = server.accept();
 
                 if (peers.size() >= MAX_PEERS) {
                     closeQuietly(socket);
-                    log.warn("Chat client rejected: too many connections");
+                    emit("Từ chối kết nối: quá nhiều client.");
                     continue;
                 }
 
@@ -154,8 +187,9 @@ public class ChatSocketServer implements AutoCloseable {
                 }
             }
         } catch (IOException exception) {
-            if (running) {
+            if (running && !server.isClosed()) {
                 log.error("Chat socket accept failed", exception);
+                emit("Lỗi accept: " + exception.getMessage());
             }
         }
     }
@@ -223,8 +257,9 @@ public class ChatSocketServer implements AutoCloseable {
         } catch (IOException | IllegalArgumentException exception) {
             log.debug("Chat connection closed: {}", exception.toString());
         } finally {
-            if (peer != null) {
-                peers.remove(peer);
+            if (peer != null && peers.remove(peer) && running) {
+                emit((peer.staff ? "Nhân viên " : "Khách ")
+                        + peer.id + " đã ngắt kết nối (" + peer.address + ")");
             }
 
             closeQuietly(socket);
@@ -260,7 +295,8 @@ public class ChatSocketServer implements AutoCloseable {
             peers.add(peer);
         }
 
-        log.info("Chat {} connected: {}", peer.staff ? "staff" : "customer", peer.id);
+        emit((peer.staff ? "Nhân viên " : "Khách ")
+                + peer.id + " đã kết nối (" + peer.address + ")");
     }
 
     private void say(Peer peer, String requestedRoom, String rawText)
@@ -277,6 +313,7 @@ public class ChatSocketServer implements AutoCloseable {
         }
 
         List<Peer> dead = new ArrayList<>();
+        String logLine;
 
         synchronized (lock) {
             String room;
@@ -327,13 +364,75 @@ public class ChatSocketServer implements AutoCloseable {
                     }
                 }
             }
+
+            totalMessages.incrementAndGet();
+
+            logLine = (peer.staff ? "Nhân viên " : "Khách ")
+                    + peer.name + " → phòng " + roomName + ": " + text;
         }
+
+        emit(logLine);
 
         for (Peer target : dead) {
             peers.remove(target);
             closeQuietly(target.socket);
         }
     }
+
+    // ===================== Dành cho giao diện quản lý =====================
+
+    /** Nhận từng dòng nhật ký (có thể gọi từ nhiều luồng). */
+    public void setLogSink(Consumer<String> sink) {
+        this.logSink = sink != null ? sink : line -> { };
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public long startedAt() {
+        return startedAt;
+    }
+
+    public long totalMessages() {
+        return totalMessages.get();
+    }
+
+    public int roomCount() {
+        synchronized (lock) {
+            return history.size();
+        }
+    }
+
+    /** Danh sách kết nối đang mở, cũ nhất lên trước. */
+    public List<PeerInfo> snapshot() {
+        List<PeerInfo> list = new ArrayList<>();
+
+        for (Peer peer : peers) {
+            list.add(new PeerInfo(
+                    peer.staff, peer.id, peer.name, peer.address, peer.since
+            ));
+        }
+
+        list.sort(Comparator.comparingLong(PeerInfo::since));
+        return list;
+    }
+
+    private void emit(String message) {
+        log.info(message);
+
+        try {
+            logSink.accept(message);
+        } catch (RuntimeException ignored) {
+            // giao diện lỗi không được làm hỏng server
+        }
+    }
+
+    // ======================================================================
 
     private String toLine(Message m) {
         return String.join("\t",
@@ -404,6 +503,10 @@ public class ChatSocketServer implements AutoCloseable {
 
     @Override
     public synchronized void close() {
+        if (!running) {
+            return;
+        }
+
         running = false;
 
         closeQuietly(serverSocket);
@@ -413,6 +516,11 @@ public class ChatSocketServer implements AutoCloseable {
         }
 
         peers.clear();
-        workers.shutdownNow();
+
+        if (workers != null) {
+            workers.shutdownNow();
+        }
+
+        emit("Server đã dừng.");
     }
 }
