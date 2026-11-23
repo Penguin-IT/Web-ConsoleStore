@@ -6,7 +6,13 @@
           content="width=device-width, initial-scale=1">
 
     <title>Đặt hàng | Console Store</title>
-
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="" defer></script>
     <link rel="icon"
           th:href="@{/images/banners/logo.png}">
 
@@ -17,6 +23,8 @@
     <script th:src="@{/js/coupon.js}" defer></script>
     <script th:src="@{/js/store.js}" defer></script>
     <script th:src="@{/js/checkout.js}" defer></script>
+    <script th:src="@{/js/address-book.js}" defer></script>
+    <script th:src="@{/js/address-map.js}" defer></script>
 </head>
 
 <body class="customer-page">
@@ -170,74 +178,85 @@
             <!-- 2. Địa chỉ nhận hàng -->
             <section class="checkout-panel co-section">
                 <h2><span class="co-num">2</span> Địa chỉ nhận hàng</h2>
+                <div class="addr-book" data-address-book
+                     th:if="${savedAddresses != null and !savedAddresses.isEmpty()}">
 
-                <div class="co-grid co-grid--3" data-address>
+                    <div class="addr-card"
+                         th:each="a : ${savedAddresses}"
+                         th:classappend="${a.defaultAddress} ? 'is-default is-selected'"
+                         th:attr="data-id=${a.id}, data-full-name=${a.fullName}, data-phone=${a.phone},
+                  data-province=${a.province}, data-district=${a.district},
+                  data-ward=${a.ward}, data-street=${a.street}">
 
-                    <div class="co-field"
-                         data-field="province"
-                         th:classappend="${checkoutErrors.containsKey('province')} ? 'has-error'">
+                        <div class="addr-main">
+                            <strong th:text="${a.fullName}"></strong>
+                            <span class="addr-phone" th:text="${a.phone}"></span>
+                            <span class="addr-badge" th:if="${a.defaultAddress}">Mặc định</span>
+                            <p th:text="${a.fullAddress}"></p>
+                        </div>
 
+                        <div class="addr-actions">
+                            <button type="button" data-addr-edit>Thay đổi</button>
+                            <button type="button" data-addr-default
+                                    th:unless="${a.defaultAddress}">Đặt mặc định</button>
+                            <button type="button" data-addr-delete>Xóa</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="addr-new" data-addr-new>+ Thêm địa chỉ mới</button>
+                </div>
+                <div class="addr-map-box">
+                    <div class="addr-map-search">
+                        <input type="search" data-map-search autocomplete="off"
+                               placeholder="Tìm địa chỉ, hoặc nhấn vào bản đồ để chọn vị trí giao hàng">
+                        <button type="button" data-map-search-btn>Tìm</button>
+                        <button type="button" data-map-locate>Vị trí của tôi</button>
+                    </div>
+                    <div class="addr-map" data-addr-map></div>
+                    <p class="co-hint" data-map-status>
+                        Nhấn vào bản đồ hoặc kéo ghim để tự điền địa chỉ.
+                    </p>
+                </div>
+                <div class="co-grid" data-address>
+
+                    <div class="co-field" data-field="province">
                         <label th:for="province">
                             Tỉnh / Thành phố <span class="co-req">*</span>
                         </label>
 
-                        <input type="text"
-                               th:field="*{province}"
-                               maxlength="40"
-                               autocomplete="address-level1"
-                               placeholder="Nhập tỉnh / thành phố"
-                               aria-describedby="province-error"
-                               th:attr="aria-invalid=${checkoutErrors.containsKey('province')}"
-                               required>
+                        <select th:field="*{province}"
+                                aria-describedby="province-error"
+                                required>
+                            <option value="">Chọn Tỉnh / Thành phố</option>
+                            <option th:if="*{province != null and !#strings.isEmpty(province)}"
+                                    th:value="*{province}"
+                                    th:text="*{province}"></option>
+                        </select>
 
-                        <p class="co-error"
-                           id="province-error"
+                        <p class="co-error" id="province-error"
                            th:text="${checkoutErrors.get('province')}"></p>
                     </div>
 
-                    <div class="co-field"
-                         data-field="district"
-                         th:classappend="${checkoutErrors.containsKey('district')} ? 'has-error'">
-
-                        <label th:for="district">
-                            Quận / Huyện <span class="co-req">*</span>
-                        </label>
-
-                        <input type="text"
-                               th:field="*{district}"
-                               maxlength="50"
-                               autocomplete="address-level2"
-                               placeholder="Nhập quận / huyện"
-                               aria-describedby="district-error"
-                               th:attr="aria-invalid=${checkoutErrors.containsKey('district')}"
-                               required>
-
-                        <p class="co-error"
-                           id="district-error"
-                           th:text="${checkoutErrors.get('district')}"></p>
-                    </div>
-
-                    <div class="co-field"
-                         data-field="ward"
-                         th:classappend="${checkoutErrors.containsKey('ward')} ? 'has-error'">
-
+                    <div class="co-field" data-field="ward">
                         <label th:for="ward">
                             Phường / Xã <span class="co-req">*</span>
                         </label>
 
-                        <input type="text"
-                               th:field="*{ward}"
-                               maxlength="50"
-                               autocomplete="address-level3"
-                               placeholder="Nhập phường / xã"
-                               aria-describedby="ward-error"
-                               th:attr="aria-invalid=${checkoutErrors.containsKey('ward')}"
-                               required>
+                        <select th:field="*{ward}"
+                                aria-describedby="ward-error"
+                                required
+                                disabled>
+                            <option value="">Chọn Phường / Xã</option>
+                            <option th:if="*{ward != null and !#strings.isEmpty(ward)}"
+                                    th:value="*{ward}"
+                                    th:text="*{ward}"></option>
+                        </select>
 
-                        <p class="co-error"
-                           id="ward-error"
+                        <p class="co-error" id="ward-error"
                            th:text="${checkoutErrors.get('ward')}"></p>
                     </div>
+
+                    <input type="hidden" th:field="*{district}">
 
                     <p class="co-hint co-wide" data-address-hint hidden></p>
                 </div>
@@ -264,7 +283,23 @@
                            id="street-error"
                            th:text="${checkoutErrors.get('street')}"></p>
                     </div>
-
+                    <div class="co-field co-wide addr-save" data-addr-save-box>
+                        <div data-addr-new-opts>
+                            <label class="addr-check">
+                                <input type="checkbox" name="saveAddress" value="true"
+                                       th:checked="*{saveAddress}">
+                                Lưu vào sổ địa chỉ
+                            </label>
+                            <label class="addr-check">
+                                <input type="checkbox" name="makeDefaultAddress" value="true"
+                                       th:checked="*{makeDefaultAddress}">
+                                Đặt làm địa chỉ mặc định
+                            </label>
+                        </div>
+                        <button type="button" class="addr-update" data-addr-update hidden>
+                            Lưu thay đổi cho địa chỉ này
+                        </button>
+                    </div>
                     <div class="co-field co-wide"
                          data-field="note"
                          th:classappend="${checkoutErrors.containsKey('note')} ? 'has-error'">

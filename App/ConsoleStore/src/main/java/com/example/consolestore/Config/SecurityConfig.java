@@ -129,6 +129,9 @@ public class SecurityConfig {
                         "/pages/register.html"
                 ).permitAll()
                 .requestMatchers("/sandbox/**").permitAll()
+                // VNPAY: return URL và IPN do VNPAY gọi (xác thực bằng chữ ký)
+                .requestMatchers("/vnpay/return", "/vnpay/ipn").permitAll()
+                .requestMatchers("/vnpay/pay/**").hasRole("KHACHHANG")
                 // Trang công khai
                 .requestMatchers(HttpMethod.GET, "/chat/config").permitAll()
                 .requestMatchers("/chat/stream", "/chat/send")

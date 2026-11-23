@@ -31,18 +31,24 @@ public class CheckoutController {
     private final CartService carts;
     private final CartSession session;
     private final MemberService members;
+    private final VnpayService vnpay;
+    private final AddressBookService book;
     public CheckoutController(
+            VnpayService vnpay,
             MemberService members,
             CheckoutService checkout,
             CartService carts,
             CartSession session,
-            CartStore cartStore            // thêm
+            CartStore cartStore,
+            AddressBookService book   // thêm
     ) {
+        this.vnpay = vnpay;
         this.members = members;
         this.checkout = checkout;
         this.carts = carts;
         this.session = session;
-        this.cartStore = cartStore;        // thêm
+        this.cartStore = cartStore;
+        this.book = book;  // thêm
     }
 
     @GetMapping({
@@ -179,20 +185,14 @@ public class CheckoutController {
 
             session.markSubmitted();
 
-            try {
-                Long invoiceId = checkout.place(
-                        principal.getName(),
-                        quote,
-                        form
-                );
+                    try {
+                        Long invoiceId = checkout.place(principal.getName(), quote, form);
 
-                session.complete(
-                        requestId,
-                        invoiceId
-                );
+                        saveAddressQuietly(principal.getName(), form);   // thêm
 
-                return redirect(invoiceId);
-            } catch (CheckoutRejectedException exception) {
+                        session.complete(requestId, invoiceId);
+                        return redirect(invoiceId);
+                    } catch (CheckoutRejectedException exception) {
                 session.rejectAttempt();
                 response.setStatus(409);
 
@@ -291,7 +291,14 @@ public class CheckoutController {
                 id
         );
 
-        String payUrl = PaymentGatewayService.payUrl(
+        // Chuyển khoản ngân hàng đi qua VNPAY sandbox (nếu đã cấu hình),
+        // MoMo/ZaloPay vẫn dùng cổng PayLab nội bộ.
+        boolean viaVnpay = vnpay.enabled()
+                && "CHUYEN_KHOAN".equals(page.payment().getMethod());
+
+        String payUrl = viaVnpay
+                ? "/vnpay/pay/" + id
+                : PaymentGatewayService.payUrl(
                 id,
                 page.invoice().getTotalAmount()
         );
@@ -307,11 +314,21 @@ public class CheckoutController {
         model.addAttribute("activeStoreMenu", "cart");
         model.addAttribute("page", page);
         model.addAttribute("payUrl", payUrl);
+        model.addAttribute("viaVnpay", viaVnpay);
         model.addAttribute("result", result);
         model.addAttribute("bundlePercent", BundlePricing.PERCENT);
         return "payments";
     }
-
+    private void saveAddressQuietly(String username, CheckoutRequest form) {
+        if (!form.isSaveAddress()) {
+            return;
+        }
+        try {
+            book.saveFromCheckout(username, form);
+        } catch (RuntimeException e) {
+            log.warn("Cannot save address book entry", e);
+        }
+    }
     private String render(
             String username,
             CheckoutRequest form,
@@ -319,6 +336,7 @@ public class CheckoutController {
             HttpServletResponse response
     ) {
         model.addAttribute("activeStoreMenu", "cart");
+        model.addAttribute("bundlePercent", BundlePricing.PERCENT);
         model.addAttribute("requestId", "");
         model.addAttribute("cart", null);
         model.addAttribute("pending", false);
@@ -334,11 +352,22 @@ public class CheckoutController {
 
         try {
             if (form == null) {
-                model.addAttribute(
-                        "form",
-                        checkout.defaults(username)
-                );
+                CheckoutRequest base = checkout.defaults(username);
+
+                book.defaultOf(username).ifPresent(a -> {
+                    base.setFullName(a.fullName());
+                    base.setPhone(a.phone());
+                    base.setProvince(a.province());
+                    base.setDistrict(a.district());
+                    base.setWard(a.ward());
+                    base.setStreet(a.street());
+                    base.setAddress(a.fullAddress());
+                });
+
+                model.addAttribute("form", base);
             }
+
+            model.addAttribute("savedAddresses", book.list(username));   // thêm
 
             MemberService.Status member = members.status(username);
             model.addAttribute("member", member);
