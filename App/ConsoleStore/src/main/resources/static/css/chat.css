@@ -1,0 +1,351 @@
+/* Nút liên hệ + khung chat khách hàng / nhân viên */
+.cs-chat {
+    --chat-accent: #7955d5;
+    --chat-accent-dark: #5f3fb8;
+    --chat-ink: #19171e;
+    --chat-muted: #776d81;
+    --chat-border: #e6dfed;
+    --chat-paper: #f7f5fa;
+
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1080;
+    font-family: inherit;
+    color: var(--chat-ink);
+}
+
+.cs-chat [hidden] {
+    display: none !important;
+}
+
+/* ---- Nút nổi ---- */
+.cs-chat-fab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--chat-accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(121, 85, 213, .45);
+    transition: transform .15s ease, background .15s ease;
+}
+
+.cs-chat-fab:hover {
+    background: var(--chat-accent-dark);
+    transform: translateY(-2px);
+}
+
+.cs-chat-fab:focus-visible,
+.cs-chat-form button:focus-visible,
+.cs-chat-close:focus-visible,
+.cs-chat-back:focus-visible {
+    outline: 3px solid #b596e6;
+    outline-offset: 2px;
+}
+
+/* ---- Huy hiệu số tin chưa đọc ---- */
+.cs-chat-badge {
+    min-width: 20px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #e5484d;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+.cs-chat-fab .cs-chat-badge {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    border: 2px solid #fff;
+}
+
+/* ---- Khung chat ---- */
+.cs-chat-panel {
+    position: absolute;
+    right: 0;
+    bottom: 64px;
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    height: min(520px, calc(100vh - 120px));
+    overflow: hidden;
+    border: 1px solid var(--chat-border);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 20px 60px rgba(25, 23, 30, .28);
+}
+
+.cs-chat-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 14px 18px;
+    background: linear-gradient(135deg, #19171e, #3a2a66);
+    color: #fff;
+}
+
+.cs-chat-heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.cs-chat-heading strong,
+.cs-chat-heading small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cs-chat-heading strong {
+    font-size: 15px;
+}
+
+.cs-chat-heading small {
+    margin-top: 2px;
+    color: rgba(255, 255, 255, .7);
+    font-size: 12px;
+}
+
+.cs-chat-back,
+.cs-chat-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.cs-chat-back:hover,
+.cs-chat-close:hover {
+    background: rgba(255, 255, 255, .28);
+}
+
+/* ---- Thân: tin nhắn / danh sách ---- */
+.cs-chat-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    overflow-y: auto;
+    background: var(--chat-paper);
+}
+
+.cs-chat-empty {
+    margin: auto;
+    max-width: 260px;
+    color: var(--chat-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.cs-chat-login {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    background: var(--chat-accent);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cs-chat-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+}
+
+.cs-chat-msg.is-mine {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.cs-chat-msg.is-theirs {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.cs-chat-sender {
+    margin: 0 6px 3px;
+    color: var(--chat-muted);
+    font-size: 11px;
+}
+
+.cs-chat-bubble {
+    margin: 0;
+    padding: 9px 13px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.is-mine .cs-chat-bubble {
+    border-bottom-right-radius: 4px;
+    background: var(--chat-accent);
+    color: #fff;
+}
+
+.is-theirs .cs-chat-bubble {
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--chat-border);
+    background: #fff;
+}
+
+.cs-chat-time {
+    margin: 3px 6px 0;
+    color: var(--chat-muted);
+    font-size: 10px;
+}
+
+/* ---- Danh sách cuộc trò chuyện (nhân viên) ---- */
+.cs-chat-room {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--chat-border);
+    border-radius: 14px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cs-chat-room:hover {
+    border-color: var(--chat-accent);
+}
+
+.cs-chat-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #ece5fa;
+    color: var(--chat-accent-dark);
+    font-weight: 700;
+}
+
+.cs-chat-room-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.cs-chat-room-text strong,
+.cs-chat-room-text small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cs-chat-room-text small {
+    margin-top: 2px;
+    color: var(--chat-muted);
+}
+
+.cs-chat-room-meta {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    color: var(--chat-muted);
+    font-size: 11px;
+}
+
+/* ---- Thông báo lỗi + ô nhập ---- */
+.cs-chat-notice {
+    margin: 0;
+    padding: 8px 14px;
+    background: #fdecec;
+    color: #b42318;
+    font-size: 13px;
+}
+
+.cs-chat-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--chat-border);
+    background: #fff;
+}
+
+.cs-chat-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--chat-border);
+    border-radius: 999px;
+    font-size: 14px;
+}
+
+.cs-chat-form input:focus {
+    border-color: var(--chat-accent);
+    outline: 0;
+}
+
+.cs-chat-form button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--chat-accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+.cs-chat-form button:hover {
+    background: var(--chat-accent-dark);
+}
+
+/* ---- Điện thoại ---- */
+@media (max-width: 480px) {
+    .cs-chat {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .cs-chat-fab-label {
+        display: none;
+    }
+
+    .cs-chat-panel {
+        position: fixed;
+        inset: 0;
+        width: auto;
+        height: auto;
+        border: 0;
+        border-radius: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cs-chat-fab {
+        transition: none;
+    }
+}

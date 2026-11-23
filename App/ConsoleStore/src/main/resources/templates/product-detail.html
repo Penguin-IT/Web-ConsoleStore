@@ -16,8 +16,110 @@
     <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
+    <script th:src="@{/js/product-gallery.js}" defer></script>
 
+    <!-- Chỉ giữ lại CSS cho phần không thuộc layout pd-* mới:
+         trang trống, đánh giá, sản phẩm liên quan -->
+    <style>
+        .detail-main {
+            min-height: 65vh;
+            padding-block: 45px 80px;
+        }
 
+        .detail-empty {
+            padding-block: 60px;
+            text-align: center;
+        }
+
+        .detail-empty p {
+            margin: 20px 0 30px;
+            color: var(--muted);
+        }
+
+        /* ===== Đánh giá ===== */
+        .reviews {
+            margin-top: 30px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .reviews h2 { margin: 0 0 14px; font-size: 22px; }
+        .reviews-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .reviews-summary strong { font-size: 28px; }
+        .review-stars { color: #f5a623; letter-spacing: 2px; }
+        .review-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; }
+        .review-ok { border: 1px solid #2e9d5b; }
+        .review-err { border: 1px solid #d64545; }
+        .review-form { display: grid; gap: 12px; margin-bottom: 22px; }
+        .review-form label { display: grid; gap: 6px; }
+        .review-form select, .review-form textarea { padding: 10px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
+        .review-item { padding-block: 16px; border-top: 1px solid var(--border); }
+        .review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .review-head time, .review-badge, .review-empty, .review-hint { color: var(--muted); font-size: 13px; }
+        .review-item p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+
+        /* ===== Sản phẩm liên quan ===== */
+        .related {
+            margin-top: 55px;
+        }
+
+        .related h2 {
+            margin: 0 0 6px;
+            font-size: 22px;
+        }
+
+        .related-sub {
+            margin: 0 0 22px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .related .product-info h3 {
+            margin: 6px 0 10px;
+            font-size: 16px;
+            line-height: 1.35;
+        }
+
+        .related .product-info h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .related-add {
+            margin-top: 12px;
+        }
+
+        .related-add .button-primary {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 991px) {
+            .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 767px) {
+            .detail-main {
+                padding-block: 28px 50px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .reviews { padding: 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .related-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 
 <body class="customer-page product-detail-page">
@@ -46,6 +148,8 @@
             <ol>
                 <li><a th:href="@{/}">Trang chủ</a></li>
                 <li><a th:href="@{/products}">Sản phẩm</a></li>
+                <li><a th:href="@{/products(category=${product.category})}"
+                       th:text="${product.category}">Loại</a></li>
                 <li><span aria-current="page" th:text="${product.name}"></span></li>
             </ol>
         </nav>
@@ -54,56 +158,106 @@
                  aria-labelledby="productTitle"
                  th:with="used=${product.condition == 'CU'},
                   available=${product.stock > 0},
-                  canAddToCart=${!authenticated or customer}">
+                  canAddToCart=${!authenticated or customer},
+                  multi=${#lists.size(gallery) > 1},
+                  freeShip=${product.price.compareTo(@pricingService.freeShipFrom()) >= 0}">
 
-            <div class="pd-gallery">
-                <div class="pd-gallery-top">
-            <span class="pd-condition"
-                  th:classappend="${used ? 'pd-condition--used' : ''}"
-                  th:text="${used ? 'Hàng cũ' : 'Hàng mới'}">
-            </span>
-                </div>
+            <!-- ============ THƯ VIỆN ẢNH ============ -->
+            <div class="pd-gallery" data-gallery>
+                <div class="pd-stage" data-gallery-stage>
+                    <span class="pd-condition"
+                          th:classappend="${used ? 'pd-condition--used' : ''}"
+                          th:text="${used ? 'Hàng cũ' : 'Hàng mới'}">
+                    </span>
 
-                <div class="pd-visual">
-                    <img th:src="@{${product.image}}"
-                         th:attr="data-product-image=${product.image}"
+                    <img class="pd-stage-img"
+                         data-gallery-main
+                         th:src="@{${gallery[0]}}"
+                         th:attr="data-product-image=${gallery[0]}"
                          th:alt="${product.name}"
                          width="780"
-                         height="780"
+                         height="585"
                          fetchpriority="high"
                          decoding="async">
+
+                    <button class="pd-nav pd-nav--prev" type="button"
+                            data-gallery-prev th:if="${multi}"
+                            aria-label="Ảnh trước">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+                    </button>
+                    <button class="pd-nav pd-nav--next" type="button"
+                            data-gallery-next th:if="${multi}"
+                            aria-label="Ảnh sau">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+                    </button>
+
+                    <span class="pd-counter" th:if="${multi}" aria-live="polite">
+                        <span data-gallery-counter>1</span> / <span th:text="${#lists.size(gallery)}">1</span>
+                    </span>
+
+                    <button class="pd-zoom" type="button" data-gallery-open
+                            aria-label="Xem ảnh lớn">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        <span>Phóng to</span>
+                    </button>
                 </div>
 
-                <div class="pd-gallery-bottom">
-                    <span th:text="${product.platform}"></span>
-                    <span th:text="${'Mã #' + product.id}"></span>
-                </div>
+                <ul class="pd-thumbs" th:if="${multi}" aria-label="Danh sách ảnh sản phẩm">
+                    <li th:each="src, it : ${gallery}">
+                        <button class="pd-thumb" type="button"
+                                th:classappend="${it.first} ? 'is-active'"
+                                th:attr="data-src=@{${src}},
+                                         data-index=${it.index},
+                                         aria-label=${'Xem ảnh ' + (it.index + 1)},
+                                         aria-current=${it.first ? 'true' : 'false'}">
+                            <img th:src="@{${src}}"
+                                 th:attr="data-product-image=${src}"
+                                 alt=""
+                                 width="96"
+                                 height="72"
+                                 loading="lazy"
+                                 decoding="async">
+                        </button>
+                    </li>
+                </ul>
             </div>
 
+            <!-- ============ THÔNG TIN MUA HÀNG ============ -->
             <div class="pd-summary">
-                <a class="pd-category"
-                   th:href="@{/products(category=${product.category})}"
-                   th:text="${product.category}">
-                </a>
+                <div class="pd-meta">
+                    <a class="pd-category"
+                       th:href="@{/products(category=${product.category})}"
+                       th:text="${product.category}">
+                    </a>
+                    <span class="pd-code" th:text="${'Mã #' + product.id}"></span>
+                </div>
 
-                <h1 id="productTitle" class="pd-title" th:text="${product.name}"></h1>
+                <h1 id="productTitle" th:text="${product.name}"></h1>
+
+                <ul class="pd-chips">
+                    <li class="pd-chip pd-chip--brand" th:text="${product.platform}"></li>
+                    <li class="pd-chip" th:text="${used ? 'Hàng cũ' : 'Hàng mới'}"></li>
+                    <li class="pd-chip" th:text="${product.category}"></li>
+                </ul>
+
+                <p class="pd-lead" th:text="${descLead}"></p>
 
                 <div class="pd-price-card">
-                    <span class="pd-price-label">Giá bán</span>
-
-                    <p class="pd-price">
-                <span th:text="${#numbers.formatDecimal(
-                        product.price, 0, 'POINT', 0, 'COMMA'
-                )}"></span>
-                        <span class="pd-currency">₫</span>
-                    </p>
+                    <div>
+                        <span class="pd-price-label">Giá bán</span>
+                        <p class="pd-price">
+                            <span th:text="${#numbers.formatDecimal(
+                                    product.price, 0, 'POINT', 0, 'COMMA')}"></span>
+                            <span class="pd-currency">₫</span>
+                        </p>
+                    </div>
 
                     <div class="pd-stock"
                          th:classappend="${available ? '' : 'pd-stock--empty'}">
                         <span class="pd-stock-dot" aria-hidden="true"></span>
                         <span th:text="${available
-                        ? 'Còn ' + product.stock + ' sản phẩm'
-                        : 'Tạm hết hàng'}"></span>
+                                ? 'Còn ' + product.stock + ' sản phẩm'
+                                : 'Tạm hết hàng'}"></span>
                     </div>
                 </div>
 
@@ -117,17 +271,23 @@
 
                         <div class="pd-quantity-field">
                             <label for="cartQuantity">Số lượng</label>
-                            <input id="cartQuantity"
-                                   name="quantity"
-                                   type="number"
-                                   value="1"
-                                   min="1"
-                                   step="1"
-                                   th:max="${product.stock}"
-                                   required>
+                            <div class="pd-qty" data-qty>
+                                <button type="button" data-qty-minus aria-label="Giảm số lượng">−</button>
+                                <input id="cartQuantity"
+                                       name="quantity"
+                                       type="number"
+                                       value="1"
+                                       min="1"
+                                       step="1"
+                                       inputmode="numeric"
+                                       th:max="${product.stock}"
+                                       required>
+                                <button type="button" data-qty-plus aria-label="Tăng số lượng">+</button>
+                            </div>
                         </div>
 
-                        <button class="pd-button pd-button--dark" type="submit">
+                        <button class="pd-button pd-button--primary" type="submit">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.2M10 20.5h.01M17 20.5h.01"/></svg>
                             Thêm vào giỏ hàng
                         </button>
                     </form>
@@ -137,12 +297,34 @@
                         Vui lòng dùng tài khoản khách hàng để mua hàng.
                     </p>
 
+                    <p class="pd-account-notice"
+                       th:if="${!available}">
+                        Sản phẩm tạm hết hàng. Bạn có thể xem các sản phẩm liên quan bên dưới.
+                    </p>
+
                     <a class="pd-cart-link"
                        th:if="${canAddToCart}"
                        th:href="@{/cart}">
                         Xem giỏ hàng <span aria-hidden="true">→</span>
                     </a>
                 </div>
+
+                <ul class="pd-trust">
+                    <li th:if="${freeShip}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19.5h.01M17 19.5h.01"/></svg>
+                        <span>Đơn này được <strong>miễn phí vận chuyển</strong></span>
+                    </li>
+                    <li th:unless="${freeShip}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19.5h.01M17 19.5h.01"/></svg>
+                        <span>Miễn phí vận chuyển cho đơn từ
+                            <strong th:text="${#numbers.formatDecimal(
+                                    @pricingService.freeShipFrom(), 0, 'POINT', 0, 'COMMA') + ' ₫'}"></strong></span>
+                    </li>
+                    <li th:if="${used}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7"/></svg>
+                        <span>Máy cũ: đọc kỹ phần mô tả tình trạng bên dưới</span>
+                    </li>
+                </ul>
 
                 <nav class="pd-summary-links" aria-label="Nội dung trang">
                     <a href="#productDescription">Mô tả</a>
@@ -157,17 +339,34 @@
             </div>
         </section>
 
+        <!-- ============ MÔ TẢ + THÔNG TIN ============ -->
         <div class="pd-content-grid">
-            <section class="pd-panel"
+            <section class="pd-panel pd-desc"
                      id="productDescription"
                      aria-labelledby="descriptionTitle">
-                <h2 id="descriptionTitle">Mô tả sản phẩm</h2>
-                <p class="pd-description-text" th:text="${description}"></p>
+                <p class="pd-kicker">MÔ TẢ SẢN PHẨM</p>
+                <h2 id="descriptionTitle">Giới thiệu sản phẩm</h2>
+
+                <p class="pd-desc-lead" th:text="${descLead}"></p>
+
+                <ul class="pd-desc-points" th:if="${!#lists.isEmpty(descPoints)}">
+                    <li th:each="point : ${descPoints}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7"/></svg>
+                        <span th:text="${point}"></span>
+                    </li>
+                </ul>
+
+                <ul class="pd-desc-tags">
+                    <li th:text="${'Nền tảng: ' + product.platform}"></li>
+                    <li th:text="${'Loại: ' + product.category}"></li>
+                    <li th:text="${'Tình trạng: ' + (product.condition == 'CU' ? 'Cũ' : 'Mới')}"></li>
+                </ul>
             </section>
 
-            <section class="pd-panel"
+            <section class="pd-panel pd-spec"
                      id="productInformation"
                      aria-labelledby="informationTitle">
+                <p class="pd-kicker">THÔNG SỐ</p>
                 <h2 id="informationTitle">Thông tin sản phẩm</h2>
 
                 <dl class="pd-facts">
@@ -187,9 +386,15 @@
                         <dt>Tình trạng</dt>
                         <dd th:text="${product.condition == 'CU' ? 'Cũ' : 'Mới'}"></dd>
                     </div>
+                    <div>
+                        <dt>Kho hàng</dt>
+                        <dd th:text="${product.stock > 0 ? 'Còn ' + product.stock + ' sản phẩm' : 'Tạm hết hàng'}"></dd>
+                    </div>
                 </dl>
             </section>
         </div>
+
+        <!-- ============ ĐÁNH GIÁ ============ -->
         <section class="reviews pd-panel"
                  id="reviews"
                  aria-labelledby="reviewsTitle">
@@ -261,6 +466,8 @@
                 <p th:text="${r.content}"></p>
             </article>
         </section>
+
+        <!-- ============ SẢN PHẨM LIÊN QUAN ============ -->
         <section class="related"
                  th:if="${!#lists.isEmpty(related)}"
                  aria-labelledby="relatedTitle">
@@ -321,5 +528,18 @@
 </main>
 <section th:replace="~{fragments/store-info :: info}"></section>
 <footer th:replace="~{fragments/store :: footer}"></footer>
+<dialog class="pd-lightbox" data-lightbox aria-label="Xem ảnh sản phẩm">
+    <button class="pd-lightbox-close" type="button" data-lightbox-close aria-label="Đóng">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+    <button class="pd-nav pd-nav--prev" type="button" data-lightbox-prev aria-label="Ảnh trước">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+    </button>
+    <img class="pd-lightbox-img" data-lightbox-img alt="">
+    <button class="pd-nav pd-nav--next" type="button" data-lightbox-next aria-label="Ảnh sau">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+    </button>
+    <p class="pd-lightbox-caption" data-lightbox-caption></p>
+</dialog>
 </body>
 </html>

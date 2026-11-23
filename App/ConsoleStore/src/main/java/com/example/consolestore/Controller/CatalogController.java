@@ -16,15 +16,18 @@ import org.springframework.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.consolestore.Service.ReviewService;
+import com.example.consolestore.Service.ProductGalleryService;
 
 @Controller
 public class CatalogController {
     private static final Logger log=LoggerFactory.getLogger(CatalogController.class);
     private final CatalogService catalog;
     private final ReviewService reviews;
-    public CatalogController(CatalogService catalog, ReviewService reviews){
+    private final ProductGalleryService gallery;
+    public CatalogController(CatalogService catalog, ReviewService reviews, ProductGalleryService gallery){
         this.catalog=catalog;
         this.reviews=reviews;
+        this.gallery=gallery;
     }
     public record NavigationItem(String label,String url,boolean active) {}
     @GetMapping({"/products","/catalog.html"})
@@ -136,6 +139,15 @@ public class CatalogController {
 
             model.addAttribute("product", detail.product());
             model.addAttribute("description", detail.description());
+            model.addAttribute("gallery", gallery.images(detail.product().image()));
+
+            // Tách mô tả: dòng đầu là đoạn dẫn nổi bật, các dòng sau là ý chính.
+            List<String> descLines = Arrays.stream(detail.description().split("\\R"))
+                    .map(line -> line.strip().replaceFirst("^[-•*]\\s*", ""))
+                    .filter(line -> !line.isBlank())
+                    .toList();
+            model.addAttribute("descLead", descLines.isEmpty() ? detail.description() : descLines.get(0));
+            model.addAttribute("descPoints", descLines.size() > 1 ? descLines.subList(1, descLines.size()) : List.<String>of());
             model.addAttribute("related", catalog.related(id, 4));
 
             // CN04 sẽ cung cấp tài khoản và quyền từ phía server.

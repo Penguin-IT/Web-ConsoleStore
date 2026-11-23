@@ -108,7 +108,8 @@ public class SecurityConfig {
                 // Cho phép xử lý lỗi và chuyển tiếp
                 .dispatcherTypeMatchers(
                         DispatcherType.ERROR,
-                        DispatcherType.FORWARD
+                        DispatcherType.FORWARD,
+                        DispatcherType.ASYNC
                 ).permitAll()
 
                 // Tài nguyên công khai
@@ -129,6 +130,9 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/sandbox/**").permitAll()
                 // Trang công khai
+                .requestMatchers(HttpMethod.GET, "/chat/config").permitAll()
+                .requestMatchers("/chat/stream", "/chat/send")
+                .hasAnyRole("KHACHHANG", "ADMIN", "NHANVIEN", "BANHANG")
                 .requestMatchers(
                         HttpMethod.GET,
                         "/",
