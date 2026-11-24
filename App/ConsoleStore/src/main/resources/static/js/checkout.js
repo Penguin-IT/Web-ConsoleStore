@@ -510,7 +510,7 @@
         update();
     }
 
- 
+
     function init() {
         form = document.querySelector('[data-checkout-form]');
 

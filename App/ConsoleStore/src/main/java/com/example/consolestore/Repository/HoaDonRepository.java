@@ -40,11 +40,13 @@ public interface HoaDonRepository
             """)
     BigDecimal readTotal(@Param("id") Long id);
     @Query("""
-        select sum(h.totalAmount)
-        from HoaDon h
-        where h.customerId = :customerId
-          and h.status = 'HOAN_TAT'
-        """)
+    select sum(h.totalAmount
+               - coalesce(h.shippingFee, 0)
+               + coalesce(h.discount, 0))
+    from HoaDon h
+    where h.customerId = :customerId
+      and h.status = 'HOAN_TAT'
+    """)
     BigDecimal completedSpend(@Param("customerId") Long customerId);
     @Modifying
     @Query(
@@ -1064,5 +1066,32 @@ public interface HoaDonRepository
     int saveTransactionCode(
             @Param("id") Long id,
             @Param("code") String code
+    );
+    // VNPAY đã thu tiền nhưng đơn đã hủy/hết hạn: đánh dấu "cần hoàn tiền" lên ghi chú đơn.
+    // - Dùng CHARINDEX thay vì LIKE vì dấu [ ] là ký tự đặc biệt của LIKE.
+    //   Nhờ đó return URL và IPN cùng gọi vẫn chỉ ghi một lần.
+    // - LEFT(..., 255) vì cột ghiChu chỉ dài 255 ký tự (tránh lỗi truncated).
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+            value = """
+                UPDATE HoaDon
+                SET ghiChu = LEFT(
+                    CONCAT(
+                        :note,
+                        CASE WHEN ghiChu IS NULL OR ghiChu = N''
+                             THEN N''
+                             ELSE CONCAT(N' | Ghi chú của khách: ', ghiChu)
+                        END
+                    ), 255)
+                WHERE maHD = :id
+                  AND kenhBan = N'ONLINE'
+                  AND (ghiChu IS NULL OR CHARINDEX(:marker, ghiChu) = 0)
+                """,
+            nativeQuery = true
+    )
+    int markRefundNeeded(
+            @Param("id") Long id,
+            @Param("note") String note,
+            @Param("marker") String marker
     );
 }

@@ -35,7 +35,7 @@ public class VnpayService {
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final Pattern TXN_REF =
             Pattern.compile("^HD(\\d{1,18})T\\d{14}$");
-
+    public static final String REFUND_MARKER = "[CẦN HOÀN TIỀN]";
     public enum Outcome {
         SUCCESS,
         ALREADY_PAID,
@@ -221,8 +221,20 @@ public class VnpayService {
             return new Result(Outcome.ALREADY_PAID, invoiceId);
         }
 
-        // VNPAY đã trừ tiền nhưng đơn đã bị hủy/hết hạn: cần xử lý hoàn tiền
-        log.warn("VNPAY paid but order HD{} is no longer open", invoiceId);
+        // VNPAY đã trừ tiền nhưng đơn đã bị hủy/hết hạn: ghi dấu vết để nhân viên hoàn tiền
+        String refundTxn = params.getOrDefault("vnp_TransactionNo", "")
+                .replaceAll("[^0-9A-Za-z]", "");
+
+        String refundNote = REFUND_MARKER + " Khách đã trả "
+                + payment.getAmount().toPlainString()
+                + "đ qua VNPAY (mã GD "
+                + (refundTxn.isEmpty() ? "không rõ" : refundTxn)
+                + ") nhưng đơn đã hủy/hết hạn.";
+
+        invoices.markRefundNeeded(invoiceId, refundNote, REFUND_MARKER);
+
+        log.warn("VNPAY paid but order HD{} is no longer open, txn={}",
+                invoiceId, refundTxn);
 
         return new Result(Outcome.EXPIRED, invoiceId);
     }

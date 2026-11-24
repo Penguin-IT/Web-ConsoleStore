@@ -2485,7 +2485,7 @@ body.customer-page .ui-auth-form {
 .tier-card span { font-size: 13px; opacity: .85; }
 .tier-card em { font-style: normal; font-size: 1.3rem; font-weight: 700; color: var(--tier-color); }
 .tier-member  { --tier-color: #cbd5e1; --tier-tint: rgba(100,116,139,.55); --tier-img: url("../images/banners/banner 13.jpg"); }
-.tier-silver  { --tier-color: #e5e7eb; --tier-tint: rgba(156,163,175,.55); --tier-img: url("../images/banners/banner15.jpg"); }
+.tier-silver  { --tier-color: #e5e7eb; --tier-tint: rgba(156,163,175,.55); --tier-img: url("../images/banners/bannerconsole.jpg"); }
 .tier-gold    { --tier-color: #fcd34d; --tier-tint: rgba(217,119,6,.55);   --tier-img: url("../images/banners/banner10.jpg"); }
 .tier-diamond { --tier-color: #a5f3fc; --tier-tint: rgba(121,85,213,.6);   --tier-img: url("../images/banners/bannerconsole.jpg"); }
 
