@@ -278,7 +278,6 @@ public interface HoaDonRepository
     findCustomerOrders(
             @Param("customerId") Long customerId,
             org.springframework.data.domain.Pageable pageable
-
     );
 
     interface OrderState {
@@ -731,20 +730,29 @@ public interface HoaDonRepository
         FROM HoaDon h
         WHERE h.kenhBan = N'ONLINE'
           AND h.trangThai = N'CHO_XAC_NHAN'
-          AND h.ngayLap < DATEADD(
-              MINUTE,
-              -:timeoutMinutes,
-              GETDATE()
-          )
           AND NOT EXISTS (
-              SELECT 1
-              FROM ThanhToan t
+              SELECT 1 FROM ThanhToan t
               WHERE t.maHD = h.maHD
-AND (t.trangThai = N'DA_THANH_TOAN' OR t.phuongThuc = N'TIEN_MAT')          )
+                AND t.trangThai = N'DA_THANH_TOAN'
+          )
+          AND (
+              -- COD: chờ nhân viên xác nhận tối đa codTimeoutMinutes
+              (EXISTS (SELECT 1 FROM ThanhToan t
+                       WHERE t.maHD = h.maHD
+                         AND t.phuongThuc = N'TIEN_MAT')
+               AND h.ngayLap < DATEADD(MINUTE, -:codTimeoutMinutes, GETDATE()))
+              OR
+              -- Online trả trước: quá timeoutMinutes mà chưa thanh toán
+              (NOT EXISTS (SELECT 1 FROM ThanhToan t
+                           WHERE t.maHD = h.maHD
+                             AND t.phuongThuc = N'TIEN_MAT')
+               AND h.ngayLap < DATEADD(MINUTE, -:timeoutMinutes, GETDATE()))
+          )
         ORDER BY h.ngayLap, h.maHD
         """, nativeQuery = true)
     List<Long> findExpiredOnlineOrderIds(
             @Param("timeoutMinutes") int timeoutMinutes,
+            @Param("codTimeoutMinutes") int codTimeoutMinutes,
             @Param("batchSize") int batchSize
     );
 
@@ -1040,4 +1048,21 @@ AND (t.trangThai = N'DA_THANH_TOAN' OR t.phuongThuc = N'TIEN_MAT')          )
             nativeQuery = true
     )
     int autoConfirmOnline(@Param("id") Long id);
+
+    // VNPAY: lưu mã giao dịch (vnp_TransactionNo) sau khi thanh toán thành công
+    @Modifying
+    @Query(
+            value = """
+                UPDATE ThanhToan
+                SET maGiaoDich = :code
+                WHERE maHD = :id
+                  AND trangThai = N'DA_THANH_TOAN'
+                  AND maGiaoDich IS NULL
+                """,
+            nativeQuery = true
+    )
+    int saveTransactionCode(
+            @Param("id") Long id,
+            @Param("code") String code
+    );
 }

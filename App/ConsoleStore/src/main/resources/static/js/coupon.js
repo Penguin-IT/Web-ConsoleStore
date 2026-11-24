@@ -129,4 +129,5 @@
     form.addEventListener('change', function (e) {
         if (e.target && e.target.name === 'province') refresh();
     });
+    form.addEventListener('address:applied', refresh);
 })();

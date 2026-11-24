@@ -89,6 +89,16 @@
                              th:if="${result == 'expired'}">
                             Giao dịch đã hết hạn.
                         </div>
+                        <div class="checkout-alert"
+                             th:if="${result == 'failed'}">
+                            Giao dịch không thành công. Bạn có thể thử thanh toán lại.
+                        </div>
+                        <div class="checkout-alert"
+                             th:if="${viaVnpay}">
+                            <strong>Thẻ test VNPAY sandbox (ngân hàng NCB):</strong><br>
+                            Số thẻ <b>9704198526191432198</b> · Tên <b>NGUYEN VAN A</b> ·
+                            Ngày phát hành <b>07/15</b> · OTP <b>123456</b>
+                        </div>
 
                         <span class="checkout-status">Chưa thanh toán</span>
 

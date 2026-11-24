@@ -12,114 +12,11 @@
 
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/app.css}">
-    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
     <link rel="icon" th:href="@{/images/banners/logo.png}">
+    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
     <script th:src="@{/js/product-gallery.js}" defer></script>
-
-    <!-- Chỉ giữ lại CSS cho phần không thuộc layout pd-* mới:
-         trang trống, đánh giá, sản phẩm liên quan -->
-    <style>
-        .detail-main {
-            min-height: 65vh;
-            padding-block: 45px 80px;
-        }
-
-        .detail-empty {
-            padding-block: 60px;
-            text-align: center;
-        }
-
-        .detail-empty p {
-            margin: 20px 0 30px;
-            color: var(--muted);
-        }
-
-        /* ===== Đánh giá ===== */
-        .reviews {
-            margin-top: 30px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-        }
-
-        .reviews h2 { margin: 0 0 14px; font-size: 22px; }
-        .reviews-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-        .reviews-summary strong { font-size: 28px; }
-        .review-stars { color: #f5a623; letter-spacing: 2px; }
-        .review-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; }
-        .review-ok { border: 1px solid #2e9d5b; }
-        .review-err { border: 1px solid #d64545; }
-        .review-form { display: grid; gap: 12px; margin-bottom: 22px; }
-        .review-form label { display: grid; gap: 6px; }
-        .review-form select, .review-form textarea { padding: 10px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
-        .review-item { padding-block: 16px; border-top: 1px solid var(--border); }
-        .review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .review-head time, .review-badge, .review-empty, .review-hint { color: var(--muted); font-size: 13px; }
-        .review-item p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
-
-        /* ===== Sản phẩm liên quan ===== */
-        .related {
-            margin-top: 55px;
-        }
-
-        .related h2 {
-            margin: 0 0 6px;
-            font-size: 22px;
-        }
-
-        .related-sub {
-            margin: 0 0 22px;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .related-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 20px;
-        }
-
-        .related .product-info h3 {
-            margin: 6px 0 10px;
-            font-size: 16px;
-            line-height: 1.35;
-        }
-
-        .related .product-info h3 a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .related-add {
-            margin-top: 12px;
-        }
-
-        .related-add .button-primary {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-        }
-
-        @media (max-width: 991px) {
-            .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-
-        @media (max-width: 767px) {
-            .detail-main {
-                padding-block: 28px 50px;
-            }
-        }
-
-        @media (max-width: 700px) {
-            .reviews { padding: 22px; }
-        }
-
-        @media (max-width: 480px) {
-            .related-grid { grid-template-columns: 1fr; }
-        }
-    </style>
 </head>
 
 <body class="customer-page product-detail-page">
@@ -128,6 +25,7 @@
 <main id="main-content"
       class="container store-container pd-main"
       tabindex="-1">
+
     <section class="detail-empty" th:if="${product == null}">
         <p class="eyebrow">CONSOLE STORE</p>
 
@@ -231,7 +129,7 @@
                     <span class="pd-code" th:text="${'Mã #' + product.id}"></span>
                 </div>
 
-                <h1 id="productTitle" th:text="${product.name}"></h1>
+                <h1 id="productTitle" class="pd-title" th:text="${product.name}"></h1>
 
                 <ul class="pd-chips">
                     <li class="pd-chip pd-chip--brand" th:text="${product.platform}"></li>
@@ -393,7 +291,6 @@
             </section>
         </div>
 
-        <!-- ============ ĐÁNH GIÁ ============ -->
         <section class="reviews pd-panel"
                  id="reviews"
                  aria-labelledby="reviewsTitle">
@@ -465,8 +362,6 @@
                 <p th:text="${r.content}"></p>
             </article>
         </section>
-
-        <!-- ============ SẢN PHẨM LIÊN QUAN ============ -->
         <section class="related"
                  th:if="${!#lists.isEmpty(related)}"
                  aria-labelledby="relatedTitle">
