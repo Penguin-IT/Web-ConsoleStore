@@ -102,7 +102,7 @@ public class SecurityConfig {
 
         http.authenticationProvider(authenticationProvider);
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/sandbox/**"));
-
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/sandbox/**", "/ai/chat"));
         http.authorizeHttpRequests(authorize -> authorize
 
                 // Cho phép xử lý lỗi và chuyển tiếp
@@ -134,6 +134,8 @@ public class SecurityConfig {
                 .requestMatchers("/vnpay/pay/**").hasRole("KHACHHANG")
                 // Trang công khai
                 .requestMatchers(HttpMethod.GET, "/chat/config").permitAll()
+                .requestMatchers(HttpMethod.GET, "/ai/config").permitAll()
+                .requestMatchers(HttpMethod.POST, "/ai/chat").permitAll()
                 .requestMatchers("/chat/stream", "/chat/send")
                 .hasAnyRole("KHACHHANG", "ADMIN", "NHANVIEN", "BANHANG")
                 .requestMatchers(
