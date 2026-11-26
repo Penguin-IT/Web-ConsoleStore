@@ -1,79 +1,102 @@
 # Console Store
 
-Đồ án môn Công nghệ Java. Console Store là ứng dụng quản lý cửa hàng máy console, tay cầm và đĩa game. Hệ thống hỗ trợ bán hàng online và tại quầy, nhập hàng, theo dõi tồn kho, thu mua thiết bị cũ, bảo hành và báo cáo. Nhân viên có thể dùng chương trình Java Socket riêng để tra cứu tồn kho và bảo hành.
+Console Store là đồ án môn Công nghệ Java về quản lý cửa hàng máy console, tay cầm và đĩa game. Hệ thống gồm ứng dụng web dành cho khách hàng và nhân viên, cơ sở dữ liệu SQL Server, cùng chương trình Java độc lập để tra cứu tồn kho và bảo hành qua TCP Socket.
 
-## 1. Công nghệ và yêu cầu cài đặt
+## Chức năng chính
 
-- **JDK 17**. Kiểm tra bằng `java -version`.
-- Spring Boot, Spring Security, Spring Data JPA, Thymeleaf và Bootstrap.
-- Microsoft SQL Server và SQL Server Management Studio (SSMS).
-- Maven Wrapper có sẵn trong dự án. Lần chạy đầu cần Internet để tải Maven và các thư viện.
+| Nhóm chức năng | Nội dung |
+| --- | --- |
+| Cửa hàng | Xem, lọc và tra cứu sản phẩm, xem chi tiết và đánh giá, đăng ký, đăng nhập, quản lý tài khoản, giỏ hàng, đặt hàng, theo dõi đơn hàng |
+| Bán hàng | Bán tại quầy, xử lý đơn online, duyệt thanh toán, tra cứu hóa đơn |
+| Kho và hậu mãi | Nhập hàng, theo dõi tồn kho và biến động, thu mua thiết bị cũ, tiếp nhận và xử lý bảo hành |
+| Quản lý | Quản lý sản phẩm, khách hàng, nhà cung cấp, nhân viên và tài khoản, xem báo cáo doanh thu và kho |
+| Tác vụ nền và mạng | Quét đơn online quá hạn (CN23), tra cứu tồn kho và bảo hành qua Socket (CN24), chat hỗ trợ trên web |
 
-## 2. Cấu trúc dự án
+## Công nghệ và yêu cầu
+
+- JDK 17. Kiểm tra bằng `java -version`.
+- Spring Boot 4.1.2, Spring MVC, Spring Security, Spring Data JPA, Thymeleaf và Bootstrap 5.
+- Microsoft SQL Server và SSMS. Bật TCP/IP nếu instance chưa nhận kết nối qua TCP.
+- Maven Wrapper có sẵn. Lần đầu chạy cần kết nối Internet để tải Maven và các thư viện.
+
+## Cấu trúc dự án
 
 | Đường dẫn | Nội dung |
-|---|---|
-| `App/ConsoleStore/` | Ứng dụng web Spring Boot |
-| `App/ConsoleStore/src/main/resources/application.properties` | Cấu hình ứng dụng, SQL Server và cổng Socket |
-| `Data/Store.sql` | Script tạo cơ sở dữ liệu và nạp dữ liệu mẫu |
-| `Client/LookupClient.java` | Chương trình tra cứu chạy độc lập qua TCP Socket |
+| --- | --- |
+| [`App/ConsoleStore/`](App/ConsoleStore/) | Ứng dụng web Maven. Controller nhận yêu cầu, Service xử lý nghiệp vụ, Repository truy vấn SQL Server và Thymeleaf dựng giao diện. |
+| [`application.properties`](App/ConsoleStore/src/main/resources/application.properties) | Cấu hình SQL Server, thanh toán, Socket và tác vụ nền. |
+| [`Data/Store.sql`](Data/Store.sql) | Script SQL Server tạo cơ sở dữ liệu, bảng, thủ tục, trigger và dữ liệu mẫu. |
+| [`Client/`](Client/) | Client Socket độc lập, gồm [bản Swing](Client/LookupClientGui.java) và [bản dòng lệnh](Client/LookupClient.java). |
+| [`BaoCao/`](BaoCao/) | Báo cáo đồ án. |
 
-## 3. Tạo cơ sở dữ liệu
+## 1. Tải mã nguồn và tạo cơ sở dữ liệu
 
-1. Mở SSMS và kết nối vào SQL Server bằng tài khoản có quyền tạo cơ sở dữ liệu.
-2. Mở [`Data/Store.sql`](Data/Store.sql) và chạy toàn bộ script trên môi trường demo. Script tạo `QLStoreConsole` nếu chưa có, sau đó tạo cấu trúc và nạp dữ liệu mẫu.
-3. Làm mới danh sách **Databases** trong SSMS. Kiểm tra `QLStoreConsole` có các bảng như `SanPham`, `TaiKhoan`, `TonKho` và `HoaDon`.
-
-## 4. Chạy server web
-
-Mở PowerShell và tải mã nguồn:
+Mở PowerShell:
 
 ```powershell
 git clone https://github.com/Penguin-IT/Web-ConsoleStore.git
 cd Web-ConsoleStore
 ```
 
-Trong PowerShell, thiết lập thông tin SQL Server của máy đang chạy:
+1. Mở SSMS, kết nối đến instance SQL Server dùng để demo bằng tài khoản có quyền tạo cơ sở dữ liệu.
+2. Mở [`Data/Store.sql`](Data/Store.sql) trong SSMS và chạy toàn bộ script. Script tạo cơ sở dữ liệu `QLStoreConsole` nếu chưa có, sau đó tạo cấu trúc và nạp dữ liệu mẫu.
+3. Làm mới danh sách **Databases**, kiểm tra các bảng `SanPham`, `TonKho`, `TaiKhoan` và `HoaDon`. Ứng dụng dùng `ddl-auto=validate` để kiểm tra cấu trúc bảng khi khởi động.
+
+## 2. Chạy ứng dụng web
+
+Từ thư mục gốc của repo, nhập các lệnh dưới đây trong cùng một cửa sổ PowerShell. Thay tài khoản, mật khẩu và cổng theo instance SQL Server trên máy. `1433` là cổng ví dụ.
 
 ```powershell
 $env:SPRING_DATASOURCE_URL = 'jdbc:sqlserver://localhost:1433;databaseName=QLStoreConsole;encrypt=true;trustServerCertificate=true'
 $env:SPRING_DATASOURCE_USERNAME = 'ten_dang_nhap_sql_server'
 $env:SPRING_DATASOURCE_PASSWORD = 'mat_khau_sql_server'
-```
 
-`localhost:1433` là địa chỉ ví dụ. Thay máy chủ, cổng, tên đăng nhập và mật khẩu theo cấu hình SQL Server đang dùng. Đây là thông tin kết nối cơ sở dữ liệu, khác với tài khoản đăng nhập trên website. Giữ mật khẩu SQL Server trong cấu hình chạy cục bộ.
-
-Trong **cùng cửa sổ PowerShell**, chạy:
-
-```powershell
 cd App/ConsoleStore
 .\mvnw.cmd spring-boot:run
 ```
 
-Khi ứng dụng khởi động xong, mở [http://localhost:8080](http://localhost:8080). Giữ server hoạt động trong khi chạy client Socket.
+Sau khi Spring Boot khởi động, mở [Console Store tại localhost](http://localhost:8080/). Giữ cửa sổ server chạy trong khi demo web hoặc client Socket. Thông tin kết nối SQL Server chỉ dùng trong cấu hình chạy cục bộ.
 
-Nếu chạy bằng IntelliJ IDEA, mở `App/ConsoleStore/pom.xml` dưới dạng dự án Maven, chọn JDK 17, thêm ba biến kết nối SQL Server vào cấu hình chạy và chạy lớp `ConsoleStoreApplication`.
+**Chạy bằng IntelliJ IDEA.** Mở `App/ConsoleStore/pom.xml` dưới dạng dự án Maven, chọn JDK 17, thêm ba biến kết nối SQL Server ở trên vào **Run → Edit Configurations → Environment variables**, rồi chạy lớp `ConsoleStoreApplication`.
 
-## 5. Tài khoản và chức năng demo
+### Tài khoản demo
 
-Các tài khoản dưới đây thuộc dữ liệu mẫu trong `Store.sql`. Mật khẩu mẫu là `123456`.
+Các tài khoản dưới đây dùng mật khẩu mẫu `123456` khi cài từ dữ liệu mẫu.
 
-| Tài khoản | Vai trò | Chức năng có thể demo |
-|---|---|---|
-| `admin` | Quản trị viên | Quản lý sản phẩm, nhân viên, tài khoản và xem báo cáo |
-| `nv02`, `nv03` | Nhân viên | Bán tại quầy, xử lý đơn online, nhập hàng, tra tồn kho và bảo hành |
-| `kh01` | Khách hàng | Xem sản phẩm, thêm vào giỏ, đặt hàng và xem đơn hàng |
+| Tài khoản | Vai trò | Dùng để demo |
+| --- | --- | --- |
+| `admin` | `ADMIN` | Quản lý và báo cáo, tra tồn kho và bảo hành |
+| `nv02`, `nv03` | `NHANVIEN` | Thao tác nghiệp vụ theo quyền, tra tồn kho và bảo hành |
+| `kh01`, `kh02` | `KHACHHANG` | Đặt hàng, xem đơn và kiểm thử hai khách đặt hàng đồng thời |
 
-## 6. Chạy client Socket
+### Thanh toán demo
 
-Mở một PowerShell khác tại thư mục gốc của repository, sau đó chạy:
+- **Online:** Có COD, chuyển khoản, MoMo và ZaloPay. COD là thanh toán khi nhận hàng. MoMo và ZaloPay dùng cổng mô phỏng PayLab. Chuyển khoản đi qua VNPAY Sandbox khi cấu hình VNPAY được bật, hoặc qua PayLab khi chưa bật.
+- **Tại quầy:** Nhân viên lập hóa đơn và có thể nhận tiền mặt.
+- Để demo PayLab, có thể chọn MoMo hoặc ZaloPay và làm theo hướng dẫn trên trang thanh toán. Để demo VNPAY, dùng thông tin Sandbox của nhóm trong cấu hình cục bộ.
+
+## 3. Chạy client Socket (CN24)
+
+Server tra cứu chạy cùng Spring Boot, mặc định lắng nghe TCP tại `127.0.0.1:9000`. Mở một PowerShell khác ở thư mục gốc của repo.
+
+**Bản Swing**
 
 ```powershell
 cd Client
-java LookupClient.java 127.0.0.1 9000
+java "-Dfile.encoding=UTF-8" LookupClientGui.java
 ```
 
-Đăng nhập bằng tài khoản `admin` hoặc tài khoản nhân viên có quyền. Các lệnh mẫu:
+Đăng nhập bằng tài khoản có quyền tra cứu. Chọn **Tra tồn kho** rồi nhập `SP1`, `SP2` hoặc `PlayStation`. Để kiểm tra bảo hành, chọn **Tra bảo hành** và nhập `SN-PS5STD-0001`. Tra cứu tồn kho trả về tổng số lượng trên các kho. Kết quả bảo hành phụ thuộc lịch sử bán và trạng thái của serial.
+
+**Bản dòng lệnh**
+
+```powershell
+cd Client
+chcp 65001
+java "-Dfile.encoding=UTF-8" LookupClient.java 127.0.0.1 9000
+```
+
+Sau khi đăng nhập, thử các lệnh:
 
 ```text
 TONKHO SP1
@@ -82,17 +105,25 @@ BAOHANH SN-PS5STD-0001
 QUIT
 ```
 
-`ADMIN` và `NHANVIEN` dùng được cả hai lệnh tra cứu. Tài khoản `KHO` chỉ dùng được `TONKHO`, còn `BAOHANH` chỉ dùng được lệnh `BAOHANH`. Client hiển thị các lệnh được phép sau khi đăng nhập.
+`ADMIN` và `NHANVIEN` dùng được cả hai chức năng tra cứu. Trong mã phân quyền, `KHO` được tra tồn kho và `BAOHANH` được tra bảo hành. Cổng `9100` trong cấu hình dành cho chat trên web.
 
-## 7. Demo xử lý đồng thời và lập trình mạng
+## 4. Kịch bản demo và kiểm thử
 
-1. **Ba client cùng kết nối.** Mở ba cửa sổ Terminal, chạy lệnh ở mục 6 trong từng cửa sổ, rồi đăng nhập lần lượt bằng `admin`, `nv02` và `nv03`. Giữ cả ba phiên mở và gửi lệnh tra cứu gần như cùng lúc. Kiểm tra từng client nhận đúng kết quả. Sau đó gửi `QUIT` ở một client và kiểm tra hai client còn lại vẫn tra cứu được.
-2. **Hai yêu cầu cùng đặt sản phẩm cuối cùng.** Chuẩn bị sản phẩm có tổng tồn khả dụng bằng 1. Đăng nhập hai tài khoản khách hàng trong hai phiên trình duyệt riêng rồi đặt cùng sản phẩm. Kết quả mong đợi là chỉ một đơn được tạo và tồn kho cuối cùng bằng 0.
-3. **Tự động hủy đơn quá hạn.** Theo dõi một đơn online thanh toán trước đang chờ xác nhận và chưa thanh toán. Cấu hình hiện tại đặt thời hạn 15 phút và khoảng nghỉ giữa hai lượt quét là 10 giây. Kiểm tra log `order-expiry-`, trạng thái đơn và số lượng được hoàn vào kho. Đơn COD thuộc luồng thanh toán khi nhận hàng và được loại khỏi lượt quét.
+| Kịch bản | Thao tác | Kết quả mong đợi |
+| --- | --- | --- |
+| Ba client Socket hoạt động đồng thời | Mở ba tab PowerShell và chạy client trong từng tab. Đăng nhập bằng `admin`, `nv02` và `nv03`. Giữ cả ba phiên mở, rồi gửi ba yêu cầu khác nhau gần như cùng lúc. | Mỗi client nhận đúng dữ liệu của lệnh đã gửi. Cửa sổ Run của server hiển thị các kết nối được xử lý trên các luồng `lookup-worker-*`. |
+| Đóng một client | Gõ `QUIT` hoặc bấm **Thoát phiên** ở một client, rồi tra cứu tiếp từ hai client kia. | Phiên đã thoát đóng kết nối. Hai client còn lại tiếp tục nhận kết quả. |
+| Hai khách đặt sản phẩm cuối cùng | Chọn sản phẩm có tổng tồn khả dụng bằng 1. Mở hai phiên trình duyệt riêng, đăng nhập `kh01` và `kh02` rồi đặt cùng sản phẩm gần như cùng lúc. Kiểm tra trước khi tác vụ hủy đơn chạy. | Chỉ một đơn được tạo và tồn khả dụng về 0. Yêu cầu còn lại nhận thông báo tồn kho và không làm tồn bị âm. |
+| Tự động hủy đơn trả trước quá hạn | Đặt đơn online trả trước, để đơn ở trạng thái chờ xác nhận và chưa thanh toán. Theo dõi sau thời hạn mặc định 15 phút. | Lượt quét của `order-expiry-*` ghi nhận đơn bị hủy. Kiểm tra trạng thái đơn và tồn kho được hoàn lại. |
 
-## 8. Xử lý lỗi thường gặp
+CN23 dùng thời hạn riêng cho COD đang chờ xác nhận (`store.order-expiry.cod-timeout-minutes`, mặc định 1440 phút). Khoảng nghỉ giữa hai lượt quét là 10 giây theo cấu hình hiện tại.
 
-- **Web báo lỗi kết nối SQL Server:** Kiểm tra dịch vụ SQL Server, máy chủ, cổng, thông tin đăng nhập và quyền truy cập `QLStoreConsole`.
-- **Web báo thiếu bảng hoặc cột:** Kiểm tra đã chạy hết `Data/Store.sql` và ứng dụng đang kết nối đúng cơ sở dữ liệu.
-- **Client không kết nối được:** Kiểm tra server đã khởi động, `store.lookup.enabled=true` và cổng client trùng với `store.lookup.port`.
-- **Client đăng nhập được nhưng bị từ chối lệnh:** Kiểm tra vai trò của tài khoản và danh sách lệnh server hiển thị sau khi đăng nhập.
+## Lỗi thường gặp
+
+| Hiện tượng | Cách kiểm tra |
+| --- | --- |
+| Spring Boot báo lỗi datasource hoặc thiếu bảng | Kiểm tra dịch vụ SQL Server, cổng TCP, tài khoản, tên `QLStoreConsole` và kết quả chạy `Store.sql`. Nếu mở bằng IntelliJ, kiểm tra các biến môi trường trong cấu hình chạy. |
+| `java` không được nhận diện | Kiểm tra JDK 17 và `PATH`. Mở lại Terminal sau khi cập nhật cấu hình. |
+| Client báo không kết nối được | Giữ Spring Boot chạy, kiểm tra log `Store socket server started` và `store.lookup.enabled=true`. Bản Swing dùng cổng 9000. Nếu server đổi cổng, truyền cổng tương ứng khi chạy bản dòng lệnh. |
+| Tìm `SP02` không ra sản phẩm | Dùng `SP2`, `2` hoặc tìm theo tên sản phẩm. |
+| Client hiện tiếng Việt sai | Giữ file Java ở UTF-8, chạy với `"-Dfile.encoding=UTF-8"` và chọn mã trang 65001 cho Terminal dòng lệnh trên Windows. |
