@@ -315,6 +315,13 @@ public class CheckoutController {
         model.addAttribute("page", page);
         model.addAttribute("payUrl", payUrl);
         model.addAttribute("viaVnpay", viaVnpay);
+        // Đơn đã hủy nhưng VNPAY đã thu tiền (ghi chú có dấu "cần hoàn tiền")
+        String invoiceNote = page.invoice().getNote();
+        boolean refundNeeded = "HUY".equals(page.invoice().getStatus())
+                && invoiceNote != null
+                && invoiceNote.startsWith(VnpayService.REFUND_MARKER);
+
+        model.addAttribute("refundNeeded", refundNeeded);
         model.addAttribute("result", result);
         model.addAttribute("bundlePercent", BundlePricing.PERCENT);
         return "payments";

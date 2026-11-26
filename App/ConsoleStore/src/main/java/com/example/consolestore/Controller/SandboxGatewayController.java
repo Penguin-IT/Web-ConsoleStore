@@ -19,14 +19,18 @@ public class SandboxGatewayController {
 
     private final PaymentGatewayService gateway;
     private final int timeoutMinutes;
+    private final String publicBaseUrl;
 
     public SandboxGatewayController(
             PaymentGatewayService gateway,
             @Value("${store.order-expiry.timeout-minutes:15}")
-            int timeoutMinutes
+            int timeoutMinutes,
+            @Value("${store.public-base-url:}")
+            String publicBaseUrl
     ) {
         this.gateway = gateway;
         this.timeoutMinutes = timeoutMinutes;
+        this.publicBaseUrl = publicBaseUrl == null ? "" : publicBaseUrl.strip();
     }
 
     @GetMapping("/{id}")
@@ -34,6 +38,7 @@ public class SandboxGatewayController {
             @PathVariable Long id,
             @RequestParam("t") String token,
             @RequestParam(value = "e", required = false) String error,
+            @RequestParam(value = "m", required = false) String mobile,
             Model model,
             HttpServletResponse response
     ) {
@@ -50,10 +55,16 @@ public class SandboxGatewayController {
                 view.createdAt().plusMinutes(timeoutMinutes)
         ).getSeconds());
 
+        String base = publicBaseUrl.replaceAll("/+$", "");
+
         model.addAttribute("v", view);
         model.addAttribute("token", token);
         model.addAttribute("error", error);
         model.addAttribute("secondsLeft", secondsLeft);
+        model.addAttribute("phone", "1".equals(mobile));
+        model.addAttribute("qrUrl", base.isEmpty()
+                ? ""
+                : base + "/sandbox/pay/" + id + "?t=" + token + "&m=1");
 
         return "sandbox-gateway";
     }
@@ -64,7 +75,7 @@ public class SandboxGatewayController {
             @RequestParam("t") String token,
             @RequestParam(defaultValue = "") String otp
     ) {
-        String back = "redirect:/sandbox/pay/" + id + "?t=" + token;
+        String back = "redirect:/sandbox/pay/" + id + "?t=" + token + "&m=1";
 
         return switch (gateway.pay(id, token, otp)) {
             case SUCCESS -> back;

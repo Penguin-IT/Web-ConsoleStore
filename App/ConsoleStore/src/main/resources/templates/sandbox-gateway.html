@@ -57,10 +57,13 @@
         <p>Đã thanh toán <strong th:text="${money}"></strong>
             cho đơn <strong th:text="${'HD' + v.invoiceId}"></strong>.</p>
         <p style="color:#6b7280">Mã giao dịch: <span th:text="${txnRef}"></span></p>
-        <p>Đang chuyển về cửa hàng...</p>
-        <a th:href="@{/checkout/orders/{id}/payment(id=${v.invoiceId},result='success')}">
-            Quay lại cửa hàng ngay
-        </a>
+        <th:block th:unless="${phone}">
+            <p>Đang chuyển về cửa hàng...</p>
+            <a th:href="@{/checkout/orders/{id}/payment(id=${v.invoiceId},result='success')}">
+                Quay lại cửa hàng ngay
+            </a>
+        </th:block>
+        <p th:if="${phone}">Bạn có thể đóng trang này và quay lại máy tính.</p>
     </section>
 
     <!-- Hết hạn / đã hủy -->
@@ -87,12 +90,14 @@
 
             <div class="timer">Giao dịch hết hạn sau <span id="clock">--:--</span></div>
 
-            <div id="qr"></div>
-            <p class="hint">Quét QR bằng điện thoại để thanh toán trên thiết bị khác.
-                Trang này sẽ tự cập nhật khi giao dịch hoàn tất.</p>
+            <th:block th:unless="${phone}">
+                <div id="qr"></div>
+                <p class="hint">Quét QR bằng điện thoại để thanh toán trên thiết bị khác.
+                    Trang này sẽ tự cập nhật khi giao dịch hoàn tất.</p>
+            </th:block>
         </section>
 
-        <section class="card">
+        <section class="card" th:if="${phone}">
             <h2 th:text="${'Xác thực thanh toán qua ' + methodName}"></h2>
 
             <label th:text="${v.method == 'CHUYEN_KHOAN' ? 'Số thẻ' : 'Số điện thoại ví'}"></label>
@@ -117,6 +122,20 @@
                 </button>
             </form>
 
+
+
+            <div class="hint">
+                <b>Dữ liệu test (sandbox):</b><br>
+                OTP <b>123456</b>: thanh toán thành công<br>
+                OTP <b>111111</b>: không đủ số dư<br>
+                OTP khác: sai OTP
+            </div>
+        </section>
+        <section class="card" th:unless="${phone}">
+            <h2>Quét mã QR để thanh toán</h2>
+            <p>Mở camera điện thoại, quét mã QR bên cạnh rồi nhập mã OTP trên điện thoại.
+                Trang này sẽ tự cập nhật khi thanh toán xong.</p>
+
             <form method="post"
                   th:action="@{/sandbox/pay/{id}/cancel(id=${v.invoiceId})}">
                 <input type="hidden" name="t" th:value="${token}">
@@ -124,10 +143,9 @@
             </form>
 
             <div class="hint">
-                <b>Dữ liệu test (sandbox):</b><br>
-                OTP <b>123456</b>: thanh toán thành công<br>
-                OTP <b>111111</b>: không đủ số dư<br>
-                OTP khác: sai OTP
+                Không có điện thoại?
+                <a th:href="@{/sandbox/pay/{id}(id=${v.invoiceId},t=${token},m=1)}">
+                    Thanh toán ngay trên máy này</a>
             </div>
         </section>
     </th:block>
@@ -141,11 +159,15 @@
         var left = /*[[${secondsLeft}]]*/ 0;
         var paid = /*[[${v.paid}]]*/ false;
         var closed = /*[[${v.closed}]]*/ false;
+        var phone = /*[[${phone}]]*/ false;
 
+        var qrUrl = /*[[${qrUrl}]]*/ '';
         if (paid) {
-            setTimeout(function () {
-                location.href = '/checkout/orders/' + id + '/payment?result=success';
-            }, 3000);
+            if (!phone) {
+                setTimeout(function () {
+                    location.href = '/checkout/orders/' + id + '/payment?result=success';
+                }, 3000);
+            }
             return;
         }
 
@@ -154,7 +176,7 @@
         var qr = document.getElementById('qr');
         if (window.QRCode && qr) {
             new QRCode(qr, {
-                text: location.origin + location.pathname + '?t=' + token,
+                text: qrUrl || (location.origin + location.pathname + '?t=' + token + '&m=1'),
                 width: 200,
                 height: 200
             });
@@ -164,7 +186,8 @@
         function tick() {
             if (left <= 0) {
                 clock.textContent = '00:00';
-                document.getElementById('payBtn').disabled = true;
+                var payBtn = document.getElementById('payBtn');
+                if (payBtn) { payBtn.disabled = true; }
                 return;
             }
             var m = Math.floor(left / 60), s = left % 60;

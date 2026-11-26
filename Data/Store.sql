@@ -269,7 +269,6 @@ GO
 -- =========================================================
 -- 5. HÓA ĐƠN VÀ THANH TOÁN
 -- =========================================================
-
 IF OBJECT_ID(N'HoaDon', N'U') IS NULL
 BEGIN
     CREATE TABLE HoaDon (
@@ -330,7 +329,6 @@ BEGIN
     );
 END;
 GO
-
 IF OBJECT_ID(N'ThanhToan', N'U') IS NULL
 BEGIN
     CREATE TABLE ThanhToan (
@@ -3012,3 +3010,15 @@ VALUES
  N'28 Duyên Hải',
  N'28 Duyên Hải, Thị trấn Cần Thạnh, Huyện Cần Giờ, TP. Hồ Chí Minh', 1);
 GO
+--Dùng đề test khi chuyển khoản quá 15 phút mà người dùng vẫn chuyển tiền thì sẽ thông báo hoàn 
+--SELECT TOP 5
+--       h.maHD, h.ngayLap, h.trangThai AS trangThaiDon,
+--       t.phuongThuc, t.trangThai AS trangThaiThanhToan, h.tongTien
+--FROM HoaDon h
+--JOIN ThanhToan t ON t.maHD = h.maHD
+--WHERE h.kenhBan = N'ONLINE'
+--  AND t.phuongThuc = N'CHUYEN_KHOAN'
+--  AND t.trangThai = N'CHUA_THANH_TOAN'
+--ORDER BY h.maHD DESC;
+--go
+--UPDATE HoaDon SET trangThai = N'HUY' WHERE maHD = 10051

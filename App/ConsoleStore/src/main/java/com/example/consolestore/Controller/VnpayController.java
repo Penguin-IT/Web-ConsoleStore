@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.http.MediaType;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Map;
@@ -85,7 +85,7 @@ public class VnpayController {
         String status = switch (result.outcome()) {
             case SUCCESS, ALREADY_PAID -> "success";
             case CANCELLED -> "cancel";
-            case EXPIRED -> "expired";
+            case EXPIRED -> "paid_expired";
             default -> "failed";
         };
 
@@ -94,14 +94,14 @@ public class VnpayController {
     }
 
     // VNPAY gọi trực tiếp từ máy chủ (cần URL public, ví dụ ngrok)
+    // VNPAY gọi trực tiếp từ máy chủ (cần URL public, ví dụ ngrok)
     @GetMapping("/vnpay/ipn")
-    @ResponseBody
-    public Map<String, String> ipn(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> ipn(HttpServletRequest request) {
         var result = vnpay.handle(
                 VnpayService.vnpParams(request.getParameterMap())
         );
 
-        return switch (result.outcome()) {
+        Map<String, String> body = switch (result.outcome()) {
             case SUCCESS, FAILED, CANCELLED ->
                     reply("00", "Confirm Success");
             case ALREADY_PAID ->
@@ -115,6 +115,11 @@ public class VnpayController {
             case EXPIRED ->
                     reply("99", "Order is closed");
         };
+
+        // Ép Content-Type JSON để không phụ thuộc header Accept của VNPAY
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
     private static Map<String, String> reply(String code, String message) {
