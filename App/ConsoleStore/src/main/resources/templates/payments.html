@@ -15,6 +15,11 @@
     <link rel="stylesheet" th:href="@{/css/checkout.css}">
 
     <script th:src="@{/js/store.js}" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" th:href="@{/css/polish.css(v='20261124')}">
+    <script th:src="@{/js/polish.js(v='20261124')}" defer></script>
 </head>
 
 <body class="customer-page">
@@ -39,9 +44,20 @@
         <section class="checkout-panel checkout-payment">
             <h2 th:text="${page.methodLabel}"></h2>
 
+            <!-- Đơn hủy, chưa mất tiền -->
             <div class="checkout-alert"
-                 th:if="${page.invoice.status == 'HUY'}">
+                 th:if="${page.invoice.status == 'HUY' and !refundNeeded}">
                 Đơn hàng đã hủy. Không thực hiện thanh toán cho đơn này.
+            </div>
+
+            <!-- Đơn hủy nhưng VNPAY đã thu tiền -->
+            <div class="checkout-alert checkout-warning"
+                 th:if="${refundNeeded}">
+                <strong>Chúng tôi đã nhận được khoản thanh toán của bạn,
+                    nhưng đơn hàng đã hết hạn nên không thể xác nhận.</strong><br>
+                Khoản tiền sẽ được hoàn lại cho bạn. Vui lòng giữ mã đơn
+                <b th:text="${'HD' + page.invoice.id}"></b> và liên hệ cửa hàng
+                nếu cần hỗ trợ. Bạn <b>không cần thanh toán lại</b>.
             </div>
 
             <th:block th:if="${page.invoice.status != 'HUY'}">
@@ -88,6 +104,16 @@
                         <div class="checkout-alert"
                              th:if="${result == 'expired'}">
                             Giao dịch đã hết hạn.
+                        </div>
+                        <div class="checkout-alert"
+                             th:if="${result == 'failed'}">
+                            Giao dịch không thành công. Bạn có thể thử thanh toán lại.
+                        </div>
+                        <div class="checkout-alert"
+                             th:if="${viaVnpay}">
+                            <strong>Thẻ test VNPAY sandbox (ngân hàng NCB):</strong><br>
+                            Số thẻ <b>9704198526191432198</b> · Tên <b>NGUYEN VAN A</b> ·
+                            Ngày phát hành <b>07/15</b> · OTP <b>123456</b>
                         </div>
 
                         <span class="checkout-status">Chưa thanh toán</span>

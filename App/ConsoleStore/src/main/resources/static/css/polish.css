@@ -1,0 +1,123 @@
+/* Console Store - lớp hoàn thiện giao diện. Nạp SAU các CSS khác. */
+@view-transition { navigation: auto; }
+
+:root {
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --focus: 0 0 0 3px rgba(121, 85, 213, .28);
+    --lift-1: 0 1px 2px rgba(25, 23, 30, .06), 0 4px 12px rgba(40, 27, 64, .06);
+    --lift-2: 0 2px 4px rgba(25, 23, 30, .06), 0 18px 40px rgba(40, 27, 64, .16);
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body, button, input, select, textarea {
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, Arial, sans-serif;
+}
+body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.55;
+}
+h1, h2, h3, h4 { letter-spacing: -.015em; line-height: 1.2; text-wrap: balance; }
+p { text-wrap: pretty; }
+.product-price, .cart-total, .price, [class*="price"], td.num, .num {
+    font-variant-numeric: tabular-nums;
+}
+::selection { background: #7955d5; color: #fff; }
+
+/* Trang vào nhẹ nhàng: một chuyển động duy nhất */
+@keyframes cs-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+main, #main-content, .ops-main { animation: cs-page-in .5s var(--ease) both; }
+
+/* Thanh header kính mờ khi cuộn */
+.site-header { transition: background-color .3s var(--ease), box-shadow .3s var(--ease), backdrop-filter .3s; }
+.site-header.is-scrolled {
+    background-color: rgba(12, 12, 16, .84);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+    backdrop-filter: saturate(160%) blur(16px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+}
+.site-header .home-nav-links a { transition: color .2s, opacity .2s; }
+
+/* Nút bấm */
+body .ui-btn, body .button-primary, body .product-button, body .btn {
+    border-radius: var(--r-sm);
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease),
+                background-color .18s, border-color .18s, color .18s;
+}
+body .ui-btn { font-size: 14px; min-height: 44px; padding: 10px 20px; font-weight: 600; letter-spacing: .005em; }
+body .ui-btn:hover { transform: translateY(-1px); box-shadow: var(--lift-1); }
+body .ui-btn:active, body .button-primary:active { transform: translateY(0) scale(.98); box-shadow: none; }
+body .ui-btn.ui-primary {
+    background-image: linear-gradient(135deg, #8a63e6 0%, #7955d5 55%, #6a45c9 100%);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 6px 18px rgba(121, 85, 213, .35);
+}
+body .ui-btn.ui-primary:hover { box-shadow: 0 10px 26px rgba(121, 85, 213, .48); filter: brightness(1.06); }
+body .button-primary { box-shadow: 0 6px 18px rgba(74, 54, 94, .22); }
+body .button-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(74, 54, 94, .32); }
+
+/* Thẻ sản phẩm */
+body.customer-page .product-card {
+    border-radius: var(--r-lg);
+    box-shadow: var(--lift-1);
+    transition: transform .35s var(--ease), box-shadow .35s var(--ease), border-color .35s;
+}
+body.customer-page .product-card:hover { transform: translateY(-6px); box-shadow: var(--lift-2); border-color: #cdbcf0; }
+body.customer-page .product-card .product-image > img {
+    transition: transform .7s var(--ease), opacity .45s var(--ease);
+}
+body.customer-page .product-card:hover .product-image > img { transform: scale(1.06); }
+body.customer-page .product-image {
+    background: linear-gradient(110deg, #f1edf7 30%, #faf8fd 50%, #f1edf7 70%) 0 0 / 200% 100%;
+    animation: cs-shimmer 1.4s linear infinite;
+}
+body.customer-page .product-image.is-loaded { animation: none; background: #fff; }
+body.customer-page .product-image > img[data-pending] { opacity: 0; }
+@keyframes cs-shimmer { to { background-position: -200% 0; } }
+body.customer-page .product-info h3 { font-size: 16px; font-weight: 650; line-height: 1.35; }
+body.customer-page .product-price { font-weight: 750; font-size: 17px; color: #4a2fa3; }
+body.customer-page .product-card .product-button {
+    border-radius: 50%; transition: transform .3s var(--ease), background-color .25s, color .25s;
+}
+body.customer-page .product-card:hover .product-button {
+    background: #7955d5; color: #fff; border-color: #7955d5; transform: rotate(45deg);
+}
+
+/* Ô nhập liệu */
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body select, body textarea, body .form-control, body .form-select {
+    border-radius: var(--r-sm);
+    transition: border-color .2s, box-shadow .2s, background-color .2s;
+}
+body input:focus, body select:focus, body textarea:focus,
+body .form-control:focus, body .form-select:focus {
+    outline: none; border-color: #7955d5; box-shadow: var(--focus);
+}
+:focus-visible { outline: 2px solid #7955d5; outline-offset: 2px; }
+body .form-control:focus-visible, body input:focus-visible { outline: none; }
+
+/* Khung/bảng (trang quản trị) */
+body .card, body .ui-card, body .ui-panel { border-radius: var(--r-md); }
+body table { border-collapse: separate; border-spacing: 0; }
+body table tbody tr { transition: background-color .15s; }
+body table tbody tr:hover { background-color: rgba(121, 85, 213, .06); }
+body .table > :not(caption) > * > * { padding-block: .8rem; }
+
+/* Thanh cuộn + ảnh */
+* { scrollbar-width: thin; scrollbar-color: #c9bde4 transparent; }
+img { image-rendering: auto; }
+img[loading="lazy"] { transition: opacity .45s var(--ease); }
+
+@media (max-width: 720px) {
+    body .ui-btn { min-height: 46px; }
+    main, #main-content { animation-duration: .35s; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    @view-transition { navigation: none; }
+}

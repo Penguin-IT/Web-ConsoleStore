@@ -111,9 +111,6 @@ public final class CheckoutValidator {
         place(errors, "province", form.getProvince(),
                 PROVINCE_MAX, "Tỉnh / Thành phố");
 
-        place(errors, "district", form.getDistrict(),
-                DISTRICT_MAX, "Quận / Huyện");
-
         place(errors, "ward", form.getWard(),
                 WARD_MAX, "Phường / Xã");
 
@@ -157,13 +154,14 @@ public final class CheckoutValidator {
 
         if (errors.isEmpty()) {
             form.setAddress(
-                    String.join(
-                            ", ",
+                    java.util.stream.Stream.of(
                             form.getStreet(),
                             form.getWard(),
                             form.getDistrict(),
                             form.getProvince()
                     )
+                    .filter(value -> value != null && !value.isBlank())
+                    .collect(java.util.stream.Collectors.joining(", "))
             );
         } else {
             form.setAddress("");

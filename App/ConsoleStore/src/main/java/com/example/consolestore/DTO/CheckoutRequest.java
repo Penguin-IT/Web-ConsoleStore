@@ -4,7 +4,13 @@ public class CheckoutRequest {
 
     private String fullName = "";
     private String phone = "";
+    private boolean saveAddress;
+    private boolean makeDefaultAddress;
 
+    public boolean isSaveAddress() { return saveAddress; }
+    public void setSaveAddress(boolean v) { saveAddress = v; }
+    public boolean isMakeDefaultAddress() { return makeDefaultAddress; }
+    public void setMakeDefaultAddress(boolean v) { makeDefaultAddress = v; }
     // Địa chỉ giao hàng nhập theo từng cấp.
     private String province = "";
     private String district = "";

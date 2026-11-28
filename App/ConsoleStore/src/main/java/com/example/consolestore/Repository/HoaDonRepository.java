@@ -40,11 +40,13 @@ public interface HoaDonRepository
             """)
     BigDecimal readTotal(@Param("id") Long id);
     @Query("""
-        select sum(h.totalAmount)
-        from HoaDon h
-        where h.customerId = :customerId
-          and h.status = 'HOAN_TAT'
-        """)
+    select sum(h.totalAmount
+               - coalesce(h.shippingFee, 0)
+               + coalesce(h.discount, 0))
+    from HoaDon h
+    where h.customerId = :customerId
+      and h.status = 'HOAN_TAT'
+    """)
     BigDecimal completedSpend(@Param("customerId") Long customerId);
     @Modifying
     @Query(
@@ -278,7 +280,6 @@ public interface HoaDonRepository
     findCustomerOrders(
             @Param("customerId") Long customerId,
             org.springframework.data.domain.Pageable pageable
-
     );
 
     interface OrderState {
@@ -731,20 +732,29 @@ public interface HoaDonRepository
         FROM HoaDon h
         WHERE h.kenhBan = N'ONLINE'
           AND h.trangThai = N'CHO_XAC_NHAN'
-          AND h.ngayLap < DATEADD(
-              MINUTE,
-              -:timeoutMinutes,
-              GETDATE()
-          )
           AND NOT EXISTS (
-              SELECT 1
-              FROM ThanhToan t
+              SELECT 1 FROM ThanhToan t
               WHERE t.maHD = h.maHD
-AND (t.trangThai = N'DA_THANH_TOAN' OR t.phuongThuc = N'TIEN_MAT')          )
+                AND t.trangThai = N'DA_THANH_TOAN'
+          )
+          AND (
+              -- COD: chờ nhân viên xác nhận tối đa codTimeoutMinutes
+              (EXISTS (SELECT 1 FROM ThanhToan t
+                       WHERE t.maHD = h.maHD
+                         AND t.phuongThuc = N'TIEN_MAT')
+               AND h.ngayLap < DATEADD(MINUTE, -:codTimeoutMinutes, GETDATE()))
+              OR
+              -- Online trả trước: quá timeoutMinutes mà chưa thanh toán
+              (NOT EXISTS (SELECT 1 FROM ThanhToan t
+                           WHERE t.maHD = h.maHD
+                             AND t.phuongThuc = N'TIEN_MAT')
+               AND h.ngayLap < DATEADD(MINUTE, -:timeoutMinutes, GETDATE()))
+          )
         ORDER BY h.ngayLap, h.maHD
         """, nativeQuery = true)
     List<Long> findExpiredOnlineOrderIds(
             @Param("timeoutMinutes") int timeoutMinutes,
+            @Param("codTimeoutMinutes") int codTimeoutMinutes,
             @Param("batchSize") int batchSize
     );
 
@@ -1040,4 +1050,48 @@ AND (t.trangThai = N'DA_THANH_TOAN' OR t.phuongThuc = N'TIEN_MAT')          )
             nativeQuery = true
     )
     int autoConfirmOnline(@Param("id") Long id);
+
+    // VNPAY: lưu mã giao dịch (vnp_TransactionNo) sau khi thanh toán thành công
+    @Modifying
+    @Query(
+            value = """
+                UPDATE ThanhToan
+                SET maGiaoDich = :code
+                WHERE maHD = :id
+                  AND trangThai = N'DA_THANH_TOAN'
+                  AND maGiaoDich IS NULL
+                """,
+            nativeQuery = true
+    )
+    int saveTransactionCode(
+            @Param("id") Long id,
+            @Param("code") String code
+    );
+    // VNPAY đã thu tiền nhưng đơn đã hủy/hết hạn: đánh dấu "cần hoàn tiền" lên ghi chú đơn.
+    // - Dùng CHARINDEX thay vì LIKE vì dấu [ ] là ký tự đặc biệt của LIKE.
+    //   Nhờ đó return URL và IPN cùng gọi vẫn chỉ ghi một lần.
+    // - LEFT(..., 255) vì cột ghiChu chỉ dài 255 ký tự (tránh lỗi truncated).
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+            value = """
+                UPDATE HoaDon
+                SET ghiChu = LEFT(
+                    CONCAT(
+                        :note,
+                        CASE WHEN ghiChu IS NULL OR ghiChu = N''
+                             THEN N''
+                             ELSE CONCAT(N' | Ghi chú của khách: ', ghiChu)
+                        END
+                    ), 255)
+                WHERE maHD = :id
+                  AND kenhBan = N'ONLINE'
+                  AND (ghiChu IS NULL OR CHARINDEX(:marker, ghiChu) = 0)
+                """,
+            nativeQuery = true
+    )
+    int markRefundNeeded(
+            @Param("id") Long id,
+            @Param("note") String note,
+            @Param("marker") String marker
+    );
 }

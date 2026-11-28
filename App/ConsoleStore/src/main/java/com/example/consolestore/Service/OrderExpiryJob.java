@@ -28,12 +28,14 @@ public class OrderExpiryJob {
 
     private final int timeoutMinutes;
     private final int batchSize;
-
+    private final int codTimeoutMinutes;
     public OrderExpiryJob(
             HoaDonRepository invoices,
             OrderExpiryService expiryService,
             @Value("${store.order-expiry.timeout-minutes:30}")
             int timeoutMinutes,
+            @Value("${store.order-expiry.cod-timeout-minutes:1440}")
+            int codTimeoutMinutes,
             @Value("${store.order-expiry.batch-size:100}")
             int batchSize
     ) {
@@ -54,6 +56,7 @@ public class OrderExpiryJob {
         this.expiryService = expiryService;
         this.timeoutMinutes = timeoutMinutes;
         this.batchSize = batchSize;
+        this.codTimeoutMinutes = codTimeoutMinutes;
     }
 
     @Scheduled(
@@ -71,6 +74,7 @@ public class OrderExpiryJob {
         try {
             candidates = invoices.findExpiredOnlineOrderIds(
                     timeoutMinutes,
+                    codTimeoutMinutes,
                     batchSize
             );
         } catch (RuntimeException exception) {

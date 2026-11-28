@@ -96,7 +96,6 @@
         },
 
         province: place('Tỉnh / Thành phố', 40),
-        district: place('Quận / Huyện', 50),
         ward: place('Phường / Xã', 50),
 
         street: function (raw) {
@@ -159,7 +158,7 @@
 
     var ORDER = [
         'fullName', 'phone',
-        'province', 'district', 'ward', 'street',
+        'province', 'ward', 'street',
         'note', 'paymentMethod'
     ];
 
@@ -257,21 +256,17 @@
     }
 
     /* ---------------------------------------------------------
-     * 3. Chọn địa chỉ theo cấp hành chính
-     *
-     * Dữ liệu lấy từ API công khai provinces.open-api.vn (bộ 63 tỉnh,
-     * 3 cấp). Nếu không tải được, các ô tự chuyển về nhập tay để
-     * khách vẫn đặt hàng được.
+     * 3. Chọn địa chỉ theo mô hình hiện hành: Tỉnh -> Phường/Xã
+     * API provinces.open-api.vn phiên bản v2 (sau 07/2025).
+     * Dropdown luôn nằm trong HTML; lỗi API không đổi nó thành input.
      * --------------------------------------------------------- */
 
-    var ADDRESS_API = 'https://provinces.open-api.vn/api';
-    var REQUEST_TIMEOUT_MS = 5000;
+    var ADDRESS_API = 'https://provinces.open-api.vn/api/v2';
+    var REQUEST_TIMEOUT_MS = 7000;
     var cache = {};
 
     function getJson(url) {
-        if (cache[url]) {
-            return Promise.resolve(cache[url]);
-        }
+        if (cache[url]) return Promise.resolve(cache[url]);
 
         var controller = new AbortController();
         var timer = window.setTimeout(function () {
@@ -283,15 +278,11 @@
             headers: { Accept: 'application/json' }
         })
             .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
-                }
-
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 return response.json();
             })
             .then(function (data) {
                 cache[url] = data;
-
                 return data;
             })
             .finally(function () {
@@ -299,225 +290,25 @@
             });
     }
 
-    var OPEN_API = 'https://provinces.open-api.vn/api';
-    var ESGOO_API = 'https://esgoo.net/api-tinhthanh/';
-
-    function esgoo(path) {
-        return getJson(ESGOO_API + path + '.htm').then(function (data) {
-            if (!data || data.error !== 0 || !Array.isArray(data.data)) {
-                throw new Error('esgoo: dữ liệu không hợp lệ');
-            }
-
-            return data.data.map(function (item) {
-                return { name: item.full_name || item.name, code: item.id };
-            });
-        });
-    }
-
-    var PROVIDERS = [
-        {
-            provinces: function () {
-                return getJson(OPEN_API + '/p/');
-            },
-            districts: function (code) {
-                return getJson(
-                    OPEN_API + '/p/' + encodeURIComponent(code) + '?depth=2'
-                ).then(function (data) {
-                    return data.districts || [];
-                });
-            },
-            wards: function (code) {
-                return getJson(
-                    OPEN_API + '/d/' + encodeURIComponent(code) + '?depth=2'
-                ).then(function (data) {
-                    return data.wards || [];
-                });
-            }
-        },
-        {
-            provinces: function () { return esgoo('1/0'); },
-            districts: function (code) {
-                return esgoo('2/' + encodeURIComponent(code));
-            },
-            wards: function (code) {
-                return esgoo('3/' + encodeURIComponent(code));
-            }
-        }
-    ];
-
-    // Nguồn đã tải Tỉnh thành công; Quận/Phường phải dùng cùng nguồn đó
-    // vì mã (code) của mỗi nguồn khác nhau.
-    var active = 0;
-
-    var source = {
-        provinces: function () {
-            var index = 0;
-
-            function next() {
-                if (index >= PROVIDERS.length) {
-                    return Promise.reject(
-                        new Error('Không có nguồn địa chỉ nào hoạt động')
-                    );
-                }
-
-                var current = index++;
-
-                return PROVIDERS[current].provinces().then(function (items) {
-                    if (!Array.isArray(items) || !items.length) {
-                        throw new Error('Danh sách rỗng');
-                    }
-
-                    active = current;
-
-                    return items;
-                }).catch(function (error) {
-                    console.warn('Nguồn địa chỉ #' + current + ' lỗi:', error);
-
-                    return next();
-                });
-            }
-
-            return next();
-        },
-
-        districts: function (code) {
-            return PROVIDERS[active].districts(code);
-        },
-
-        wards: function (code) {
-            return PROVIDERS[active].wards(code);
-        }
-    };
-
     var LEVELS = {
         province: { label: 'Tỉnh / Thành phố', placeholder: 'Chọn Tỉnh / Thành phố' },
-        district: { label: 'Quận / Huyện', placeholder: 'Chọn Quận / Huyện' },
         ward: { label: 'Phường / Xã', placeholder: 'Chọn Phường / Xã' }
     };
 
-    function copyAttributes(from, to, names) {
-        names.forEach(function (name) {
-            if (from.hasAttribute(name)) {
-                to.setAttribute(name, from.getAttribute(name));
+    function nameKey(value) {
+        return normalizeText(value).toLocaleLowerCase('vi')
+            .replace(/^(thành phố|tỉnh|phường|xã|đặc khu|tp\.?)\s+/i, '');
+    }
+
+    function findByName(names, wanted) {
+        var candidates = [].concat(wanted || []).filter(Boolean);
+        for (var i = 0; i < candidates.length; i++) {
+            var candidate = nameKey(candidates[i]);
+            for (var j = 0; j < names.length; j++) {
+                if (names[j] && nameKey(names[j]) === candidate) return j;
             }
-        });
-    }
-
-    var SHARED = [
-        'id', 'name', 'required', 'aria-describedby',
-        'aria-invalid', 'autocomplete'
-    ];
-
-    // Đổi ô nhập tay thành ô chọn, giữ nguyên id/name để form vẫn gửi đúng.
-    function asSelect(name) {
-        var current = form.elements[name];
-
-        if (current && current.tagName === 'SELECT') {
-            return current;
         }
-
-        var select = document.createElement('select');
-
-        copyAttributes(current, select, SHARED);
-        select.removeAttribute('autocomplete');
-        current.replaceWith(select);
-
-        return select;
-    }
-
-    function asInput(name) {
-        var current = form.elements[name];
-
-        if (current && current.tagName === 'INPUT') {
-            current.disabled = false;
-
-            return current;
-        }
-
-        var input = document.createElement('input');
-
-        input.type = 'text';
-        input.maxLength = name === 'province' ? 40 : 50;
-        input.placeholder = 'Nhập ' + LEVELS[name].label.toLowerCase();
-
-        copyAttributes(current, input, SHARED);
-        current.replaceWith(input);
-
-        return input;
-    }
-
-    function fillSelect(select, items, selectedName) {
-        var level = select.name;
-
-        select.innerHTML = '';
-
-        var first = document.createElement('option');
-
-        first.value = '';
-        first.textContent = LEVELS[level].placeholder;
-        select.appendChild(first);
-
-        var chosen = false;
-
-        items.forEach(function (item) {
-            var option = document.createElement('option');
-
-            option.value = item.name;
-            option.textContent = item.name;
-            option.dataset.code = item.code;
-
-            if (selectedName && item.name === selectedName) {
-                option.selected = true;
-                chosen = true;
-            }
-
-            select.appendChild(option);
-        });
-
-        select.disabled = false;
-
-        return chosen;
-    }
-
-    function resetSelect(name) {
-        var select = asSelect(name);
-
-        select.innerHTML = '';
-
-        var option = document.createElement('option');
-
-        option.value = '';
-        option.textContent = LEVELS[name].placeholder;
-        select.appendChild(option);
-
-        select.disabled = true;
-    }
-
-    function codeOf(name) {
-        var select = form.elements[name];
-
-        if (!select || select.tagName !== 'SELECT') {
-            return '';
-        }
-
-        var option = select.selectedOptions[0];
-
-        return option && option.dataset.code ? option.dataset.code : '';
-    }
-
-    function sortProvinces(items) {
-        var pinned = /(Hà Nội|Hồ Chí Minh)$/;
-
-        return items.slice().sort(function (a, b) {
-            var pa = pinned.test(a.name) ? 0 : 1;
-            var pb = pinned.test(b.name) ? 0 : 1;
-
-            if (pa !== pb) {
-                return pa - pb;
-            }
-
-            return a.name.localeCompare(b.name, 'vi');
-        });
+        return -1;
     }
 
     function sortByName(items) {
@@ -526,131 +317,183 @@
         });
     }
 
+    function sortProvinces(items) {
+        return items.slice().sort(function (a, b) {
+            var aPinned = /Hà Nội|Hồ Chí Minh/.test(a.name) ? 0 : 1;
+            var bPinned = /Hà Nội|Hồ Chí Minh/.test(b.name) ? 0 : 1;
+            return aPinned - bPinned || a.name.localeCompare(b.name, 'vi');
+        });
+    }
+
+    function field(name) {
+        return form.elements[name];
+    }
+
+    function fillSelect(select, items, selectedName) {
+        var placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = LEVELS[select.name].placeholder;
+        select.replaceChildren(placeholder);
+
+        var names = items.map(function (item) { return item.name; });
+        var matchIndex = findByName(names, selectedName);
+        var matched = matchIndex >= 0;
+
+        items.forEach(function (item, index) {
+            var option = document.createElement('option');
+            option.value = item.name;
+            option.textContent = item.name;
+            option.dataset.code = item.code;
+            if (index === matchIndex) option.selected = true;
+            select.appendChild(option);
+        });
+
+        select.disabled = false;
+        return matched;
+    }
+
+    function resetWard() {
+        var ward = field('ward');
+        ward.replaceChildren(new Option(LEVELS.ward.placeholder, ''));
+        ward.disabled = true;
+    }
+
+    function codeOf(name) {
+        var select = field(name);
+        var option = select && select.selectedOptions[0];
+        return option && option.dataset.code ? option.dataset.code : '';
+    }
+
     function setHint(message) {
         var hint = form.querySelector('[data-address-hint]');
-
-        if (!hint) {
-            return;
-        }
-
+        if (!hint) return;
         hint.textContent = message || '';
         hint.hidden = !message;
     }
 
-    function fallbackToText(names, message) {
-        names.forEach(function (name) {
-            asInput(name);
-        });
-
-        setHint(message);
-    }
-
-    function loadDistricts(selectedName, selectedWard) {
-        var code = codeOf('province');
-
-        resetSelect('district');
-        resetSelect('ward');
-
-        if (!code) {
-            return Promise.resolve();
+    function legacyWardNames(wanted, provinceCode) {
+        var candidates = [].concat(wanted || []).filter(Boolean);
+        function tryNext(index) {
+            if (index >= candidates.length) return Promise.resolve([]);
+            var url = ADDRESS_API + '/w/from-legacy/?legacy_name=' +
+                encodeURIComponent(candidates[index]);
+            return getJson(url).then(function (rows) {
+                var matches = (rows || []).filter(function (row) {
+                    return row.ward && String(row.ward.province_code) === String(provinceCode);
+                });
+                if (matches.length === 1) return [matches[0].ward.name];
+                return tryNext(index + 1);
+            }).catch(function () {
+                return tryNext(index + 1);
+            });
         }
-
-        return source.districts(code).then(function (items) {
-            var select = asSelect('district');
-            var found = fillSelect(
-                select,
-                sortByName(items),
-                selectedName
-            );
-
-            if (found) {
-                return loadWards(selectedWard);
-            }
-        }).catch(function (error) {
-            console.error('Không tải được địa chỉ:', error);
-            // Giữ nguyên các ô nhập tay do máy chủ dựng sẵn.
-            setHint(
-                'Không tải được danh sách địa phương. '
-                + 'Vui lòng nhập Tỉnh / Quận / Phường thủ công.'
-            );
-        });
+        return tryNext(0);
     }
 
     function loadWards(selectedName) {
-        var code = codeOf('district');
+        var provinceCode = codeOf('province');
+        resetWard();
+        if (!provinceCode) return Promise.resolve();
 
-        resetSelect('ward');
+        var url = ADDRESS_API + '/p/' + encodeURIComponent(provinceCode) + '?depth=2';
+        return getJson(url).then(function (data) {
+            var wards = sortByName(data.wards || []);
+            var wardSelect = field('ward');
+            var found = fillSelect(wardSelect, wards, selectedName);
 
-        if (!code) {
-            return Promise.resolve();
-        }
+            if (found || !selectedName) return;
 
-        return source.wards(code).then(function (items) {
-            fillSelect(
-                asSelect('ward'),
-                sortByName(items),
-                selectedName
-            );
+            return legacyWardNames(selectedName, provinceCode).then(function (newNames) {
+                if (newNames.length) {
+                    fillSelect(wardSelect, wards, newNames);
+                } else {
+                    // Giữ được địa chỉ đã lưu cũ nếu không thể tự ánh xạ tên phường.
+                    var oldName = [].concat(selectedName || [])[0];
+                    if (oldName) {
+                        var option = new Option(oldName, oldName, true, true);
+                        wardSelect.add(option);
+                    }
+                }
+            });
         }).catch(function (error) {
-            console.error('Không tải được địa chỉ:', error);
-            setHint(
-                'Không tải được danh sách địa phương. '
-                + 'Vui lòng nhập Tỉnh / Quận / Phường thủ công.'
-            );
+            console.error('Không tải được danh sách phường/xã:', error);
+            setHint('Không tải được danh sách phường/xã. Hãy tải lại trang hoặc thử lại sau.');
         });
     }
 
     function setupAddress() {
-        var initial = {
-            province: valueOf('province'),
-            district: valueOf('district'),
-            ward: valueOf('ward')
-        };
+        var provinceSelect = field('province');
+        var wardSelect = field('ward');
+        var initialProvince = valueOf('province');
+        var initialWard = valueOf('ward');
+        var districtField = field('district');
+        if (districtField) districtField.value = districtField.value || '';
 
-        // Đăng ký trước để không bỏ lỡ sự kiện đổi Tỉnh / Quận.
-        form.addEventListener('change', function (event) {
-            var target = event.target;
-
-            if (!target || target.tagName !== 'SELECT') {
-                return;
-            }
-
-            if (target.name === 'province') {
-                setError('district', '');
-                setError('ward', '');
-                loadDistricts('', '');
-            } else if (target.name === 'district') {
-                setError('ward', '');
-                loadWards('');
-            }
+        provinceSelect.addEventListener('change', function () {
+            setError('province', '');
+            setError('ward', '');
+            if (districtField) districtField.value = '';
+            setHint('');
+            loadWards('');
         });
 
-        return source.provinces().then(function (items) {
-            var select = asSelect('province');
+        wardSelect.addEventListener('change', function () {
+            setError('ward', '');
+        });
 
-            fillSelect(select, sortProvinces(items), initial.province);
-
-            resetSelect('district');
-            resetSelect('ward');
-
+        return getJson(ADDRESS_API + '/p/').then(function (items) {
+            if (!Array.isArray(items) || !items.length) {
+                throw new Error('Danh sách tỉnh/thành rỗng');
+            }
+            fillSelect(provinceSelect, sortProvinces(items), initialProvince);
+            resetWard();
             setHint('');
 
-            if (initial.province && select.value) {
-                return loadDistricts(initial.district, initial.ward);
+            if (initialProvince && provinceSelect.value) {
+                return loadWards(initialWard);
             }
-        }).catch(function () {
-            // Giữ nguyên các ô nhập tay do máy chủ dựng sẵn.
-            setHint(
-                'Không tải được danh sách địa phương. '
-                    + 'Vui lòng nhập Tỉnh / Quận / Phường thủ công.'
-            );
+        }).catch(function (error) {
+            console.error('Không tải được danh sách tỉnh/thành:', error);
+            // Vẫn giữ nguyên các control SELECT, không đổi về input.
+            provinceSelect.disabled = false;
+            wardSelect.disabled = true;
+            setHint('Không tải được dữ liệu địa chỉ. Vui lòng tải lại trang hoặc kiểm tra kết nối mạng.');
         });
     }
 
-    /* ---------------------------------------------------------
-     * 4. Gắn sự kiện
-     * --------------------------------------------------------- */
+    function applyAddress(a) {
+        a = a || {};
+        var provinceSelect = field('province');
+        var wardSelect = field('ward');
+        var districtField = field('district');
 
+        if (districtField) {
+            districtField.value = [].concat(a.district || [])[0] || '';
+        }
+
+        function done() {
+            form.dispatchEvent(new CustomEvent('address:applied'));
+        }
+
+        var provinceNames = Array.prototype.map.call(provinceSelect.options, function (o) {
+            return o.value;
+        });
+        var found = findByName(provinceNames, a.province);
+        provinceSelect.selectedIndex = found >= 0 ? found : 0;
+
+        if (!provinceSelect.value) {
+            resetWard();
+            wardSelect.value = '';
+            done();
+            return Promise.resolve();
+        }
+
+        return loadWards(a.ward).then(done);
+    }
+
+    root.CheckoutAddress = { apply: applyAddress };
+
+// Hàm cập nhật số ký tự ghi chú
     function setupNoteCounter() {
         var counter = form.querySelector('[data-note-count]');
         var note = form.elements.note;
@@ -666,6 +509,7 @@
         note.addEventListener('input', update);
         update();
     }
+
 
     function init() {
         form = document.querySelector('[data-checkout-form]');
@@ -766,7 +610,8 @@
 
         // Nếu máy chủ trả lỗi, đưa con trỏ tới ô lỗi đầu tiên sau khi
         // các ô địa chỉ đã được dựng xong (chúng có thể bị thay thế).
-        setupAddress().then(focusFirstServerError);
+        // setupAddress().then(focusFirstServerError);
+        root.CheckoutAddress.ready = setupAddress().then(focusFirstServerError);
     }
 
     function focusFirstServerError() {

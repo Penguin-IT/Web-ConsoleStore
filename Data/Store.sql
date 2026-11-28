@@ -269,7 +269,6 @@ GO
 -- =========================================================
 -- 5. HÓA ĐƠN VÀ THANH TOÁN
 -- =========================================================
-
 IF OBJECT_ID(N'HoaDon', N'U') IS NULL
 BEGIN
     CREATE TABLE HoaDon (
@@ -330,7 +329,6 @@ BEGIN
     );
 END;
 GO
-
 IF OBJECT_ID(N'ThanhToan', N'U') IS NULL
 BEGIN
     CREATE TABLE ThanhToan (
@@ -2868,3 +2866,159 @@ JOIN SanPham sp ON sp.maSP = d.maSP
 JOIN KhachHang k ON k.maKH = d.maKH
 ORDER BY d.maSP;
 GO
+IF OBJECT_ID(N'DiaChiGiaoHang', N'U') IS NULL
+BEGIN
+    CREATE TABLE DiaChiGiaoHang (
+        maDC BIGINT IDENTITY(1,1) NOT NULL,
+        maKH BIGINT NOT NULL,
+        tenNguoiNhan NVARCHAR(100) NOT NULL,
+        soDienThoai NVARCHAR(10) NOT NULL,
+        tinhThanh NVARCHAR(40) NOT NULL,
+        quanHuyen NVARCHAR(50) NOT NULL,
+        phuongXa NVARCHAR(50) NOT NULL,
+        soNhaDuong NVARCHAR(100) NOT NULL,
+        diaChiDayDu NVARCHAR(255) NOT NULL,
+        macDinh BIT NOT NULL DEFAULT 0,
+        ngayTao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT PK_DiaChiGiaoHang PRIMARY KEY (maDC),
+        CONSTRAINT FK_DiaChiGiaoHang_KhachHang
+            FOREIGN KEY (maKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
+    );
+END;
+GO
+
+-- Mỗi khách chỉ có tối đa 1 địa chỉ mặc định
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UX_DiaChiGiaoHang_MacDinh'
+      AND object_id = OBJECT_ID(N'DiaChiGiaoHang')
+)
+    CREATE UNIQUE INDEX UX_DiaChiGiaoHang_MacDinh
+        ON DiaChiGiaoHang(maKH) WHERE macDinh = 1;
+GO
+-- Thêm dữ liệu vào bảng DiaChiGiaoHang
+INSERT INTO DiaChiGiaoHang
+(
+    maKH,
+    tenNguoiNhan,
+    soDienThoai,
+    tinhThanh,
+    quanHuyen,
+    phuongXa,
+    soNhaDuong,
+    diaChiDayDu,
+    macDinh
+)
+VALUES
+(1, N'Nguyễn Văn An', N'0911000001',
+ N'TP. Hồ Chí Minh', N'Quận 7', N'Phường Tân Phú',
+ N'123 Nguyễn Thị Thập',
+ N'123 Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP. Hồ Chí Minh', 1),
+
+(2, N'Trần Thị Bình', N'0911000002',
+ N'TP. Hồ Chí Minh', N'Quận 1', N'Phường Bến Nghé',
+ N'45 Nguyễn Huệ',
+ N'45 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh', 1),
+
+(3, N'Lê Hoàng Cường', N'0911000003',
+ N'TP. Hồ Chí Minh', N'Quận 3', N'Phường Võ Thị Sáu',
+ N'78 Điện Biên Phủ',
+ N'78 Điện Biên Phủ, Phường Võ Thị Sáu, Quận 3, TP. Hồ Chí Minh', 1),
+
+(4, N'Phạm Thị Dung', N'0911000004',
+ N'TP. Hồ Chí Minh', N'Quận 5', N'Phường 8',
+ N'12 Trần Hưng Đạo',
+ N'12 Trần Hưng Đạo, Phường 8, Quận 5, TP. Hồ Chí Minh', 1),
+
+(5, N'Võ Minh Đức', N'0911000005',
+ N'TP. Hồ Chí Minh', N'Quận 10', N'Phường 12',
+ N'90 Sư Vạn Hạnh',
+ N'90 Sư Vạn Hạnh, Phường 12, Quận 10, TP. Hồ Chí Minh', 1),
+
+(6, N'Đặng Thu Giang', N'0911000006',
+ N'TP. Hồ Chí Minh', N'Bình Thạnh', N'Phường 25',
+ N'56 Xô Viết Nghệ Tĩnh',
+ N'56 Xô Viết Nghệ Tĩnh, Phường 25, Bình Thạnh, TP. Hồ Chí Minh', 1),
+
+(7, N'Bùi Quang Hải', N'0911000007',
+ N'TP. Hồ Chí Minh', N'Gò Vấp', N'Phường 10',
+ N'34 Quang Trung',
+ N'34 Quang Trung, Phường 10, Gò Vấp, TP. Hồ Chí Minh', 1),
+
+(8, N'Hoàng Thị Hạnh', N'0911000008',
+ N'TP. Hồ Chí Minh', N'Tân Bình', N'Phường 4',
+ N'88 Cộng Hòa',
+ N'88 Cộng Hòa, Phường 4, Tân Bình, TP. Hồ Chí Minh', 1),
+
+(9, N'Phan Văn Khải', N'0911000009',
+ N'TP. Hồ Chí Minh', N'Quận 4', N'Phường 9',
+ N'21 Hoàng Diệu',
+ N'21 Hoàng Diệu, Phường 9, Quận 4, TP. Hồ Chí Minh', 1),
+
+(10, N'Vũ Thị Lan', N'0911000010',
+ N'TP. Hồ Chí Minh', N'Quận 2', N'Phường Thảo Điền',
+ N'67 Quốc Hương',
+ N'67 Quốc Hương, Phường Thảo Điền, Quận 2, TP. Hồ Chí Minh', 1),
+
+(11, N'Đỗ Minh Long', N'0911000011',
+ N'TP. Hồ Chí Minh', N'Thủ Đức', N'Phường Linh Trung',
+ N'102 Võ Văn Ngân',
+ N'102 Võ Văn Ngân, Phường Linh Trung, TP. Thủ Đức, TP. Hồ Chí Minh', 1),
+
+(12, N'Ngô Thị Mai', N'0911000012',
+ N'TP. Hồ Chí Minh', N'Quận 6', N'Phường 11',
+ N'45 Hậu Giang',
+ N'45 Hậu Giang, Phường 11, Quận 6, TP. Hồ Chí Minh', 1),
+
+(13, N'Dương Văn Nam', N'0911000013',
+ N'TP. Hồ Chí Minh', N'Quận 8', N'Phường 5',
+ N'76 Phạm Thế Hiển',
+ N'76 Phạm Thế Hiển, Phường 5, Quận 8, TP. Hồ Chí Minh', 1),
+
+(14, N'Lý Thị Oanh', N'0911000014',
+ N'TP. Hồ Chí Minh', N'Phú Nhuận', N'Phường 9',
+ N'19 Phan Đăng Lưu',
+ N'19 Phan Đăng Lưu, Phường 9, Phú Nhuận, TP. Hồ Chí Minh', 1),
+
+(15, N'Trương Quốc Phong', N'0911000015',
+ N'TP. Hồ Chí Minh', N'Quận 12', N'Phường Tân Chánh Hiệp',
+ N'55 Nguyễn Ảnh Thủ',
+ N'55 Nguyễn Ảnh Thủ, Phường Tân Chánh Hiệp, Quận 12, TP. Hồ Chí Minh', 1),
+
+(16, N'Huỳnh Thị Quyên', N'0911000016',
+ N'TP. Hồ Chí Minh', N'Hóc Môn', N'Thị trấn Hóc Môn',
+ N'23 Lý Nam Đế',
+ N'23 Lý Nam Đế, Thị trấn Hóc Môn, Huyện Hóc Môn, TP. Hồ Chí Minh', 1),
+
+(17, N'Mai Văn Sơn', N'0911000017',
+ N'TP. Hồ Chí Minh', N'Bình Tân', N'Phường Bình Trị Đông',
+ N'90 Tên Lửa',
+ N'90 Tên Lửa, Phường Bình Trị Đông, Bình Tân, TP. Hồ Chí Minh', 1),
+
+(18, N'Đinh Thị Thảo', N'0911000018',
+ N'TP. Hồ Chí Minh', N'Quận 11', N'Phường 5',
+ N'32 Lạc Long Quân',
+ N'32 Lạc Long Quân, Phường 5, Quận 11, TP. Hồ Chí Minh', 1),
+
+(19, N'Lương Văn Tín', N'0911000019',
+ N'TP. Hồ Chí Minh', N'Nhà Bè', N'Xã Phú Xuân',
+ N'15 Huỳnh Tấn Phát',
+ N'15 Huỳnh Tấn Phát, Xã Phú Xuân, Huyện Nhà Bè, TP. Hồ Chí Minh', 1),
+
+(20, N'Tạ Thị Uyên', N'0911000020',
+ N'TP. Hồ Chí Minh', N'Cần Giờ', N'Thị trấn Cần Thạnh',
+ N'28 Duyên Hải',
+ N'28 Duyên Hải, Thị trấn Cần Thạnh, Huyện Cần Giờ, TP. Hồ Chí Minh', 1);
+GO
+--Dùng đề test khi chuyển khoản quá 15 phút mà người dùng vẫn chuyển tiền thì sẽ thông báo hoàn 
+--SELECT TOP 5
+--       h.maHD, h.ngayLap, h.trangThai AS trangThaiDon,
+--       t.phuongThuc, t.trangThai AS trangThaiThanhToan, h.tongTien
+--FROM HoaDon h
+--JOIN ThanhToan t ON t.maHD = h.maHD
+--WHERE h.kenhBan = N'ONLINE'
+--  AND t.phuongThuc = N'CHUYEN_KHOAN'
+--  AND t.trangThai = N'CHUA_THANH_TOAN'
+--ORDER BY h.maHD DESC;
+--go
+--UPDATE HoaDon SET trangThai = N'HUY' WHERE maHD = 10051

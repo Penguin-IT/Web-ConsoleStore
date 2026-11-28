@@ -53,7 +53,7 @@ public class CatalogController {
             return databaseError(exception,model,response);
         }
     }
-    // JSON uses the same search service as the HTML page.
+
     public record ProductPage(List<ProductCard> items,int page,int totalPages,long totalElements) {}
 
     @GetMapping("/api/products")
@@ -73,7 +73,7 @@ public class CatalogController {
         }
     }
 
-    // Field conversion failures are displayed beside the corresponding HTML input.
+
     private Map<String,String> filterMessages(BindingResult errors) {
         Map<String,String> messages=new LinkedHashMap<>();
         for(var error:errors.getFieldErrors()) {
@@ -150,7 +150,7 @@ public class CatalogController {
             model.addAttribute("descPoints", descLines.size() > 1 ? descLines.subList(1, descLines.size()) : List.<String>of());
             model.addAttribute("related", catalog.related(id, 4));
 
-            // CN04 sẽ cung cấp tài khoản và quyền từ phía server.
+
             model.addAttribute(
                     "authenticated",
                     request.getUserPrincipal() != null
