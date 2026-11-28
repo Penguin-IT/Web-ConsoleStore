@@ -46,6 +46,8 @@ public class ChatServerLauncher {
             return;
         }
 
+        log.info("Đang mở giao diện chat server...");
+
         SwingUtilities.invokeLater(() -> {
             try {
                 javax.swing.UIManager.setLookAndFeel(
@@ -55,7 +57,15 @@ public class ChatServerLauncher {
                 // dùng giao diện mặc định
             }
 
-            new ChatServerWindow(server).setVisible(true);
+            ChatServerWindow window = new ChatServerWindow(server);
+            window.setLocationRelativeTo(null);   // luôn giữa màn hình chính
+            window.setVisible(true);
+            window.setAlwaysOnTop(true);          // nổi lên trên IntelliJ
+            window.toFront();
+            window.requestFocus();
+            window.setAlwaysOnTop(false);         // rồi trả về bình thường
+
+            log.info("Đã mở cửa sổ Chat Socket Server.");
         });
     }
 }

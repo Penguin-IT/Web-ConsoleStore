@@ -918,6 +918,18 @@
             applySessionUI();
         });
     }
+    window.ConsoleStoreSession = {
+        setCartCount(quantity) {
+            if (!sessionState
+                || !Number.isSafeInteger(quantity)
+                || quantity < 0) {
+                return;
+            }
+
+            sessionState.cartCount = quantity;
+            scheduleSessionUI();
+        }
+    };
 
     async function readJson(path) {
         const response = await fetch(
@@ -1068,11 +1080,22 @@
         ).forEach(initializeCarousel);
 
         const observer = new MutationObserver(records => {
-            records.forEach(record => {
-                record.addedNodes.forEach(scanImages);
-            });
+            let needSession = false;
 
-            scheduleSessionUI();
+            for (const record of records) {
+                // Bản đồ Leaflet thêm/xóa node liên tục khi kéo, bỏ qua để khỏi giật.
+                if (record.target instanceof Element
+                    && record.target.closest('.leaflet-container')) {
+                    continue;
+                }
+
+                record.addedNodes.forEach(scanImages);
+                needSession = true;
+            }
+
+            if (needSession) {
+                scheduleSessionUI();
+            }
         });
 
         observer.observe(document.body, {
