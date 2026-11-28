@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${(status ?: 'Lỗi') + ' | Console Store'}">Lỗi | Console Store</title>
+
+    <link rel="icon" type="image/png" th:href="@{/images/banners/logo.png}">
+
+    <script th:src="@{/js/page-transition.js(v='20261127')}"></script>
+    <link rel="stylesheet" th:href="@{/css/home.css(v='20261113-3')}">
+    <script th:src="@{/js/store.js(v='20261113-3')}" defer></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" th:href="@{/css/polish.css(v='20261127')}">
+    <script th:src="@{/js/store-fx.js(v='20261127')}" defer></script>
+
+    <style>
+        .err {
+            min-height: calc(100vh - 220px);
+            display: grid;
+            place-content: center;
+            justify-items: center;
+            padding: 72px 20px;
+            text-align: center;
+            color: #fff;
+            overflow: hidden;
+            background:
+                    radial-gradient(900px 420px at 50% 0%,
+                    color-mix(in srgb, var(--accent, #7955d5) 24%, transparent), transparent 70%),
+                    #0c0c10;
+        }
+        .err__pad {
+            width: 120px;
+            height: 120px;
+            color: var(--accent, #7955d5);
+            animation: err-float 3.2s ease-in-out infinite;
+        }
+        .err__label {
+            margin: 10px 0 0;
+            color: #a99eb8;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .32em;
+        }
+        .err__code {
+            margin: 4px 0 0;
+            font-size: clamp(88px, 22vw, 190px);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -.04em;
+            color: #fff;
+            text-shadow: 3px 0 #ff4d8d, -3px 0 #4dd2ff;
+            animation: err-glitch 3s infinite;
+        }
+        .err__title { margin: 8px 0 0; font-size: clamp(22px, 4vw, 30px); font-weight: 700; }
+        .err__text  { max-width: 460px; margin: 10px 0 0; color: #b9aec7; line-height: 1.6; }
+        .err__path  { margin: 14px 0 0; color: #7d7390; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+        .err__actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 30px; }
+        .err__btn {
+            padding: 13px 26px;
+            border: 1px solid #ffffff30;
+            border-radius: 12px;
+            background: transparent;
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform .2s, background .2s;
+        }
+        .err__btn:hover { transform: translateY(-2px); background: #ffffff12; }
+        .err__btn--primary { border-color: transparent; background: var(--accent, #7955d5); }
+        .err__btn--primary:hover { background: var(--accent, #7955d5); filter: brightness(1.1); }
+        .err__btn--primary::before { content: "▶"; margin-right: 8px; animation: err-blink 1s steps(2) infinite; }
+
+        @keyframes err-float { 50% { transform: translateY(-12px) rotate(-3deg); } }
+        @keyframes err-blink { 50% { opacity: 0; } }
+        @keyframes err-glitch {
+            0%, 88%, 100% { text-shadow: 3px 0 #ff4d8d, -3px 0 #4dd2ff; transform: none; }
+            90% { text-shadow: -6px 0 #ff4d8d, 6px 0 #4dd2ff; transform: translateX(3px) skewX(-6deg); }
+            94% { text-shadow: 6px 0 #ff4d8d, -6px 0 #4dd2ff; transform: translateX(-3px) skewX(5deg); }
+        }
+    </style>
+</head>
+
+<body class="customer-page error-page">
+<header th:replace="~{fragments/store :: header}"></header>
+
+<main id="main-content" class="err">
+    <svg class="err__pad" viewBox="0 0 64 64" fill="none" stroke="currentColor"
+         stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 22h28c7 0 11 6 13 16l2 10c1 5-4 8-8 5l-8-7H19l-8 7c-4 3-9 0-8-5l2-10c2-10 6-16 13-16z"/>
+        <path d="M20 31v8M16 35h8"/>
+        <circle cx="42" cy="32" r="1.6" fill="currentColor"/>
+        <circle cx="48" cy="38" r="1.6" fill="currentColor"/>
+    </svg>
+
+    <p class="err__label">GAME OVER</p>
+    <h1 class="err__code" th:text="${status ?: '???'}">404</h1>
+
+    <th:block th:if="${status == 404}">
+        <h2 class="err__title">Trang này đã biến mất khỏi bản đồ</h2>
+        <p class="err__text">Đường dẫn bạn mở không tồn tại hoặc đã được chuyển đi nơi khác.</p>
+    </th:block>
+
+    <th:block th:if="${status == 403}">
+        <h2 class="err__title">Khu vực này đang bị khóa</h2>
+        <p class="err__text">Tài khoản của bạn chưa có quyền truy cập. Hãy đăng nhập bằng tài khoản phù hợp.</p>
+    </th:block>
+
+    <th:block th:if="${status != null and status >= 500}">
+        <h2 class="err__title">Máy chủ vừa bị treo</h2>
+        <p class="err__text">Có lỗi xảy ra phía chúng tôi. Bạn thử lại sau ít phút nhé.</p>
+    </th:block>
+
+    <th:block th:if="${status == null or (status != 404 and status != 403 and status < 500)}">
+        <h2 class="err__title">Có lỗi xảy ra</h2>
+        <p class="err__text">Yêu cầu của bạn chưa thể hoàn tất. Hãy quay lại và thử lại.</p>
+    </th:block>
+
+    <p class="err__path" th:if="${path}" th:text="${path}"></p>
+
+    <div class="err__actions">
+        <a class="err__btn err__btn--primary" th:href="@{/}">Về trang chủ</a>
+        <button class="err__btn" type="button" onclick="history.back()">Quay lại</button>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/store :: footer}"></footer>
+</body>
+</html>

@@ -13,9 +13,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
-    <link rel="stylesheet" th:href="@{/css/polish.css(v='20261124')}">
+    <script th:src="@{/js/page-transition.js(v='20261127')}"></script>
+    <link rel="stylesheet" th:href="@{/css/polish.css(v='20261127')}">
     <script th:src="@{/js/polish.js(v='20261124')}" defer></script>
-    <script th:src="@{/js/store-motion.js}"></script>
+    <script th:src="@{/js/store-fx.js(v='20261127')}" defer></script>
+
 </head>
 <body class="catalog-page customer-page">
 <header th:replace="~{fragments/store :: header}"></header>
@@ -154,13 +156,25 @@
                             </h2>
                             <p class="catalog-stock"
                                th:text="${item.stock > 0 ? 'Còn ' + item.stock + ' sản phẩm' : 'Hết hàng'}"></p>
-                            <div class="product-bottom"><strong class="product-price"
-                                                                th:text="${#numbers.formatDecimal(item.price,0,'POINT',0,'COMMA') + ' đ'}"></strong>
+                            <div class="product-bottom">
+                                <strong class="product-price"
+                                        th:text="${#numbers.formatDecimal(item.price,0,'POINT',0,'COMMA') + ' đ'}"></strong>
+
+                                <div class="product-actions">
+                                    <form class="product-quick-add"
+                                          method="post"
+                                          th:action="@{/cart/items}"
+                                          th:if="${item.stock > 0}"
+                                          data-customer-link>
+                                        <input type="hidden" name="productId" th:value="${item.id}">
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button class="product-quick-button" type="submit"
+                                                th:aria-label="${'Thêm ' + item.name + ' vào giỏ hàng'}">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
-                    </article>
-                </div>
-            </div>
             <nav class="catalog-pagination" th:if="${result.totalPages > 1}" aria-label="Phân trang sản phẩm"><span
                     th:text="${'Trang ' + (result.number + 1) + ' / ' + result.totalPages}"></span>
                 <ul class="pagination mb-0">

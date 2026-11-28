@@ -784,6 +784,25 @@ public interface HoaDonRepository
             @Param("id") Long id,
             @Param("timeoutMinutes") int timeoutMinutes
     );
+    // Khách chủ động hủy đơn online chưa thanh toán (không kiểm tra thời gian như job hết hạn).
+    @Modifying(
+            flushAutomatically = true,
+            clearAutomatically = true
+    )
+    @Query(value = """
+        UPDATE HoaDon
+        SET trangThai = N'HUY'
+        WHERE maHD = :id
+          AND kenhBan = N'ONLINE'
+          AND trangThai = N'CHO_XAC_NHAN'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM ThanhToan t WITH (UPDLOCK, HOLDLOCK)
+              WHERE t.maHD = :id
+                AND t.trangThai = N'DA_THANH_TOAN'
+          )
+        """, nativeQuery = true)
+    int cancelUnpaidOnlineOrder(@Param("id") Long id);
     interface InvoiceHeader {
 
         Long getId();

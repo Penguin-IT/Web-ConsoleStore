@@ -17,7 +17,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import com.example.consolestore.DTO.CartView;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -168,6 +171,54 @@ public class CartController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(Map.of("quantity", quantity));
+    }
+    @GetMapping("/cart/mini")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> mini(
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        CartStore.Owner owner = owner(authentication, request, response, false);
+        boolean guest = owner.isGuest();
+
+        try {
+            Map<String, Object> body = session.locked(owner, store, () -> {
+                int percent = guest
+                        ? 0
+                        : members.status(authentication.getName()).tier().getPercent();
+
+                CartView view = service.view(session.items(), percent);
+
+                List<Map<String, Object>> lines = new ArrayList<>();
+
+                for (CartView.Line line : view.lines()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("productId", line.productId());
+                    row.put("name", line.name());
+                    row.put("image", line.image());
+                    row.put("price", line.price());
+                    row.put("quantity", line.quantity());
+                    row.put("stock", line.stock());
+                    row.put("available", line.available());
+                    lines.add(row);
+                }
+
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("lines", lines);
+                result.put("totalQuantity", view.totalQuantity());
+                result.put("totalAmount", view.totalAmount());
+                return result;
+            });
+
+            return ResponseEntity.ok()
+                    .cacheControl(CacheControl.noStore())
+                    .body(body);
+        } catch (DataAccessException exception) {
+            return ResponseEntity.status(503)
+                    .cacheControl(CacheControl.noStore())
+                    .body(Map.of());
+        }
     }
 
     // Khách hàng -> giỏ theo tài khoản; còn lại -> giỏ theo cookie CART_ID

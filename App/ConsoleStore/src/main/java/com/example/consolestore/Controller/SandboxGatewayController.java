@@ -93,14 +93,17 @@ public class SandboxGatewayController {
             @PathVariable Long id,
             @RequestParam("t") String token
     ) {
-        if (gateway.view(id, token) == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-
-        return "redirect:/checkout/orders/" + id
-                + "/payment?result=cancel";
+        return switch (gateway.cancel(id, token)) {
+            case INVALID -> throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND
+            );
+            // Khách vừa kịp thanh toán ở điện thoại: đừng hủy, báo thành công.
+            case ALREADY_PAID -> "redirect:/checkout/orders/" + id
+                    + "/payment?result=success";
+            case CANCELLED, CLOSED -> "redirect:/checkout/orders/" + id
+                    + "/payment?result=cancel";
+        };
     }
-
     @GetMapping("/{id}/status")
     @ResponseBody
     public Map<String, Boolean> status(

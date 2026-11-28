@@ -265,8 +265,35 @@
     var REQUEST_TIMEOUT_MS = 7000;
     var cache = {};
 
+    var CACHE_PREFIX = 'cs:addr:';
+    var CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    function readStored(url, allowStale) {
+        try {
+            var raw = localStorage.getItem(CACHE_PREFIX + url);
+            if (!raw) return null;
+            var item = JSON.parse(raw);
+            return allowStale || Date.now() - item.at < CACHE_TTL_MS ? item.data : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeStored(url, data) {
+        try {
+            localStorage.setItem(CACHE_PREFIX + url,
+                JSON.stringify({ at: Date.now(), data: data }));
+        } catch (e) { /* đầy bộ nhớ hoặc bị chặn: bỏ qua */ }
+    }
+
     function getJson(url) {
         if (cache[url]) return Promise.resolve(cache[url]);
+
+        var fresh = readStored(url, false);
+        if (fresh) {
+            cache[url] = fresh;
+            return Promise.resolve(fresh);
+        }
 
         var controller = new AbortController();
         var timer = window.setTimeout(function () {
@@ -283,7 +310,17 @@
             })
             .then(function (data) {
                 cache[url] = data;
+                writeStored(url, data);
                 return data;
+            })
+            .catch(function (error) {
+                // API lỗi: dùng bản cũ trong máy nếu có.
+                var stale = readStored(url, true);
+                if (stale) {
+                    cache[url] = stale;
+                    return stale;
+                }
+                throw error;
             })
             .finally(function () {
                 window.clearTimeout(timer);
@@ -394,7 +431,7 @@
         var provinceCode = codeOf('province');
         resetWard();
         if (!provinceCode) return Promise.resolve();
-
+        field('ward').options[0].textContent = 'Đang tải Phường / Xã…';
         var url = ADDRESS_API + '/p/' + encodeURIComponent(provinceCode) + '?depth=2';
         return getJson(url).then(function (data) {
             var wards = sortByName(data.wards || []);
@@ -416,6 +453,7 @@
                 }
             });
         }).catch(function (error) {
+            field('ward').options[0].textContent = LEVELS.ward.placeholder;
             console.error('Không tải được danh sách phường/xã:', error);
             setHint('Không tải được danh sách phường/xã. Hãy tải lại trang hoặc thử lại sau.');
         });
@@ -595,12 +633,14 @@
             if (submit) {
                 submit.disabled = true;
                 submit.textContent = 'Đang xử lý…';
+                submit.classList.add('is-loading');
             }
         });
 
         // Quay lại bằng nút Back: bỏ trạng thái "đang xử lý".
         window.addEventListener('pageshow', function () {
             if (submit && submit.textContent === 'Đang xử lý…') {
+                submit.classList.remove('is-loading');
                 submit.disabled = false;
                 submit.textContent = submitLabel;
             }

@@ -23,7 +23,7 @@ public class PaymentGatewayService {
     public static final String OTP_NO_FUNDS = "111111";
 
     public enum Result { SUCCESS, WRONG_OTP, NO_FUNDS, EXPIRED, INVALID }
-
+    public enum CancelResult { CANCELLED, ALREADY_PAID, CLOSED, INVALID }
     public record View(
             Long invoiceId,
             String method,
@@ -151,5 +151,37 @@ public class PaymentGatewayService {
                 && "DA_THANH_TOAN".equals(current.getStatus())
                 ? Result.SUCCESS
                 : Result.EXPIRED;
+    }
+    // ===== Khách hủy giao dịch: hủy luôn đơn nếu chưa thanh toán =====
+
+    @Transactional(timeout = 20)
+    public CancelResult cancel(Long invoiceId, String token) {
+        View v = view(invoiceId, token);
+
+        if (v == null) {
+            return CancelResult.INVALID;
+        }
+
+        if (v.isPaid()) {
+            return CancelResult.ALREADY_PAID;
+        }
+
+        if (v.isClosed()) {
+            return CancelResult.CLOSED;
+        }
+
+        // Khóa đơn để không đua với lúc quét OTP thành công.
+        invoices.lockOnlineOrder(invoiceId);
+
+        if (invoices.cancelUnpaidOnlineOrder(invoiceId) == 1) {
+            return CancelResult.CANCELLED;
+        }
+
+        var current = invoices.payment(invoiceId).orElse(null);
+
+        return current != null
+                && "DA_THANH_TOAN".equals(current.getStatus())
+                ? CancelResult.ALREADY_PAID
+                : CancelResult.CLOSED;
     }
 }

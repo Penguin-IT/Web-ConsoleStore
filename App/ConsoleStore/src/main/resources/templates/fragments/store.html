@@ -116,11 +116,26 @@
                ) + ' đ'}">
             </p>
 
-            <a class="product-button"
-               th:href="@{/products/{id}(id=${item.id})}"
-               th:aria-label="${'Xem ' + item.name}">
-                <span aria-hidden="true">↗</span>
-            </a>
+            <div class="product-actions">
+                <form class="product-quick-add"
+                      method="post"
+                      th:action="@{/cart/items}"
+                      th:if="${item.stock > 0}"
+                      data-customer-link>
+                    <input type="hidden" name="productId" th:value="${item.id}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button class="product-quick-button" type="submit"
+                            th:aria-label="${'Thêm ' + item.name + ' vào giỏ hàng'}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </form>
+
+                <a class="product-button"
+                   th:href="@{/products/{id}(id=${item.id})}"
+                   th:aria-label="${'Xem ' + item.name}">
+                    <span aria-hidden="true">↗</span>
+                </a>
+            </div>
         </div>
     </div>
 </article>
@@ -323,6 +338,8 @@
     </div>
     <link rel="stylesheet" th:href="@{/css/chat.css}">
     <script th:src="@{/js/chat.js}" th:attr="data-chat-base=@{/chat}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/ai-chat.css}">
+    <script th:src="@{/js/ai-chat.js}" th:attr="data-ai-base=@{/ai}" defer></script>
 </footer>
 
 <th:block th:fragment="dialogs"></th:block>

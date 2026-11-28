@@ -32,7 +32,15 @@
         .done { grid-column:1 / -1; text-align:center; padding:40px 20px; }
         .tick { width:72px; height:72px; margin:0 auto 14px; border-radius:50%; background:#12b76a; color:#fff; display:grid; place-items:center; font-size:38px; }
         @media (max-width:720px) { .wrap { grid-template-columns:1fr; } }
+        .timer.is-urgent { animation: pulse 1s ease-in-out infinite; }
+        @keyframes pulse { 50% { background: #ffd9d6; } }
+        #qr.is-expired { filter: grayscale(1) blur(3px); opacity: .5; }
+        .success-pop .tick { animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+        @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .timer.is-urgent, .success-pop .tick { animation: none; } }
     </style>
+    <script th:src="@{/js/page-transition.js(v='20261127')}"></script>
+    <link rel="stylesheet" th:href="@{/css/polish.css(v='20261127')}">
 </head>
 
 <body th:with="brand=${v.method == 'MOMO' ? '#a50064' : (v.method == 'ZALOPAY' ? '#0068ff' : '#0b5cab')},
@@ -69,7 +77,7 @@
     <!-- Hết hạn / đã hủy -->
     <section class="card done" th:if="${!v.paid and v.closed}">
         <h2>Giao dịch đã hết hạn</h2>
-        <p>Đơn hàng đã bị hủy do quá thời gian thanh toán.</p>
+        <p>Đơn hàng đã bị hủy.</p>
         <a th:href="@{/checkout/orders/{id}/payment(id=${v.invoiceId},result='expired')}">
             Quay lại cửa hàng
         </a>
@@ -137,9 +145,10 @@
                 Trang này sẽ tự cập nhật khi thanh toán xong.</p>
 
             <form method="post"
-                  th:action="@{/sandbox/pay/{id}/cancel(id=${v.invoiceId})}">
+                  th:action="@{/sandbox/pay/{id}/cancel(id=${v.invoiceId})}"
+                  onsubmit="return confirm('Hủy đơn hàng này? Bạn sẽ cần đặt lại từ đầu.');">
                 <input type="hidden" name="t" th:value="${token}">
-                <button class="btn ghost" type="submit">Hủy giao dịch</button>
+                <button class="btn ghost" type="submit">Hủy đơn hàng</button>
             </form>
 
             <div class="hint">
@@ -154,57 +163,136 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script th:inline="javascript">
     (function () {
+        'use strict';
+
         var id = /*[[${v.invoiceId}]]*/ 0;
         var token = /*[[${token}]]*/ '';
         var left = /*[[${secondsLeft}]]*/ 0;
         var paid = /*[[${v.paid}]]*/ false;
         var closed = /*[[${v.closed}]]*/ false;
         var phone = /*[[${phone}]]*/ false;
-
         var qrUrl = /*[[${qrUrl}]]*/ '';
-        if (paid) {
-            if (!phone) {
-                setTimeout(function () {
-                    location.href = '/checkout/orders/' + id + '/payment?result=success';
-                }, 3000);
-            }
-            return;
+
+        var successUrl = '/checkout/orders/' + id + '/payment?result=success';
+        var statusUrl = '/sandbox/pay/' + id + '/status?t=' + encodeURIComponent(token);
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function go(url, delay) {
+            setTimeout(function () { location.href = url; }, delay);
         }
 
+        if (paid) {
+            if (!phone) { go(successUrl, 1500); }
+            return;
+        }
         if (closed) { return; }
 
-        var qr = document.getElementById('qr');
-        if (window.QRCode && qr) {
-            new QRCode(qr, {
-                text: qrUrl || (location.origin + location.pathname + '?t=' + token + '&m=1'),
-                width: 200,
-                height: 200
+        // ===== QR =====
+        var qrBox = document.getElementById('qr');
+        if (qrBox) {
+            var target = qrUrl || (location.origin + location.pathname + '?t=' + token + '&m=1');
+
+            if (window.QRCode) {
+                new QRCode(qrBox, { text: target, width: 200, height: 200 });
+            } else {
+                qrBox.textContent = 'Không tải được mã QR. Hãy bấm "Thanh toán ngay trên máy này".';
+            }
+
+            if (!qrUrl && /^(localhost|127\.|10\.|192\.168\.)/.test(location.hostname)) {
+                var warn = document.createElement('p');
+                warn.className = 'hint';
+                warn.textContent = 'Lưu ý: địa chỉ này chỉ mở được trên máy tính. '
+                    + 'Hãy cấu hình store.public-base-url (ngrok) để điện thoại quét được.';
+                qrBox.insertAdjacentElement('afterend', warn);
+            }
+        }
+
+        // ===== Đồng hồ đếm ngược (theo mốc thời gian thật, không bị trôi) =====
+        var clock = document.getElementById('clock');
+        var payBtn = document.getElementById('payBtn');
+        var deadline = Date.now() + left * 1000;
+        var expired = false;
+        var stopped = false;
+
+        function renderClock() {
+            var remain = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+            var m = Math.floor(remain / 60);
+            var s = remain % 60;
+
+            clock.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            clock.parentElement.classList.toggle('is-urgent', remain > 0 && remain <= 60);
+
+            if (remain === 0 && !expired) {
+                expired = true;
+                if (payBtn) { payBtn.disabled = true; }
+                if (qrBox) { qrBox.classList.add('is-expired'); }
+                checkStatus();      // job có thể đã hủy đơn, hỏi lại ngay
+            }
+        }
+        renderClock();
+        var clockTimer = setInterval(renderClock, 1000);
+
+        // ===== Hỏi trạng thái thanh toán =====
+        var pollDelay = 2000;
+        var pollTimer = null;
+
+        function showSuccess() {
+            stopped = true;
+            clearInterval(clockTimer);
+
+            if (phone) { location.reload(); return; }
+
+            var wrap = document.querySelector('.wrap');
+            wrap.innerHTML = '<section class="card done success-pop">'
+                + '<div class="tick">✓</div>'
+                + '<h2>Thanh toán thành công</h2>'
+                + '<p>Đang chuyển về cửa hàng…</p></section>';
+            go(successUrl, reduceMotion ? 300 : 1400);
+        }
+
+        function checkStatus() {
+            return fetch(statusUrl, { cache: 'no-store' })
+                .then(function (r) {
+                    if (!r.ok) { throw new Error(r.status); }
+                    return r.json();
+                })
+                .then(function (d) {
+                    pollDelay = 2000;
+                    if (d.paid) {
+                        showSuccess();
+                    } else if (d.closed) {
+                        stopped = true;
+                        location.reload();      // hiện thẻ "Giao dịch đã hết hạn" từ server
+                    }
+                })
+                .catch(function () {
+                    pollDelay = Math.min(pollDelay * 2, 10000);   // lỗi mạng: giãn dần
+                });
+        }
+
+        function loop() {
+            clearTimeout(pollTimer);
+            if (stopped) { return; }
+
+            var run = document.hidden ? Promise.resolve() : checkStatus();
+            run.then(function () {
+                if (!stopped) { pollTimer = setTimeout(loop, pollDelay); }
             });
         }
 
-        var clock = document.getElementById('clock');
-        function tick() {
-            if (left <= 0) {
-                clock.textContent = '00:00';
-                var payBtn = document.getElementById('payBtn');
-                if (payBtn) { payBtn.disabled = true; }
-                return;
-            }
-            var m = Math.floor(left / 60), s = left % 60;
-            clock.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-            left--;
-        }
-        tick();
-        setInterval(tick, 1000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && !stopped) { loop(); }   // quay lại tab là kiểm tra ngay
+        });
+        loop();
 
-        // Tự cập nhật khi thanh toán xong ở thiết bị khác
-        setInterval(function () {
-            fetch('/sandbox/pay/' + id + '/status?t=' + encodeURIComponent(token),
-                { cache: 'no-store' })
-                .then(function (r) { return r.json(); })
-                .then(function (d) { if (d.paid || d.closed) { location.reload(); } })
-                .catch(function () {});
-        }, 2000);
+        // ===== Chống bấm 2 lần khi gửi OTP =====
+        var otpForm = document.querySelector('form[action*="/confirm"]');
+        if (otpForm && payBtn) {
+            otpForm.addEventListener('submit', function () {
+                payBtn.disabled = true;
+                payBtn.textContent = 'Đang xác thực…';
+            });
+        }
     })();
 </script>
 </body>
